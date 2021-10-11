@@ -338,11 +338,11 @@ class ZionCamera(PiCamera):
 			print('\nAuto White Balance Gain (BLUE) = '+str(awb_gains_blue_info[2]))				
 
 	def read_all_gains(self):
-		print('\nAnalog Gain = '+str(self.analog_gain))
-		print('\nDigital Gain = '+str(self.digital_gain))
+		print('\nAnalog Gain = '+str(float(self.analog_gain)))
+		print('\nDigital Gain = '+str(float(self.digital_gain)))
 		awb_gains = self.awb_gains
-		print('\nAWB Gain (RED) = '+str(awb_gains[0]))
-		print('\nAWB Gain (BLUE) = '+str(awb_gains[1]))
+		print('\nAWB Gain (RED) = '+str(float(awb_gains[0])))
+		print('\nAWB Gain (BLUE) = '+str(float(awb_gains[1])))
 		
 		
 #TODO: link cropping with bounding box UI input

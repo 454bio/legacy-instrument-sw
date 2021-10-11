@@ -1,10 +1,11 @@
+import os
 import time
 from operator import itemgetter
 import keyboard
 from ZionCamera import ZionCamera
 from ZionGPIO import ZionGPIO
 from ZionEvents import check_led_timings, create_event_list, performEventList
-import os
+
 
 
 class ZionSession(object): #TODO: inherit from some UI/app session class type
