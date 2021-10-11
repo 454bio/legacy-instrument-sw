@@ -1,6 +1,7 @@
 import pigpio
 import os
 import itertools
+import glob
 
 # Gpio Pin Lookup Table. Index is GPIO #, format is (pin #, enabled, alternate function)
 # (can remove/trim if memory is an issue)
@@ -57,6 +58,9 @@ dtoverlay=w1-gpio,gpiopin=5 (for 5)
 ls /sys/bus/w1/devices
 '''
 
+
+
+
 #1 GPIO for UV safety switch:
 #TODO
 
@@ -98,8 +102,15 @@ class ZionGPIO(pigpio.pi):
 		self.Temp_Output_GPIO = temp_out_gpio
 		#TODO: implement heat control output
 				
-		self.Temp_Input_1W = temp_in_gpio
-		#TODO: finish setting up 1-wire for temp input
+		base_dir = '/sys/bus/w1/devices/'
+		self.Temp_1W_device = glob.glob(base_dir + '28*')[0]
+
+		# ~ f = open(device_folder+'', 'r')
+		# ~ self.Temp_1W_address = f.readline()
+		# ~ f.close()
+		# ~ self.Temp_1W_device_file = device_folder+self.Temp_1W_address+'/w1_slave'
+		
+		# ~ #TODO: finish setting up 1-wire for temp input
 		
 		# Last thing is to ensure all leds are off:
 		self.turn_off_led('all')
@@ -139,3 +150,15 @@ class ZionGPIO(pigpio.pi):
 			super(ZionGPIO,self).clear_bank_1( self.Orange_Reg )
 		else:
 			raise ValueError('Invalid color choice!')
+	
+	def read_temperature(self):
+		f = open(self.Temp_1W_device+'/w1_slave', 'r')
+		lines = f.readlines()
+		f.close()
+		if not lines[0][-4:-1]=='YES':
+			print(lines[0][-4:-1])
+		else:
+			equals_pos = lines[1].find('t=')
+			temp_c = float(lines[1][equals_pos+2:])/1000.
+			print('\nTemperature = '+str(temp_c)+' C')
+		return temp_c
