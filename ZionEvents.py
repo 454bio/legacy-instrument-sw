@@ -2,6 +2,28 @@ from time import sleep
 from operator import itemgetter
 import keyboard
 
+class ZionScript():
+    def __init__(LED_Blu_Timing, LED_Or_Timing, LED_UV_Timing, Camera_Capture_Times, Repeat_N=0):
+	#first take last UV time on to create refactory period:
+	uv_time_on = LED_UV_Timing[-1][1]-LED_UV_Timing[-1][0]
+	
+	#First we create all events (we'll sort later):
+	eventList = []
+	eventList += [(time_pair[0], 'led_on', 'Blue') for time_pair in LED_Blu_Timing]
+	eventList += [(time_pair[1], 'led_off', 'Blue', time_pair[1]) for time_pair in LED_Blu_Timing]
+	eventList += [(time_pair[0], 'led_on', 'Orange', time_pair[0]) for time_pair in LED_Or_Timing]
+	eventList += [(time_pair[1], 'led_off', 'Orange', time_pair[1]) for time_pair in LED_Or_Timing]
+	eventList += [(time_pair[0], 'led_on', 'UV', time_pair[0]) for time_pair in LED_UV_Timing]
+	eventList += [(time_pair[1], 'led_off', 'UV', time_pair[1]) for time_pair in LED_UV_Timing]
+	for capture_event in Camera_Capture_Times:
+		eventList += [(capture_event[0], 'take_snapshot', capture_event[1], capture_event[2])]
+	#TODO: dependency on group number starting at 1 and incrementing by 1
+	self.NumGroups = Camera_Capture_Times[-1][2]
+	#Now sort by time:
+	eventList.sort(key=itemgetter(0))
+    self.EventList = eventList
+    self.RepeatN = Repeat_N
+
 #Check for well-formed timing arrays:
 def check_led_timings(LED_Blu_Timing, LED_Or_Timing, LED_UV_Timing, UV_duty_cycle=3.0):
 	for led_array in [LED_Blu_Timing, LED_Or_Timing, LED_UV_Timing]:

@@ -19,13 +19,15 @@ Session_Name = 'session_name'
 Spatial_Res = (2028, 1520)
 Frame_Rate = 20
 
+# TODO: bring shutter speed back out to user
+# (right now manual shutter speed can't be changed from 1/FR)
 # Shutter Speed = Exposure Time (in microseconds)
 # ~ Shutter_Speed = round(1000./Frame_Rate)  #(0 is automatic) 
-Shutter_Speed = round(1000000./Frame_Rate)
-Shutter_Speed_Stepsize = 2000
-Shutter_Speed_Max = 200000000
+# Shutter_Speed = round(1000000./Frame_Rate)
+# Shutter_Speed_Stepsize = 2000
+# Shutter_Speed_Max = 200000000
 # Minimum is 1/Frame_Rate
-# TODO: right now manual shutter speed can't be changed from 1/FR
+
 
 # LED Timing:
 # ~ Blue_Timing = [ (120000, 126000) ]
@@ -63,7 +65,7 @@ mySession = ZionSession(Session_Name, Spatial_Res, Frame_Rate, Blue_Timing, Oran
 mySession.RunProgram()
 
 # TODO: once we use high-power UVs, gonna want to turn them all off for safety:
-# ~ myGPIO.turn_off_led('all')
+# ~ myGPIO.turn_off_led('UV')
 
 #Start preview:
 mySession.InteractivePreview(window=(30,60,854,640))
