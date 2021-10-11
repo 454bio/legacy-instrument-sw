@@ -29,10 +29,10 @@ class ZionCamera(PiCamera):
 		
 		print('\nCamera Initializing...')
 		super(ZionCamera,self).__init__(resolution=resolution, framerate=framerate, sensor_mode=2)
-		self.iso=100
-
-		time.sleep(2)
-		
+		self.iso=800
+		time.sleep(0.5)
+		self.exposure_mode='verylong' #night?
+		time.sleep(2.5)
 		self.awb_mode = 'off'
 		self.awb_gains = (awb_gains_red_info[2], awb_gains_blue_info[2])
 		self.exposure_mode='off'
