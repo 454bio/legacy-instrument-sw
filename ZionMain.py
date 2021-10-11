@@ -4,11 +4,14 @@
 from time import sleep
 from ZionGPIO import ZionGPIO
 from ZionCamera import ZionCamera
-from ZionEvents import check_led_timings, create_event_list, initializeSession, performEventList
+from ZionEvents import check_led_timings, create_event_list, performEventList
+from ZionSession import ZionSession
 
 ########################################################################
 ######################### User-Level Settings ##########################
 ######################################################################## 
+
+Session_Name = 'session_name'
 
 # Camera Properties:
 
@@ -25,43 +28,49 @@ Shutter_Speed_Max = 200000000
 # TODO: right now manual shutter speed can't be changed from 1/FR
 
 # LED Timing:
-Blue_Timing = [ (120000, 126000) ]
-Orange_Timing = [ (120000, 122000), (124000,130000) ]
-UV_Timing = [ (1, 122000) ]
+# ~ Blue_Timing = [ (120000, 126000) ]
+# ~ Orange_Timing = [ (120000, 122000), (124000,130000) ]
+# ~ UV_Timing = [ (1, 122000) ]
+Blue_Timing = [ (5000, 6000) ]
+Orange_Timing = [ (5500, 6500) ]
+UV_Timing = [ (7000, 8000) ]
 # ~ UV_Timing =  [ (3000, 4000), (6000, 7000), (9000, 10000) ]
 
-# Camera Capture Timing:jikozasxxsssddccfffvvvvvulloiuojkiujkiuujkiujkolkiujkoloiuliuolkjlujikolikujolikoluji...//;';';[[]////////////////////////////''';............;;\\
+# Camera Capture Timing:
 Camera_Captures = [
-(121000, None),
-(123000, None),
-(125000, None),
-(127000, None)
+(4000, None, 1),
+(4500, None, 1),
+(6000, None, 2),
+(7500, None, 2),
+(8000, None, 3)
 ]
 #all 3 > blue > blue + orange > orange
 
-# Repeat whole process N number of times
+# Repeat whole process N number of (additional) times
 Repeat_N = 2
+
+# TODO: Overwrite
+# ~ overWrite=False
 
 ########################################################################
 ############################# Main Script ##############################
 ########################################################################
 
 # Initialization Block:
-# TODO: once we use real UV LEDs, remove UV_duty_cycle argument to default it to 3.0
-check_led_timings(Blue_Timing, Orange_Timing, UV_Timing)
-myGPIO = ZionGPIO()
-myCamera = ZionCamera(Spatial_Res, Frame_Rate, Shutter_Speed, Shutter_Speed_Stepsize, Shutter_Speed_Max, gpio_ctrl=myGPIO)
+mySession = ZionSession(Session_Name, Spatial_Res, Frame_Rate, Blue_Timing, Orange_Timing, UV_Timing, Camera_Captures, Repeat_N)
 
-# Do what you want here:
-baseFilename = 'UV_long_run'
+#Next line perform events defined above:
+mySession.RunProgram()
 
-#Next two lines perform events defined
-myEventList = create_event_list(Blue_Timing, Orange_Timing, UV_Timing, Camera_Captures, Repeat_N)
-performEventList(myEventList, myCamera, myGPIO, Repeat_N, baseFilename)
-
+# TODO: once we use high-power UVs, gonna want to turn them all off for safety:
 # ~ myGPIO.turn_off_led('all')
-myCamera.interactive_preview(baseFilename, window=(30, 60, 854, 640))
 
-#Turn LEDs off and turns off camera
-myGPIO.turn_off_led('all')
-myCamera.quit()
+#Start preview:
+mySession.InteractivePreview(window=(30,60,854,640))
+
+########################################################################
+######################### Shutdown Script ##############################
+########################################################################
+
+# Shut down Turn LEDs off and turns off camera
+mySession.QuitSession()

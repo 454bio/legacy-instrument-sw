@@ -103,7 +103,10 @@ class ZionGPIO(pigpio.pi):
 		
 		# Last thing is to ensure all leds are off:
 		self.turn_off_led('all')
-
+		
+		
+		
+	#TODO: add simultaneous led events
 	def turn_on_led(self, color):
 		if color=='all':
 			print('\nTurning all LEDs on')
@@ -120,6 +123,7 @@ class ZionGPIO(pigpio.pi):
 		else:
 			raise ValueError('Invalid color choice!')
 
+	#TODO: add simultaneous led events
 	def turn_off_led(self, color):
 		if color=='all':
 			print('\nTurning all LEDs off')

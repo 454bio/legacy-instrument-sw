@@ -1,10 +1,11 @@
 from picamera import PiCamera, PiRenderer
 import pigpio
 import keyboard
-from operator import itemgetter
+# ~ from operator import itemgetter
 from PIL import Image as PIL_Image
 from time import sleep
-
+import time
+import os
 
 brightness_info = (0,100,50,5)
 contrast_info = (-100,100,50,5)
@@ -18,8 +19,8 @@ exposure_mode_info = ['off', 'auto', 'night', 'nightpreview',
 					  'backlight', 'spotlight', 'sports', 'snow',
 					  'beach', 'verylong', 'fixedfps', 'antishake', 'fireworks']
 awb_mode_info = ['off','auto']
-awb_gains_red_info = (0.0, 8.0, 4, 0.5)
-awb_gains_blue_info = (0.0, 8.0, 4, 0.5)
+awb_gains_red_info = (0.0, 8.0, 1.9, 0.1)
+awb_gains_blue_info = (0.0, 8.0, 1.9, 0.1)
 
 
 class ZionCamera(PiCamera):
@@ -28,9 +29,14 @@ class ZionCamera(PiCamera):
 		
 		print('\nCamera Initializing...')
 		super(ZionCamera,self).__init__(resolution=resolution, framerate=framerate, sensor_mode=2)
+		self.iso=100
 
-		sleep(2)
+		time.sleep(2)
 		
+		self.awb_mode = 'off'
+		self.awb_gains = (awb_gains_red_info[2], awb_gains_blue_info[2])
+		self.exposure_mode='off'
+
 		# ~ self.framerate_range = (1, framerate)
 		#TODO fix shutter speed stuff
 		self.shutter_speed = shutter_speed
@@ -43,9 +49,12 @@ class ZionCamera(PiCamera):
 		self.GPIO = gpio_ctrl
 		print('\nCamera Ready')
 		
-	def capture(self, filename, cropping=(0,0,1,1), useIndex=False):
+	def capture(self, filename, cropping=(0,0,1,1), baseTime=0, group=None):
 		self.zoom = cropping
-		fileToWrite = filename+'_'+str(self.file_idx)+'.jpg' if useIndex else filename+'.jpg'
+		fileTimestamp = round(1000*(time.time()-baseTime))
+		group = str(group) if group else ''
+		fileToWrite = os.path.join(filename[0], group+'_'+filename[1]+'_'+str(fileTimestamp)+'.jpg')
+		# ~ group+'_'+filename+'_'+str(self.file_idx)+'_'+str(fileTimestamp)+'.jpg' if useIndex else filename+'.jpg'
 		print('\nWriting image to file '+fileToWrite)
 		if self.GPIO:
 			self.GPIO.write(self.GPIO.Camera_Trigger, True)
@@ -61,9 +70,9 @@ class ZionCamera(PiCamera):
 		self.close()
 		print('\nCamera closed')
 			
-	def interactive_preview(self, baseFilename=None, init_file_idx=0, cropping=(0,0,1,1), window=None):
+	def interactive_preview(self, baseFilename=None, init_file_idx=0, cropping=(0,0,1,1), window=None, baseTime=0):
 		self.file_idx = init_file_idx
-		keyboard.add_hotkey('space', self.capture, args=(baseFilename, cropping, True))
+		keyboard.add_hotkey('space', self.capture, args=(baseFilename, cropping, baseTime, 'P'))
 		
 		keyboard.add_hotkey('u', self.GPIO.turn_on_led, args=('Blue',))
 		keyboard.add_hotkey('j', self.GPIO.turn_off_led, args=('Blue',))
@@ -72,7 +81,7 @@ class ZionCamera(PiCamera):
 		keyboard.add_hotkey('o', self.GPIO.turn_on_led, args=('UV',))
 		keyboard.add_hotkey('l', self.GPIO.turn_off_led, args=('UV',))
 		
-		# ~ keyboard.add_hotkey('tab', self.toggle_denoise)
+		keyboard.add_hotkey('tab', self.toggle_denoise)
 		
 		keyboard.add_hotkey('a', self.increase_brightness)
 		keyboard.add_hotkey('z', self.decrease_brightness)
@@ -128,6 +137,8 @@ class ZionCamera(PiCamera):
 		keyboard.add_hotkey(';', self.increase_blue_awb)
 		keyboard.add_hotkey('.', self.decrease_blue_awb)
 		keyboard.add_hotkey('[', self.reset_blue_awb)
+		
+		keyboard.add_hotkey('backspace', self.read_all_gains)
 		
 		#TODO: move preview to gui
 		if window:
@@ -274,13 +285,16 @@ class ZionCamera(PiCamera):
 			self.awb_mode = 'auto'
 			print('\nAuto White Balance on')
 		elif self.awb_mode == 'auto':
+			awb_gains = self.awb_gains
 			self.awb_mode = 'off'
 			print('\nAuto White Balance off')
-
+			self.awb_gains=awb_gains
+			print('\nWhite balance gains are: RED='+str(float(self.awb_gains[0]))+', BLUE='+str(float(self.awb_gains[1])))
+			
 	def increase_red_awb(self, amt=awb_gains_red_info[-1]):
 		if self.awb_mode=='off':
 			current_awb_gains = self.awb_gains
-			if current_awb_gains[0] == awb_gains_red_info[1]:
+			if current_awb_gains[0]+amt >= awb_gains_red_info[1]:
 				return
 			else:
 				new_red_awb = current_awb_gains[0] + amt
@@ -289,7 +303,7 @@ class ZionCamera(PiCamera):
 	def decrease_red_awb(self, amt=awb_gains_red_info[-1]):
 		if self.awb_mode=='off':
 			current_awb_gains = self.awb_gains
-			if current_awb_gains[0] == awb_gains_red_info[0]:
+			if current_awb_gains[0]-amt <= awb_gains_red_info[0]:
 				return
 			else:
 				new_red_awb = current_awb_gains[0] - amt
@@ -303,7 +317,7 @@ class ZionCamera(PiCamera):
 	def increase_blue_awb(self, amt=awb_gains_blue_info[-1]):
 		if self.awb_mode=='off':		
 			current_awb_gains = self.awb_gains
-			if current_awb_gains[1] == awb_gains_blue_info[1]:
+			if current_awb_gains[1]+amt >= awb_gains_blue_info[1]:
 				return
 			else:
 				new_blue_awb = current_awb_gains[1] + amt
@@ -312,7 +326,7 @@ class ZionCamera(PiCamera):
 	def decrease_blue_awb(self, amt=awb_gains_blue_info[-1]):
 		if self.awb_mode=='off':
 			current_awb_gains = self.awb_gains
-			if current_awb_gains[1] == awb_gains_blue_info[0]:
+			if current_awb_gains[1]-amt <= awb_gains_blue_info[0]:
 				return
 			else:
 				new_blue_awb = current_awb_gains[1] - amt
@@ -322,4 +336,13 @@ class ZionCamera(PiCamera):
 		if self.awb_mode=='off':
 			self.awb_gains = (self.awb_gains[0], awb_gains_blue_info[2])
 			print('\nAuto White Balance Gain (BLUE) = '+str(awb_gains_blue_info[2]))				
+
+	def read_all_gains(self):
+		print('\nAnalog Gain = '+str(self.analog_gain))
+		print('\nDigital Gain = '+str(self.digital_gain))
+		awb_gains = self.awb_gains
+		print('\nAWB Gain (RED) = '+str(awb_gains[0]))
+		print('\nAWB Gain (BLUE) = '+str(awb_gains[1]))
+		
+		
 #TODO: link cropping with bounding box UI input
