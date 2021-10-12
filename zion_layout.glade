@@ -548,14 +548,15 @@
                                                     <property name="visible">True</property>
                                                     <property name="can_focus">False</property>
                                                     <property name="model">liststore1</property>
-                                                    <property name="add_tearoffs">True</property>
                                                     <property name="has_frame">False</property>
                                                     <property name="has_entry">True</property>
                                                     <property name="entry_text_column">0</property>
                                                     <child internal-child="entry">
                                                       <object class="GtkEntry">
                                                         <property name="can_focus">False</property>
-                                                        <property name="text" translatable="yes">off</property>
+                                                        <property name="editable">False</property>
+                                                        <property name="has_frame">False</property>
+                                                        <property name="caps_lock_warning">False</property>
                                                       </object>
                                                     </child>
                                                   </object>
