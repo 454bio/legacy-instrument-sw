@@ -62,13 +62,13 @@ Repeat_N = 2
 mySession = ZionSession(Session_Name, Spatial_Res, Frame_Rate, Blue_Timing, Orange_Timing, UV_Timing, Camera_Captures, Repeat_N)
 
 #Next line perform events defined above:
-mySession.RunProgram()
+# ~ mySession.RunProgram()
 
 # TODO: once we use high-power UVs, gonna want to turn them all off for safety:
 # ~ myGPIO.turn_off_led('UV')
 
 #Start preview:
-mySession.InteractivePreview(window=(30,60,854,640))
+# ~ mySession.InteractivePreview(window=(30,60,854,640))
 
 ########################################################################
 ######################### Shutdown Script ##############################
