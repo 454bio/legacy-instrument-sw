@@ -6,7 +6,20 @@ from ZionCamera import ZionCamera
 from ZionGPIO import ZionGPIO
 from ZionEvents import check_led_timings, create_event_list, performEventList
 
-
+'''
+from gi.repository import (...) GdkPixbuf, GLib, Gio
+(...)
+my_source=Here_I_get_BLOB_img_from_database()
+newimage=my_source.read()
+glib=GLib.Bytes.new(newimage)
+stream = Gio.MemoryInputStream.new_from_bytes(glib)
+pixbuf = GdkPixbuf.Pixbuf.new_from_stream(stream, None)
+image=Gtk.Image().new_from_pixbuf(pixbuf)
+my_window = Gtk.Window(modal=True, title="Image")
+my_window.add(image)
+image.show()
+my_window.show()
+'''
 
 class ZionSession(object): #TODO: inherit from some UI/app session class type
 
