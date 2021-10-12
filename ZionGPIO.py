@@ -108,9 +108,11 @@ class ZionGPIO(pigpio.pi):
 			print('Warning: 1-Wire interface not connected.')
 			self.Temp_1W_device = None 
 		
-		
+		# Last thing is to ensure all leds are off:
 		self.turn_off_led('all')
 		
+		
+		#TODO: led pwm stuff here, why doesnt clear bank work to turn it off?
 		super(ZionGPIO,self).set_PWM_frequency(19, 8000)
 		super(ZionGPIO,self).set_PWM_dutycycle(19, 255)
 		time.sleep(5)
