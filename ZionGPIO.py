@@ -2,6 +2,7 @@ import pigpio
 import os
 import itertools
 import glob
+import time
 
 # Gpio Pin Lookup Table. Index is GPIO #, format is (pin #, enabled, alternate function)
 # (can remove/trim if memory is an issue)
@@ -69,8 +70,6 @@ class ZionGPIO(pigpio.pi):
 	#TODO: add UV off command to appropriate error handles?
 	
 	def __init__(self, UV_gpios=UV, Blue_gpios=BLUE, Orange_gpios=ORANGE, temp_out_gpio=TEMP_OUTPUT, temp_in_gpio=TEMP_INPUT_1W, camera_trigger_gpio=CAMERA_TRIGGER):
-		
-		#os.system("sudo pigpiod") #This is now done upon boot (actually ~/.bashrc)
 		super(ZionGPIO, self).__init__()
 
 		# Check that GPIO settings are valid:
@@ -108,19 +107,20 @@ class ZionGPIO(pigpio.pi):
 		except IndexError:
 			print('Warning: 1-Wire interface not connected.')
 			self.Temp_1W_device = None 
-		# ~ f = open(device_folder+'', 'r')
-		# ~ self.Temp_1W_address = f.readline()
-		# ~ f.close()
-		# ~ self.Temp_1W_device_file = device_folder+self.Temp_1W_address+'/w1_slave'
 		
-		# ~ #TODO: finish setting up 1-wire for temp input
 		
-		# Last thing is to ensure all leds are off:
 		self.turn_off_led('all')
 		
+		super(ZionGPIO,self).set_PWM_frequency(19, 8000)
+		super(ZionGPIO,self).set_PWM_dutycycle(19, 255)
+		time.sleep(5)
+		super(ZionGPIO,self).set_PWM_dutycycle(19, 128)
+		time.sleep(5)
+		
+		# Last thing is to ensure all leds are off:
+		super(ZionGPIO,self).set_PWM_dutycycle(19, 0)
 		
 		
-	#TODO: add simultaneous led events
 	def turn_on_led(self, color):
 		if color=='all':
 			print('\nTurning all LEDs on')
@@ -137,7 +137,6 @@ class ZionGPIO(pigpio.pi):
 		else:
 			raise ValueError('Invalid color choice!')
 
-	#TODO: add simultaneous led events
 	def turn_off_led(self, color):
 		if color=='all':
 			print('\nTurning all LEDs off')
