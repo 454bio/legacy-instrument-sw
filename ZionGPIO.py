@@ -103,8 +103,11 @@ class ZionGPIO(pigpio.pi):
 		#TODO: implement heat control output
 				
 		base_dir = '/sys/bus/w1/devices/'
-		self.Temp_1W_device = glob.glob(base_dir + '28*')[0]
-
+		try:
+			self.Temp_1W_device = glob.glob(base_dir + '28*')[0]
+		except IndexError:
+			print('Warning: 1-Wire interface not connected.')
+			self.Temp_1W_device = None 
 		# ~ f = open(device_folder+'', 'r')
 		# ~ self.Temp_1W_address = f.readline()
 		# ~ f.close()
@@ -152,13 +155,17 @@ class ZionGPIO(pigpio.pi):
 			raise ValueError('Invalid color choice!')
 	
 	def read_temperature(self):
-		f = open(self.Temp_1W_device+'/w1_slave', 'r')
-		lines = f.readlines()
-		f.close()
-		if not lines[0][-4:-1]=='YES':
-			print(lines[0][-4:-1])
+		if self.Temp_1W_device:
+			f = open(self.Temp_1W_device+'/w1_slave', 'r')
+			lines = f.readlines()
+			f.close()
+			if not lines[0][-4:-1]=='YES':
+				print('Serial communications issue!')
+			else:
+				equals_pos = lines[1].find('t=')
+				temp_c = float(lines[1][equals_pos+2:])/1000.
+				print('\nTemperature = '+str(temp_c)+' C')
+			return temp_c
 		else:
-			equals_pos = lines[1].find('t=')
-			temp_c = float(lines[1][equals_pos+2:])/1000.
-			print('\nTemperature = '+str(temp_c)+' C')
-		return temp_c
+			print('No digital thermometer connected')
+			return None
