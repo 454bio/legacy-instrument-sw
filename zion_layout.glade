@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- Generated with glade 3.22.1 -->
 <interface>
-  <requires lib="gtk+" version="3.20"/>
+  <requires lib="gtk+" version="3.0"/>
   <object class="GtkListStore" id="liststore1">
     <columns>
       <!-- column-name exp_mode_opts -->
@@ -27,10 +27,10 @@
   </object>
   <object class="GtkWindow" id="window1">
     <property name="name">main_window</property>
+    <property name="visible">True</property>
     <property name="can_focus">False</property>
-    <child type="titlebar">
-      <placeholder/>
-    </child>
+    <property name="gravity">center</property>
+    <signal name="delete-event" handler="on_window1_delete_event" swapped="no"/>
     <child>
       <object class="GtkBox">
         <property name="name">box1</property>
@@ -74,7 +74,8 @@
                                     <property name="halign">center</property>
                                     <property name="orientation">vertical</property>
                                     <property name="show_fill_level">True</property>
-                                    <property name="round_digits">1</property>
+                                    <property name="fill_level">0</property>
+                                    <property name="round_digits">10</property>
                                     <property name="has_origin">False</property>
                                   </object>
                                 </child>
@@ -882,7 +883,8 @@ Off)</property>
                                                   <object class="GtkScale" id="red_gain_scale">
                                                     <property name="visible">True</property>
                                                     <property name="can_focus">True</property>
-                                                    <property name="round_digits">1</property>
+                                                    <property name="fill_level">8</property>
+                                                    <property name="round_digits">0</property>
                                                     <property name="value_pos">left</property>
                                                   </object>
                                                 </child>
