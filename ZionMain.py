@@ -17,7 +17,7 @@ Session_Name = 'session_name'
 
 # These can't change while camera is open:
 Spatial_Res = (2028, 1520)
-Frame_Rate = 20
+Frame_Rate = 10
 
 # TODO: bring shutter speed back out to user
 # (right now manual shutter speed can't be changed from 1/FR)
@@ -68,7 +68,7 @@ mySession = ZionSession(Session_Name, Spatial_Res, Frame_Rate, Blue_Timing, Oran
 # ~ myGPIO.turn_off_led('UV')
 
 #Start preview:
-# ~ mySession.InteractivePreview(window=(30,60,854,640))
+mySession.InteractivePreview(window=(30,60,854,640))
 
 ########################################################################
 ######################### Shutdown Script ##############################

@@ -28,7 +28,8 @@ class ZionCamera(PiCamera):
 	def __init__(self, resolution, framerate, shutter_speed, shutter_speed_step, shutter_speed_max, gpio_ctrl=None):
 		
 		print('\nCamera Initializing...')
-		super(ZionCamera,self).__init__(resolution=resolution, framerate=framerate, sensor_mode=2)
+		super(ZionCamera,self).__init__(resolution=resolution, framerate=framerate, sensor_mode=3)
+		# ~ super(ZionCamera,self).__init__(resolution=resolution, framerate=framerate, sensor_mode=2)
 		self.iso=800
 		time.sleep(0.5)
 		self.exposure_mode='verylong' #night?
@@ -340,9 +341,11 @@ class ZionCamera(PiCamera):
 	def read_all_gains(self):
 		print('\nAnalog Gain = '+str(float(self.analog_gain)))
 		print('\nDigital Gain = '+str(float(self.digital_gain)))
-		awb_gains = self.awb_gains
-		print('\nAWB Gain (RED) = '+str(float(awb_gains[0])))
-		print('\nAWB Gain (BLUE) = '+str(float(awb_gains[1])))
+		print('\nExposure Time = '+str(self.exposure_speed))
+		print('\nShutter Time = '+str(self.shutter_speed))
+		# ~ awb_gains = self.awb_gains
+		# ~ print('\nAWB Gain (RED) = '+str(float(awb_gains[0])))
+		# ~ print('\nAWB Gain (BLUE) = '+str(float(awb_gains[1])))
 		
 		
 #TODO: link cropping with bounding box UI input
