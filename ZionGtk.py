@@ -9,6 +9,10 @@ class Handlers:
 
     def __init__(self):
         self.LightOn = False
+        self.awbGainsOn = True
+        redGainScale.set_sensitive(self.awbGainsOn)
+        blueGainScale.set_sensitive(self.awbGainsOn)
+        self.isoButtonsOn = True
         
     def on_image_denoise_button(self, button):
         if button.get_active():
@@ -61,10 +65,16 @@ class Handlers:
     def on_awb_enable_button(self, switch, gparam):
         if switch.get_active():
             print('Enable AWB and disable gain sliders')
-            #TODO: disable sliders
+            self.awbGainsOn = False
+            redGainScale.set_sensitive(self.awbGainsOn)
+            blueGainScale.set_sensitive(self.awbGainsOn)
+
         else:
             print('Disable AWB and enable gain sliders')
-            #TODO: enable sliders
+            self.awbGainsOn = True
+            redGainScale.set_sensitive(self.awbGainsOn)
+            blueGainScale.set_sensitive(self.awbGainsOn)
+            
             
     #TODO: move has column entry 0 above active 0 line in glade file
     def on_exp_mode_changed(self, combo):
@@ -72,8 +82,10 @@ class Handlers:
         if tree_iter is not None:
             choice = combo.get_model()[tree_iter][0]
             print('New exposure mode: ' +choice)
-            #TODO: if setting to auto, toggle button below
-            
+            # ~ if choice=='off':
+                
+
+
     def on_lock_exp_mode_button(self, button):
         if button.get_active():
             print('New exposure mode: auto')
@@ -113,6 +125,11 @@ class Handlers:
         return
 
 builder = Gtk.Builder.new_from_file("zion_layout.glade")
+mainWindow = builder.get_object("window1")
+Gtk.Window.maximize(mainWindow)
+
+redGainScale = builder.get_object("red_gain_scale")
+blueGainScale = builder.get_object("blue_gain_scale")
 
 # ~ da    = builder.get_object("drawingarea1")
 
