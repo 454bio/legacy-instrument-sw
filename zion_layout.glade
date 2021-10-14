@@ -2,6 +2,31 @@
 <!-- Generated with glade 3.22.1 -->
 <interface>
   <requires lib="gtk+" version="3.0"/>
+  <object class="GtkAdjustment" id="blue_gain_adjust">
+    <property name="upper">8</property>
+    <property name="value">1.3999999999999999</property>
+    <property name="step_increment">0.10000000000000001</property>
+    <property name="page_increment">1</property>
+  </object>
+  <object class="GtkAdjustment" id="brightness_adjust">
+    <property name="upper">100</property>
+    <property name="value">50</property>
+    <property name="step_increment">1</property>
+    <property name="page_increment">1</property>
+  </object>
+  <object class="GtkAdjustment" id="contrast_adjust">
+    <property name="lower">-100</property>
+    <property name="upper">100</property>
+    <property name="value">50</property>
+    <property name="step_increment">1</property>
+    <property name="page_increment">1</property>
+  </object>
+  <object class="GtkAdjustment" id="exp_comp_adjust">
+    <property name="lower">-25</property>
+    <property name="upper">25</property>
+    <property name="step_increment">1</property>
+    <property name="page_increment">1</property>
+  </object>
   <object class="GtkListStore" id="liststore1">
     <columns>
       <!-- column-name exp_mode_opts -->
@@ -23,7 +48,49 @@
       <row>
         <col id="0" translatable="yes">fixedfps</col>
       </row>
+      <row>
+        <col id="0" translatable="yes">nightpreview</col>
+      </row>
+      <row>
+        <col id="0" translatable="yes">backlight</col>
+      </row>
+      <row>
+        <col id="0" translatable="yes">spotlight</col>
+      </row>
+      <row>
+        <col id="0" translatable="yes">sports</col>
+      </row>
+      <row>
+        <col id="0" translatable="yes">snow</col>
+      </row>
+      <row>
+        <col id="0" translatable="yes">beach</col>
+      </row>
+      <row>
+        <col id="0" translatable="yes">antishake</col>
+      </row>
+      <row>
+        <col id="0" translatable="yes">fireworks</col>
+      </row>
     </data>
+  </object>
+  <object class="GtkAdjustment" id="red_gain_adjust">
+    <property name="upper">8</property>
+    <property name="value">1.3999999999999999</property>
+    <property name="step_increment">0.10000000000000001</property>
+    <property name="page_increment">1</property>
+  </object>
+  <object class="GtkAdjustment" id="saturation_adjust">
+    <property name="lower">-100</property>
+    <property name="upper">100</property>
+    <property name="value">100</property>
+    <property name="step_increment">1</property>
+    <property name="page_increment">1</property>
+  </object>
+  <object class="GtkAdjustment" id="sharpness_adjust">
+    <property name="upper">100</property>
+    <property name="step_increment">1</property>
+    <property name="page_increment">1</property>
   </object>
   <object class="GtkWindow" id="window1">
     <property name="name">main_window</property>
@@ -69,16 +136,17 @@
                             <child>
                               <object class="GtkAlignment">
                                 <property name="visible">True</property>
-                                <property name="can_focus">False</property>
+                                <property name="can_focus">True</property>
                                 <child>
                                   <object class="GtkScale" id="brightness_scale">
                                     <property name="visible">True</property>
                                     <property name="can_focus">True</property>
                                     <property name="halign">center</property>
-                                    <property name="orientation">vertical</property>
-                                    <property name="show_fill_level">True</property>
+                                    <property name="adjustment">brightness_adjust</property>
+                                    <property name="restrict_to_fill_level">False</property>
                                     <property name="fill_level">0</property>
-                                    <property name="round_digits">10</property>
+                                    <property name="round_digits">1</property>
+                                    <property name="digits">0</property>
                                     <property name="has_origin">False</property>
                                   </object>
                                 </child>
@@ -118,8 +186,11 @@
                                     <property name="can_focus">True</property>
                                     <property name="halign">center</property>
                                     <property name="orientation">vertical</property>
-                                    <property name="show_fill_level">True</property>
+                                    <property name="adjustment">contrast_adjust</property>
+                                    <property name="restrict_to_fill_level">False</property>
+                                    <property name="fill_level">0</property>
                                     <property name="round_digits">1</property>
+                                    <property name="digits">0</property>
                                     <property name="has_origin">False</property>
                                   </object>
                                 </child>
@@ -158,8 +229,11 @@
                                     <property name="can_focus">True</property>
                                     <property name="halign">center</property>
                                     <property name="orientation">vertical</property>
-                                    <property name="show_fill_level">True</property>
+                                    <property name="adjustment">saturation_adjust</property>
+                                    <property name="restrict_to_fill_level">False</property>
+                                    <property name="fill_level">0</property>
                                     <property name="round_digits">1</property>
+                                    <property name="digits">0</property>
                                     <property name="has_origin">False</property>
                                   </object>
                                 </child>
@@ -198,8 +272,11 @@
                                     <property name="can_focus">True</property>
                                     <property name="halign">center</property>
                                     <property name="orientation">vertical</property>
-                                    <property name="show_fill_level">True</property>
+                                    <property name="adjustment">sharpness_adjust</property>
+                                    <property name="restrict_to_fill_level">False</property>
+                                    <property name="fill_level">0</property>
                                     <property name="round_digits">1</property>
+                                    <property name="digits">0</property>
                                     <property name="has_origin">False</property>
                                   </object>
                                 </child>
@@ -257,6 +334,7 @@
                                 <property name="receives_default">False</property>
                                 <property name="active">True</property>
                                 <property name="draw_indicator">True</property>
+                                <signal name="toggled" handler="on_image_denoise_button" swapped="no"/>
                               </object>
                               <packing>
                                 <property name="expand">False</property>
@@ -281,6 +359,7 @@
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
                                 <property name="receives_default">True</property>
+                                <signal name="clicked" handler="reset_button_click" swapped="no"/>
                               </object>
                               <packing>
                                 <property name="expand">False</property>
@@ -379,6 +458,7 @@
                                                     <property name="receives_default">False</property>
                                                     <property name="draw_indicator">True</property>
                                                     <property name="group">radiobutton7</property>
+                                                    <signal name="toggled" handler="on_iso_auto_button" swapped="no"/>
                                                   </object>
                                                   <packing>
                                                     <property name="expand">False</property>
@@ -394,6 +474,7 @@
                                                     <property name="receives_default">False</property>
                                                     <property name="draw_indicator">True</property>
                                                     <property name="group">radiobutton7</property>
+                                                    <signal name="toggled" handler="on_iso_100_button" swapped="no"/>
                                                   </object>
                                                   <packing>
                                                     <property name="expand">False</property>
@@ -409,6 +490,7 @@
                                                     <property name="receives_default">False</property>
                                                     <property name="draw_indicator">True</property>
                                                     <property name="group">radiobutton7</property>
+                                                    <signal name="toggled" handler="on_iso_200_button" swapped="no"/>
                                                   </object>
                                                   <packing>
                                                     <property name="expand">False</property>
@@ -424,6 +506,7 @@
                                                     <property name="receives_default">False</property>
                                                     <property name="draw_indicator">True</property>
                                                     <property name="group">radiobutton7</property>
+                                                    <signal name="toggled" handler="on_iso_320_button" swapped="no"/>
                                                   </object>
                                                   <packing>
                                                     <property name="expand">False</property>
@@ -439,6 +522,7 @@
                                                     <property name="receives_default">False</property>
                                                     <property name="draw_indicator">True</property>
                                                     <property name="group">radiobutton7</property>
+                                                    <signal name="toggled" handler="on_iso_400_button" swapped="no"/>
                                                   </object>
                                                   <packing>
                                                     <property name="expand">False</property>
@@ -454,6 +538,7 @@
                                                     <property name="receives_default">False</property>
                                                     <property name="draw_indicator">True</property>
                                                     <property name="group">radiobutton7</property>
+                                                    <signal name="toggled" handler="on_iso_500_button" swapped="no"/>
                                                   </object>
                                                   <packing>
                                                     <property name="expand">False</property>
@@ -469,6 +554,7 @@
                                                     <property name="receives_default">False</property>
                                                     <property name="draw_indicator">True</property>
                                                     <property name="group">radiobutton7</property>
+                                                    <signal name="toggled" handler="on_iso_640_button" swapped="no"/>
                                                   </object>
                                                   <packing>
                                                     <property name="expand">False</property>
@@ -484,6 +570,7 @@
                                                     <property name="receives_default">False</property>
                                                     <property name="active">True</property>
                                                     <property name="draw_indicator">True</property>
+                                                    <signal name="toggled" handler="on_iso_800_button" swapped="no"/>
                                                   </object>
                                                   <packing>
                                                     <property name="expand">False</property>
@@ -528,35 +615,36 @@
                                                   <object class="GtkComboBox" id="exposure_mode_combobox">
                                                     <property name="visible">True</property>
                                                     <property name="can_focus">False</property>
+                                                    <property name="focus_on_click">False</property>
+                                                    <property name="halign">center</property>
+                                                    <property name="valign">center</property>
                                                     <property name="model">liststore1</property>
+                                                    <property name="active">0</property>
                                                     <property name="has_frame">False</property>
                                                     <property name="has_entry">True</property>
                                                     <property name="entry_text_column">0</property>
+                                                    <signal name="changed" handler="on_exp_mode_changed" swapped="no"/>
                                                     <child internal-child="entry">
                                                       <object class="GtkEntry">
                                                         <property name="can_focus">False</property>
-                                                        <property name="editable">False</property>
-                                                        <property name="has_frame">False</property>
-                                                        <property name="caps_lock_warning">False</property>
                                                       </object>
                                                     </child>
                                                   </object>
                                                   <packing>
-                                                    <property name="expand">True</property>
+                                                    <property name="expand">False</property>
                                                     <property name="fill">True</property>
                                                     <property name="position">0</property>
                                                   </packing>
                                                 </child>
                                                 <child>
                                                   <object class="GtkToggleButton" id="lock_gains_button">
-                                                    <property name="label" translatable="yes">Lock
-(Auto
-Off)</property>
+                                                    <property name="label" translatable="yes">Lock</property>
                                                     <property name="visible">True</property>
                                                     <property name="can_focus">True</property>
                                                     <property name="receives_default">True</property>
                                                     <property name="halign">center</property>
                                                     <property name="valign">center</property>
+                                                    <signal name="toggled" handler="on_lock_exp_mode_button" swapped="no"/>
                                                   </object>
                                                   <packing>
                                                     <property name="expand">False</property>
@@ -686,7 +774,12 @@ Off)</property>
                                               <object class="GtkScale" id="exposure_comp_scale">
                                                 <property name="visible">True</property>
                                                 <property name="can_focus">True</property>
+                                                <property name="adjustment">exp_comp_adjust</property>
+                                                <property name="restrict_to_fill_level">False</property>
+                                                <property name="fill_level">0</property>
                                                 <property name="round_digits">1</property>
+                                                <property name="digits">0</property>
+                                                <property name="has_origin">False</property>
                                                 <property name="value_pos">left</property>
                                               </object>
                                             </child>
@@ -830,12 +923,34 @@ Off)</property>
                                     <property name="visible">True</property>
                                     <property name="can_focus">False</property>
                                     <child>
-                                      <object class="GtkCheckButton" id="awb_button">
-                                        <property name="label" translatable="yes">AutoWB</property>
+                                      <object class="GtkFrame">
                                         <property name="visible">True</property>
-                                        <property name="can_focus">True</property>
-                                        <property name="receives_default">False</property>
-                                        <property name="draw_indicator">True</property>
+                                        <property name="can_focus">False</property>
+                                        <property name="label_xalign">0</property>
+                                        <property name="shadow_type">none</property>
+                                        <child>
+                                          <object class="GtkAlignment">
+                                            <property name="visible">True</property>
+                                            <property name="can_focus">False</property>
+                                            <property name="left_padding">12</property>
+                                            <child>
+                                              <object class="GtkSwitch" id="auto_wb_switch">
+                                                <property name="visible">True</property>
+                                                <property name="can_focus">True</property>
+                                                <property name="halign">center</property>
+                                                <property name="valign">center</property>
+                                                <signal name="notify::active" handler="on_awb_enable_button" swapped="no"/>
+                                              </object>
+                                            </child>
+                                          </object>
+                                        </child>
+                                        <child type="label">
+                                          <object class="GtkLabel">
+                                            <property name="visible">True</property>
+                                            <property name="can_focus">False</property>
+                                            <property name="label" translatable="yes">Auto WB</property>
+                                          </object>
+                                        </child>
                                       </object>
                                       <packing>
                                         <property name="expand">False</property>
@@ -863,6 +978,7 @@ Off)</property>
                                                   <object class="GtkScale" id="red_gain_scale">
                                                     <property name="visible">True</property>
                                                     <property name="can_focus">True</property>
+                                                    <property name="adjustment">red_gain_adjust</property>
                                                     <property name="fill_level">8</property>
                                                     <property name="round_digits">0</property>
                                                     <property name="value_pos">left</property>
@@ -899,6 +1015,7 @@ Off)</property>
                                                   <object class="GtkScale" id="blue_gain_scale">
                                                     <property name="visible">True</property>
                                                     <property name="can_focus">True</property>
+                                                    <property name="adjustment">blue_gain_adjust</property>
                                                     <property name="round_digits">1</property>
                                                     <property name="value_pos">left</property>
                                                   </object>
@@ -1046,6 +1163,7 @@ Off)</property>
                             <property name="can_focus">True</property>
                             <property name="halign">center</property>
                             <property name="valign">center</property>
+                            <signal name="notify::active" handler="on_blue_led_switch_activate" swapped="no"/>
                           </object>
                         </child>
                       </object>
@@ -1081,6 +1199,7 @@ Off)</property>
                             <property name="can_focus">True</property>
                             <property name="halign">center</property>
                             <property name="valign">center</property>
+                            <signal name="notify::active" handler="on_orange_led_switch_activate" swapped="no"/>
                           </object>
                         </child>
                       </object>
