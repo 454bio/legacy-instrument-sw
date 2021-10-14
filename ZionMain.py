@@ -18,6 +18,7 @@ Session_Name = 'session_name'
 # These can't change while camera is open:
 Spatial_Res = (2028, 1520)
 Frame_Rate = 10
+Binning = True
 
 # TODO: bring shutter speed back out to user
 # (right now manual shutter speed can't be changed from 1/FR)
@@ -59,7 +60,7 @@ Repeat_N = 2
 ########################################################################
 
 # Initialization Block:
-mySession = ZionSession(Session_Name, Spatial_Res, Frame_Rate, Blue_Timing, Orange_Timing, UV_Timing, Camera_Captures, Repeat_N)
+mySession = ZionSession(Session_Name, Spatial_Res, Frame_Rate, Binning, Blue_Timing, Orange_Timing, UV_Timing, Camera_Captures, Repeat_N)
 
 #Next line perform events defined above:
 # ~ mySession.RunProgram()

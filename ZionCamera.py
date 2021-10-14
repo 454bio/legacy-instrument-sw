@@ -25,11 +25,11 @@ awb_gains_blue_info = (0.0, 8.0, 1.9, 0.1)
 
 class ZionCamera(PiCamera):
 
-	def __init__(self, resolution, framerate, shutter_speed, shutter_speed_step, shutter_speed_max, gpio_ctrl=None):
+	def __init__(self, resolution, framerate, binning, shutter_speed, shutter_speed_step, shutter_speed_max, gpio_ctrl=None):
 		
 		print('\nCamera Initializing...')
-		super(ZionCamera,self).__init__(resolution=resolution, framerate=framerate, sensor_mode=3)
-		# ~ super(ZionCamera,self).__init__(resolution=resolution, framerate=framerate, sensor_mode=2)
+		sensMode = 2 if binning else 3
+		super(ZionCamera,self).__init__(resolution=resolution, framerate=framerate, sensor_mode=sensMode)
 		self.iso=800
 		time.sleep(0.5)
 		self.exposure_mode='verylong' #night?
@@ -40,7 +40,7 @@ class ZionCamera(PiCamera):
 
 		# ~ self.framerate_range = (1, framerate)
 		#TODO fix shutter speed stuff
-		self.shutter_speed = shutter_speed
+		# ~ self.shutter_speed = shutter_speed
 		self.shutter_speed_default = shutter_speed
 		self.shutter_speed_step = shutter_speed_step
 		self.shutter_speed_max = shutter_speed_max
