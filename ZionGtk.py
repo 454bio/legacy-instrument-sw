@@ -13,6 +13,7 @@ class Handlers:
         redGainScale.set_sensitive(self.awbGainsOn)
         blueGainScale.set_sensitive(self.awbGainsOn)
         self.isoButtonsOn = True
+        self.ExpModeLastChoice = 1
         
     def on_image_denoise_button(self, button):
         if button.get_active():
@@ -75,23 +76,32 @@ class Handlers:
             redGainScale.set_sensitive(self.awbGainsOn)
             blueGainScale.set_sensitive(self.awbGainsOn)
             
-            
-    #TODO: move has column entry 0 above active 0 line in glade file
     def on_exp_mode_changed(self, combo):
-        tree_iter = combo.get_active_iter()
-        if tree_iter is not None:
-            choice = combo.get_model()[tree_iter][0]
-            print('New exposure mode: ' +choice)
-            # ~ if choice=='off':
+        active_idx = combo.get_active()
+        if not active_idx==-1:
+            print('New exposure mode: '+expModeComboBox.get_active_text())
+            handle_id = expModeLockButton.connect("toggled", self.on_lock_exp_mode_button)
+            if active_idx==0:
+                expModeLockButton.handler_block(handle_id)
+                expModeLockButton.set_active(True)
+                expModeLockButton.handler_unblock(handle_id)
+                self.enable_iso_buttons(False)
+            else:
+                self.ExpModeLastChoice = active_idx
+                expModeLockButton.handler_block(handle_id)
+                expModeLockButton.set_active(False)
+                expModeLockButton.handler_unblock(handle_id)
+                self.enable_iso_buttons(True)
                 
-
-
     def on_lock_exp_mode_button(self, button):
         if button.get_active():
-            print('New exposure mode: auto')
+            expModeComboBox.set_active(0)
         else:
-            #TODO: set back to the one it was at?
-            pass
+            expModeComboBox.set_active(self.ExpModeLastChoice)
+            
+    def enable_iso_buttons(self, isOn):
+        isoButtonBox.set_sensitive(isOn)
+        
         
         
     # ~ def on_offButton_clicked(self, widget):
@@ -130,6 +140,9 @@ Gtk.Window.maximize(mainWindow)
 
 redGainScale = builder.get_object("red_gain_scale")
 blueGainScale = builder.get_object("blue_gain_scale")
+expModeLockButton = builder.get_object("exp_mode_lock_button")
+expModeComboBox = builder.get_object("exposure_mode_combobox")
+isoButtonBox = builder.get_object("iso_button_box")
 
 # ~ da    = builder.get_object("drawingarea1")
 
