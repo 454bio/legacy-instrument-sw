@@ -8,7 +8,7 @@ import keyboard
 from ZionCamera import ZionCamera
 from ZionGPIO import ZionGPIO
 from ZionEvents import check_led_timings, create_event_list, performEventList
-
+from ZionGtk import ZionGUI
 
 
 class ZionSession(object): #TODO: inherit from some UI/app session class type
@@ -25,7 +25,8 @@ class ZionSession(object): #TODO: inherit from some UI/app session class type
 			else:
 				#file exists but not a directory...
 				raise ValueError('File '+session_name+' already exists but is not a session folder!')		
-		
+				
+
 			
 		# Shutter Speed = Exposure Time (in microseconds)
 		# ~ Shutter_Speed = round(1000./Frame_Rate)  #(0 is automatic) 
@@ -45,12 +46,18 @@ class ZionSession(object): #TODO: inherit from some UI/app session class type
 		self.Camera = ZionCamera(Spatial_Res, Frame_Rate, Binning, Shutter_Speed, Shutter_Speed_Stepsize, Shutter_Speed_Max, gpio_ctrl=self.GPIO)
 		self.TimeOfLife = time.time()
 
+		self.gui = ZionGUI(self.Camera, 'night')
+		
+
 	def RunProgram(self):
 		performEventList(self.EventList, self.Camera, self.GPIO, Repeat_N=self.RepeatN, baseFilename=(self.Dir, self.Name), baseTime=self.TimeOfLife, numGrps=self.NumGrps)
 		
 	#TODO: move interactive preview here:
 	def InteractivePreview(self, window):
-		self.Camera.interactive_preview(baseFilename=(self.Dir, self.Name), window=window, baseTime=self.TimeOfLife)
+		# ~ self.Camera.interactive_preview(baseFilename=(self.Dir, self.Name), window=window, baseTime=self.TimeOfLife)
+		self.Camera.start_preview(fullscreen=False, window=window)
+		Gtk.main()
+		self.Camera.stop_preview()
 
 	def QuitSession(self):
 		self.GPIO.turn_off_led('all')
