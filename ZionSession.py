@@ -1,10 +1,14 @@
 import os
 import time
 from operator import itemgetter
+import gi
+gi.require_version('Gtk', '3.0')
+from gi.repository import Gtk
 import keyboard
 from ZionCamera import ZionCamera
 from ZionGPIO import ZionGPIO
 from ZionEvents import check_led_timings, create_event_list, performEventList
+
 
 
 class ZionSession(object): #TODO: inherit from some UI/app session class type
@@ -20,7 +24,8 @@ class ZionSession(object): #TODO: inherit from some UI/app session class type
 				self.Dir = './'+session_name
 			else:
 				#file exists but not a directory...
-				raise ValueError('File '+session_name+' already exists but is not a session folder!')
+				raise ValueError('File '+session_name+' already exists but is not a session folder!')		
+		
 			
 		# Shutter Speed = Exposure Time (in microseconds)
 		# ~ Shutter_Speed = round(1000./Frame_Rate)  #(0 is automatic) 

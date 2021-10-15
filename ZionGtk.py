@@ -4,7 +4,6 @@ import gi
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk
 
-
 class Handlers:
 
     def __init__(self):
@@ -13,10 +12,24 @@ class Handlers:
         redGainScale.set_sensitive(self.awbGainsOn)
         blueGainScale.set_sensitive(self.awbGainsOn)
         self.ExpModeLastChoice = 1
+        self.updateExpParams()
+        # ~ self.updateTemp()
+        
+    def printToLog(self, text):
+        logBuffer.insert_at_cursor(text+'\n')
+        mark = logBuffer.create_mark(None, logBuffer.get_end_iter(), False)
+        logView.scroll_to_mark(mark, 0, False, 0,0)
+
+    def updateExpParams(self):
+        # ~ analogGainView
+        # ~ digitalGainView
+        # ~ expTimeBox
+        return
         
     def reset_button_click(self, *args):
         #TODO: test quitting, have this reset to defs
-        Gtk.main_quit(*args)
+        # ~ Gtk.main_quit(*args)
+        return
         
     def on_image_denoise_button(self, button):
         if button.get_active():
@@ -24,8 +37,21 @@ class Handlers:
         else:
             print('Image denoising off')
             
-    #TODO: video scale handlers here
+    def on_brightness_scale_value_changed(self, scale):
+        newval = int(scale.get_value())
+        print('Brightness set to '+str(newval))
+        
+    def on_contrast_scale_value_changed(self, scale):
+        newval = int(scale.get_value())
+        print('Contrast set to '+str(newval))
     
+    def on_saturation_scale_value_changed(self, scale):
+        newval = int(scale.get_value())
+        print('Saturation set to '+str(newval))
+            
+    def on_sharpness_scale_value_changed(self, scale):
+        newval = int(scale.get_value())
+        print('Sharpness set to '+str(newval))
 
     # LED Control Section
     def on_blue_led_switch_activate(self, switch, gparam):
@@ -40,17 +66,26 @@ class Handlers:
         else:
             print('Orange LED off')
             
-    def on_UV_led_switch_activate(self, switch, gparam):
+    def on_uv_led_switch(self, switch, gparam):
         if switch.get_active():
             print('UV LED on')
         else:
             print('UV LED off')
-    
-    def on_UV_pulse_button(self, button):
-        #pulse_time = pulseTextInput.get_active_text()
-        #print('Going to pulse UV for '+str(pulse_time)+' milliseconds')
-        return
-    
+            
+    def on_uv_switch_safety_button(self, button):
+        if button.get_active():
+            secretUVSwitchButton.set_visible(True)
+        else:
+            secretUVSwitchButton.set_visible(False)
+            
+    def on_uv_led_pulse_button(self, button):
+        newVal = pulseTextInput.get_text()
+        if newVal.isdecimal():
+            print('Doing UV pulse of '+newVal+' milliseconds')
+            newVal = int(newVal)
+        else:
+            print('Pulse time should be an integer number of milliseconds.')
+            
     def on_iso_auto_button(self, button):
         if button.get_active():
             print('auto iso button clicked')
@@ -76,7 +111,9 @@ class Handlers:
         if button.get_active():
             print('800 iso button clicked')
             
-    #TODO: exp comp scale
+    def on_exposure_comp_scale_value_changed(self, scale):
+        newval = int(scale.get_value())
+        print('Exposure compensation set to '+str(newval))
 
     def on_exp_mode_changed(self, combo):
         active_idx = combo.get_active()
@@ -124,8 +161,16 @@ class Handlers:
             self.awbGainsOn = True
             redGainScale.set_sensitive(self.awbGainsOn)
             blueGainScale.set_sensitive(self.awbGainsOn)
-    #TODO: red and blue gain scales
 
+    def on_red_gain_scale_value_changed(self, scale):
+        newval = scale.get_value()
+        print('WB Red Gain set to '+str(newval))
+            
+    def on_blue_gain_scale_value_changed(self, scale):
+        newval = scale.get_value()
+        print('WB Blue Gain set to '+str(newval))
+        self.printToLog('WB Blue Gain set to '+str(newval))
+              
     def on_window1_delete_event(self, *args):
         Gtk.main_quit(*args)
 
@@ -160,6 +205,13 @@ expModeComboBox = builder.get_object("exposure_mode_combobox")
 isoButtonBox = builder.get_object("iso_button_box")
 expCompScale = builder.get_object("exposure_comp_scale")
 pulseTextInput = builder.get_object("uv_led_entry")
+secretUVSwitchButton = builder.get_object("uv_led_switch")
+logBuffer = builder.get_object("textbuffer_log")
+logView = builder.get_object("textview_log")
+temperatureView = builder.get_object("temperature_textview")
+analogGainView = builder.get_object("analog_gain_textview")
+digitalGainView = builder.get_object("digital_gain_textview")
+expTimeBox = builder.get_object("exposure_time_entry")
 
 # ~ da    = builder.get_object("drawingarea1")
 
