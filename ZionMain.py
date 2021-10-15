@@ -69,7 +69,11 @@ mySession = ZionSession(Session_Name, Spatial_Res, Frame_Rate, Binning, Blue_Tim
 # ~ myGPIO.turn_off_led('UV')
 
 #Start preview:
-mySession.InteractivePreview(window=(30,60,854,640))
+width = 640
+xpos = 560
+ypos = 38
+#window was (30,60,854,640)
+mySession.InteractivePreview(window=(xpos,ypos,width,round(width*3/4)))
 
 ########################################################################
 ######################### Shutdown Script ##############################
