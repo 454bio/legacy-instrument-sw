@@ -30,13 +30,18 @@ class ZionCamera(PiCamera):
 		print('\nCamera Initializing...')
 		sensMode = 2 if binning else 3
 		super(ZionCamera,self).__init__(resolution=resolution, framerate=framerate, sensor_mode=sensMode)
+		self.brightness = brightness_info[2]
+		self.contrast = contrast_info[2]
+		self.saturation = saturation_info[2]
+		self.sharpness = sharpness_info[2]
+		
 		self.iso=800
 		time.sleep(0.5)
-		self.exposure_mode='verylong' #night?
+		self.exposure_mode='night' #night?
 		time.sleep(2.5)
 		self.awb_mode = 'off'
 		self.awb_gains = (awb_gains_red_info[2], awb_gains_blue_info[2])
-		self.exposure_mode='off'
+		# ~ self.exposure_mode='off'
 
 		# ~ self.framerate_range = (1, framerate)
 		#TODO fix shutter speed stuff
@@ -285,12 +290,15 @@ class ZionCamera(PiCamera):
 		if self.awb_mode == 'off':
 			self.awb_mode = 'auto'
 			print('\nAuto White Balance on')
+			ret = (1,0,0)
 		elif self.awb_mode == 'auto':
 			awb_gains = self.awb_gains
 			self.awb_mode = 'off'
 			print('\nAuto White Balance off')
 			self.awb_gains=awb_gains
 			print('\nWhite balance gains are: RED='+str(float(self.awb_gains[0]))+', BLUE='+str(float(self.awb_gains[1])))
+			ret = (0,)+awb_gains
+		return ret
 			
 	def increase_red_awb(self, amt=awb_gains_red_info[-1]):
 		if self.awb_mode=='off':
@@ -336,7 +344,7 @@ class ZionCamera(PiCamera):
 	def reset_blue_awb(self):
 		if self.awb_mode=='off':
 			self.awb_gains = (self.awb_gains[0], awb_gains_blue_info[2])
-			print('\nAuto White Balance Gain (BLUE) = '+str(awb_gains_blue_info[2]))				
+			print('\nAuto White Balance Gain (BLUE) = '+str(awb_gains_blue_info[2]))	
 
 	def read_all_gains(self):
 		print('\nAnalog Gain = '+str(float(self.analog_gain)))

@@ -2,6 +2,7 @@
 <!-- Generated with glade 3.22.1 -->
 <interface>
   <requires lib="gtk+" version="3.0"/>
+  <object class="GtkTextBuffer" id="analog_gain_buffer"/>
   <object class="GtkAdjustment" id="blue_gain_adjust">
     <property name="upper">8</property>
     <property name="value">1.3999999999999999</property>
@@ -21,12 +22,14 @@
     <property name="step_increment">1</property>
     <property name="page_increment">1</property>
   </object>
+  <object class="GtkTextBuffer" id="digital_gain_buffer"/>
   <object class="GtkAdjustment" id="exp_comp_adjust">
     <property name="lower">-25</property>
     <property name="upper">25</property>
     <property name="step_increment">1</property>
     <property name="page_increment">1</property>
   </object>
+  <object class="GtkTextBuffer" id="exposure_time_buffer"/>
   <object class="GtkAdjustment" id="red_gain_adjust">
     <property name="upper">8</property>
     <property name="value">1.3999999999999999</property>
@@ -46,6 +49,7 @@
     <property name="step_increment">1</property>
     <property name="page_increment">1</property>
   </object>
+  <object class="GtkTextBuffer" id="temperature_buffer"/>
   <object class="GtkTextBuffer" id="textbuffer_log"/>
   <object class="GtkWindow" id="window1">
     <property name="name">main_window</property>
@@ -143,6 +147,8 @@
                                         <property name="valign">center</property>
                                         <property name="margin_right">12</property>
                                         <property name="editable">False</property>
+                                        <property name="cursor_visible">False</property>
+                                        <property name="buffer">temperature_buffer</property>
                                         <property name="accepts_tab">False</property>
                                       </object>
                                     </child>
@@ -298,6 +304,7 @@
                                     <property name="round_digits">1</property>
                                     <property name="digits">0</property>
                                     <property name="has_origin">False</property>
+                                    <signal name="value-changed" handler="on_saturation_scale_value_changed" swapped="no"/>
                                   </object>
                                 </child>
                               </object>
@@ -608,7 +615,7 @@
                                                     <property name="visible">True</property>
                                                     <property name="can_focus">False</property>
                                                     <property name="valign">center</property>
-                                                    <property name="active">1</property>
+                                                    <property name="active">2</property>
                                                     <items>
                                                       <item translatable="yes">off</item>
                                                       <item translatable="yes">auto</item>
@@ -687,6 +694,10 @@
                                                             <object class="GtkTextView" id="analog_gain_textview">
                                                             <property name="visible">True</property>
                                                             <property name="can_focus">True</property>
+                                                            <property name="editable">False</property>
+                                                            <property name="cursor_visible">False</property>
+                                                            <property name="buffer">analog_gain_buffer</property>
+                                                            <property name="accepts_tab">False</property>
                                                             </object>
                                                             </child>
                                                             </object>
@@ -720,6 +731,10 @@
                                                             <object class="GtkTextView" id="digital_gain_textview">
                                                             <property name="visible">True</property>
                                                             <property name="can_focus">True</property>
+                                                            <property name="editable">False</property>
+                                                            <property name="cursor_visible">False</property>
+                                                            <property name="buffer">digital_gain_buffer</property>
+                                                            <property name="accepts_tab">False</property>
                                                             </object>
                                                             </child>
                                                             </object>
@@ -764,6 +779,10 @@
                                                             <object class="GtkTextView" id="exposure_time_entry">
                                                             <property name="visible">True</property>
                                                             <property name="can_focus">True</property>
+                                                            <property name="cursor_visible">False</property>
+                                                            <property name="buffer">exposure_time_buffer</property>
+                                                            <property name="accepts_tab">False</property>
+                                                            <property name="populate_all">True</property>
                                                             </object>
                                                             <packing>
                                                             <property name="expand">True</property>
@@ -774,7 +793,6 @@
                                                             <child>
                                                             <object class="GtkButton">
                                                             <property name="label" translatable="yes">Set</property>
-                                                            <property name="visible">True</property>
                                                             <property name="can_focus">True</property>
                                                             <property name="receives_default">True</property>
                                                             <property name="halign">center</property>
@@ -1133,7 +1151,6 @@
                 <child>
                   <object class="GtkButton" id="crop_button">
                     <property name="label" translatable="yes">Crop</property>
-                    <property name="visible">True</property>
                     <property name="can_focus">True</property>
                     <property name="receives_default">True</property>
                     <property name="halign">center</property>
@@ -1153,6 +1170,7 @@
                     <property name="receives_default">True</property>
                     <property name="halign">center</property>
                     <property name="valign">center</property>
+                    <signal name="clicked" handler="on_capture_button_clicked" swapped="no"/>
                   </object>
                   <packing>
                     <property name="expand">False</property>
@@ -1355,6 +1373,7 @@
                               <object class="GtkButton" id="uv_led_pulse_button">
                                 <property name="label" translatable="yes">Pulse</property>
                                 <property name="visible">True</property>
+                                <property name="sensitive">False</property>
                                 <property name="can_focus">True</property>
                                 <property name="receives_default">True</property>
                                 <signal name="clicked" handler="on_uv_led_pulse_button" swapped="no"/>

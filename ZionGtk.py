@@ -2,177 +2,230 @@
 
 import gi
 gi.require_version('Gtk', '3.0')
-from gi.repository import Gtk
+from gi.repository import Gtk, GObject
+
+def get_handler_id(obj, signal_name):
+    signal_id, detail = GObject.signal_parse_name(signal_name, obj, True)
+    return GObject.signal_handler_find(obj, GObject.SignalMatchType.ID, signal_id, detail, None, None, None)
+
 
 class Handlers:
 
-    def __init__(self):
+    def __init__(self, gui):
 #        self.LightOn = False
         self.awbGainsOn = True
-        redGainScale.set_sensitive(self.awbGainsOn)
-        blueGainScale.set_sensitive(self.awbGainsOn)
-        self.ExpModeLastChoice = 1
+        self.parent = gui
+        self.parent.redGainScale.set_sensitive(self.awbGainsOn)
+        self.parent.blueGainScale.set_sensitive(self.awbGainsOn)
+        
+        #TODO: fix inital exp mode based on input
+        self.ExpModeLastChoice = 2
+        
         self.updateExpParams()
+        self.source_id = GObject.timeout_add(2000, self.updateExpParams)
         # ~ self.updateTemp()
         
+    def on_window1_delete_event(self, *args):
+        GObject.source_remove(self.source_id)
+        Gtk.main_quit(*args)
+        
     def printToLog(self, text):
-        logBuffer.insert_at_cursor(text+'\n')
-        mark = logBuffer.create_mark(None, logBuffer.get_end_iter(), False)
-        logView.scroll_to_mark(mark, 0, False, 0,0)
+        self.parent.logBuffer.insert_at_cursor(text+'\n')
+        mark = self.parent.logBuffer.create_mark(None, self.parent.logBuffer.get_end_iter(), False)
+        self.parent.logView.scroll_to_mark(mark, 0, False, 0,0)
 
     def updateExpParams(self):
-        # ~ analogGainView
-        # ~ digitalGainView
-        # ~ expTimeBox
-        return
+        a_gain = float(self.parent.Camera.analog_gain)
+        d_gain = float(self.parent.Camera.digital_gain)
+        e_time = float(self.parent.Camera.exposure_speed/1000.)
+        self.parent.analogGainBuffer.set_text("{:.3f}".format(a_gain))
+        self.parent.digitalGainBuffer.set_text("{:.3f}".format(d_gain))
+        self.parent.expTimeBuffer.set_text("{:.3f}".format(e_time))
+        return True
         
     def reset_button_click(self, *args):
-        #TODO: test quitting, have this reset to defs
-        # ~ Gtk.main_quit(*args)
-        return
+        self.printToLog('Setting Video Params to Defaults')
+        self.parent.BrightnessScale.set_value(50)
+        self.parent.ContrastScale.set_value(50)
+        self.parent.SaturationScale.set_value(100)
+        self.parent.SharpnessScale.set_value(0)
+        self.updateExpParams()
         
     def on_image_denoise_button(self, button):
         if button.get_active():
-            print('Image denoising on')
+            self.printToLog('Image denoising on')
+            self.parent.Camera.image_denoising=True
         else:
-            print('Image denoising off')
+            self.printToLog('Image denoising off')
+            self.parent.Camera.image_denoising=False
             
     def on_brightness_scale_value_changed(self, scale):
         newval = int(scale.get_value())
-        print('Brightness set to '+str(newval))
+        self.parent.Camera.brightness=newval
+        self.printToLog('Brightness set to '+str(newval))
         
     def on_contrast_scale_value_changed(self, scale):
         newval = int(scale.get_value())
-        print('Contrast set to '+str(newval))
+        self.parent.Camera.contrast=newval
+        self.printToLog('Contrast set to '+str(newval))
     
     def on_saturation_scale_value_changed(self, scale):
         newval = int(scale.get_value())
-        print('Saturation set to '+str(newval))
+        self.parent.Camera.saturation=newval
+        self.printToLog('Saturation set to '+str(newval))
             
     def on_sharpness_scale_value_changed(self, scale):
         newval = int(scale.get_value())
-        print('Sharpness set to '+str(newval))
+        self.parent.Camera.sharpness=newval
+        self.printToLog('Sharpness set to '+str(newval))
 
     # LED Control Section
     def on_blue_led_switch_activate(self, switch, gparam):
         if switch.get_active():
-            print('Blue LED on')
+            self.printToLog('Blue LED on')
+            self.parent.Camera.GPIO.turn_on_led('Blue')
         else:
-            print('Blue LED off')
+            self.printToLog('Blue LED off')
+            self.parent.Camera.GPIO.turn_off_led('Blue')
             
     def on_orange_led_switch_activate(self, switch, gparam):
         if switch.get_active():
-            print('Orange LED on')
+            self.printToLog('Orange LED on')
+            self.parent.Camera.GPIO.turn_off_led('Orange')
         else:
-            print('Orange LED off')
+            self.printToLog('Orange LED off')
+            self.parent.Camera.GPIO.turn_off_led('Orange')
             
     def on_uv_led_switch(self, switch, gparam):
         if switch.get_active():
-            print('UV LED on')
+            self.printToLog('UV LED on')
+            self.parent.Camera.GPIO.turn_off_led('UV')
         else:
-            print('UV LED off')
+            self.printToLog('UV LED off')
+            self.parent.Camera.GPIO.turn_off_led('UV')
             
     def on_uv_switch_safety_button(self, button):
         if button.get_active():
-            secretUVSwitchButton.set_visible(True)
+            self.parent.secretUVSwitchButton.set_visible(True)
         else:
-            secretUVSwitchButton.set_visible(False)
+            self.parent.secretUVSwitchButton.set_visible(False)
             
     def on_uv_led_pulse_button(self, button):
-        newVal = pulseTextInput.get_text()
+        newVal = self.parent.pulseTextInput.get_text()
         if newVal.isdecimal():
-            print('Doing UV pulse of '+newVal+' milliseconds')
+            self.printToLog('Doing UV pulse of '+newVal+' milliseconds')
             newVal = int(newVal)
+            #TODO: fill in hook for sending pulse
         else:
             print('Pulse time should be an integer number of milliseconds.')
             
     def on_iso_auto_button(self, button):
         if button.get_active():
-            print('auto iso button clicked')
+            self.printToLog('ISO set to auto')
+            self.parent.Camera.iso = 0
     def on_iso_100_button(self, button):
         if button.get_active():
-            print('100 iso button clicked')
+            self.printToLog('ISO set to 100')
+            self.parent.Camera.iso = 100
     def on_iso_200_button(self, button):
         if button.get_active():
-            print('200 iso button clicked')
+            self.printToLog('ISO set to 200')
+            self.parent.Camera.iso = 200
     def on_iso_320_button(self, button):
         if button.get_active():
-            print('320 iso button clicked')
+            self.printToLog('ISO set to 320')
+            self.parent.Camera.iso = 320
     def on_iso_400_button(self, button):
         if button.get_active():
-            print('400 iso button clicked')
+            self.printToLog('ISO set to 400')
+            self.parent.Camera.iso = 400
     def on_iso_500_button(self, button):
         if button.get_active():
-            print('500 iso button clicked')
+            self.printToLog('ISO set to 500')
+            self.parent.Camera.iso = 500
     def on_iso_640_button(self, button):
         if button.get_active():
-            print('640 iso button clicked')
+            self.printToLog('ISO set to 640')
+            self.parent.Camera.iso = 640
     def on_iso_800_button(self, button):
         if button.get_active():
-            print('800 iso button clicked')
+            self.printToLog('ISO set to 800')
+            self.parent.Camera.iso = 800
             
     def on_exposure_comp_scale_value_changed(self, scale):
         newval = int(scale.get_value())
-        print('Exposure compensation set to '+str(newval))
+        self.parent.Camera.exposure_compensation = newval
+        self.printToLog('Exposure compensation set to '+str(newval))
 
     def on_exp_mode_changed(self, combo):
         active_idx = combo.get_active()
         if not active_idx==-1:
-            print('New exposure mode: '+expModeComboBox.get_active_text())
-            handle_id = expModeLockButton.connect("toggled", self.on_lock_exp_mode_button)
+            newmode = self.parent.expModeComboBox.get_active_text()
+            self.parent.Camera.exposure_mode = newmode
+            self.printToLog('New exposure mode: '+newmode)
+            handle_id = get_handler_id(self.parent.expModeLockButton, "toggled")
             if active_idx==0:
-                expModeLockButton.handler_block(handle_id)
-                expModeLockButton.set_active(True)
-                expModeLockButton.handler_unblock(handle_id)
+                self.parent.expModeLockButton.handler_block(handle_id)
+                self.parent.expModeLockButton.set_active(True)
+                self.parent.expModeLockButton.handler_unblock(handle_id)
                 self.enable_exp_params(False)
             else:
                 self.ExpModeLastChoice = active_idx
-                expModeLockButton.handler_block(handle_id)
-                expModeLockButton.set_active(False)
-                expModeLockButton.handler_unblock(handle_id)
+                self.parent.expModeLockButton.handler_block(handle_id)
+                self.parent.expModeLockButton.set_active(False)
+                self.parent.expModeLockButton.handler_unblock(handle_id)
                 self.enable_exp_params(True)
     def on_lock_exp_mode_button(self, button):
         if button.get_active():
-            expModeComboBox.set_active(0)
+            self.parent.expModeComboBox.set_active(0)
         else:
-            expModeComboBox.set_active(self.ExpModeLastChoice)
+            self.parent.expModeComboBox.set_active(self.ExpModeLastChoice)
     def enable_exp_params(self, isOn):
-        #return
-        isoButtonBox.set_sensitive(isOn)
-        expCompScale.set_sensitive(isOn)
-
-    # ~ def on_offButton_clicked(self, widget):
-        # ~ self.LightOn = False
-        # ~ da.queue_draw() 
-    
-    # ~ # drawingarea1 is set as the userdata in glade
-    # ~ def on_onButton_clicked(self, widget):
-        # ~ self.LightOn = True
-        # ~ widget.queue_draw()
+        #TODO: put this back in once we get the hang of it
+        self.parent.isoButtonBox.set_sensitive(isOn)
+        # ~ expCompScale.set_sensitive(isOn)
+        return
 
     def on_awb_enable_button(self, switch, gparam):
         if switch.get_active():
-            print('AWB button enabled')
-            self.awbGainsOn = False
-            redGainScale.set_sensitive(self.awbGainsOn)
-            blueGainScale.set_sensitive(self.awbGainsOn)
+            on_now = self.parent.Camera.toggle_awb()
+            if on_now[0]:
+                self.printToLog('Auto WB enabled')
+                self.parent.redGainScale.set_sensitive(False)
+                self.parent.blueGainScale.set_sensitive(False)
         else:
-            print('AWB button disabled')
-            self.awbGainsOn = True
-            redGainScale.set_sensitive(self.awbGainsOn)
-            blueGainScale.set_sensitive(self.awbGainsOn)
+            on_now = self.parent.Camera.toggle_awb()
+            if not on_now[0]:
+                self.printToLog('Auto WB disabled')
+                
+                self.parent.redGainScale.set_sensitive(True)
+                handle_id_red = get_handler_id(self.parent.redGainScale, "value-changed")
+                self.parent.redGainScale.handler_block(handle_id_red)
+                self.parent.redGainScale.set_value(on_now[1])
+                self.parent.redGainScale.handler_unblock(handle_id_red)
+                
+                self.parent.blueGainScale.set_sensitive(True)
+                handle_id_blue = get_handler_id(self.parent.blueGainScale, "value-changed")
+                self.parent.blueGainScale.handler_block(handle_id_blue)
+                self.parent.blueGainScale.set_value(on_now[2])
+                self.parent.redGainScale.handler_unblock(handle_id_blue)
 
     def on_red_gain_scale_value_changed(self, scale):
         newval = scale.get_value()
-        print('WB Red Gain set to '+str(newval))
+        gains = self.parent.Camera.awb_gains
+        self.parent.Camera.awb_gains = (newval, gains[1])
+        self.printToLog('WB Red Gain set to '+str(newval))
             
     def on_blue_gain_scale_value_changed(self, scale):
         newval = scale.get_value()
-        print('WB Blue Gain set to '+str(newval))
+        gains = self.parent.Camera.awb_gains
+        self.parent.Camera.awb_gains = (gains[0], newval)
         self.printToLog('WB Blue Gain set to '+str(newval))
-              
-    def on_window1_delete_event(self, *args):
-        Gtk.main_quit(*args)
+        
+    def on_capture_button_clicked(self, button):
+        #TODO:fix capture file naming here
+        self.parent.Camera.capture(('','test_pic'), cropping=(0,0,1,1), baseTime=0, group='P')              
+
 
     def on_drawingarea1_draw(self,widget,cr):
         w = widget.get_allocated_width()
@@ -191,30 +244,49 @@ class Handlers:
        
     def on_drawingarea1_button_press_event(self, *args):
         return
+        
+    # ~ def on_offButton_clicked(self, widget):
+        # ~ self.LightOn = False
+        # ~ da.queue_draw() 
+    
+    # ~ # drawingarea1 is set as the userdata in glade
+    # ~ def on_onButton_clicked(self, widget):
+        # ~ self.LightOn = True
+        # ~ widget.queue_draw()
 
-#Create Window and Maximize:
-builder = Gtk.Builder.new_from_file("zion_layout.glade")
-mainWindow = builder.get_object("window1")
-Gtk.Window.maximize(mainWindow)
+class ZionGUI():
+    def __init__(self, camera, initExpMode):#, gladefile, paramDefs=None):
+        #Create Window and Maximize:
+        self.builder = Gtk.Builder.new_from_file("zion_layout.glade")
+        self.mainWindow = self.builder.get_object("window1")
+        Gtk.Window.maximize(self.mainWindow)
+        self.Camera = camera
 
-#Objects needed for handlers:
-redGainScale = builder.get_object("red_gain_scale")
-blueGainScale = builder.get_object("blue_gain_scale")
-expModeLockButton = builder.get_object("exp_mode_lock_button")
-expModeComboBox = builder.get_object("exposure_mode_combobox")
-isoButtonBox = builder.get_object("iso_button_box")
-expCompScale = builder.get_object("exposure_comp_scale")
-pulseTextInput = builder.get_object("uv_led_entry")
-secretUVSwitchButton = builder.get_object("uv_led_switch")
-logBuffer = builder.get_object("textbuffer_log")
-logView = builder.get_object("textview_log")
-temperatureView = builder.get_object("temperature_textview")
-analogGainView = builder.get_object("analog_gain_textview")
-digitalGainView = builder.get_object("digital_gain_textview")
-expTimeBox = builder.get_object("exposure_time_entry")
+    #Objects needed for handlers:
+        self.redGainScale = self.builder.get_object("red_gain_scale")
+        self.blueGainScale = self.builder.get_object("blue_gain_scale")
+        self.expModeLockButton = self.builder.get_object("exp_mode_lock_button")
+        self.expModeComboBox = self.builder.get_object("exposure_mode_combobox")
+        self.isoButtonBox = self.builder.get_object("iso_button_box")
+        self.expCompScale = self.builder.get_object("exposure_comp_scale")
+        self.pulseTextInput = self.builder.get_object("uv_led_entry")
+        self.secretUVSwitchButton = self.builder.get_object("uv_led_switch")
+        self.logBuffer = self.builder.get_object("textbuffer_log")
+        self.logView = self.builder.get_object("textview_log")
+        self.temperatureBuffer = self.builder.get_object("temperature_buffer")
+        self.analogGainBuffer = self.builder.get_object("analog_gain_buffer")
+        self.digitalGainBuffer = self.builder.get_object("digital_gain_buffer")
+        self.expTimeBuffer = self.builder.get_object("exposure_time_buffer")
+        self.expTimeBox = self.builder.get_object("exposure_time_entry")
+        self.BrightnessScale = self.builder.get_object("brightness_scale")
+        self.ContrastScale = self.builder.get_object("contrast_scale")
+        self.SaturationScale = self.builder.get_object("saturation_scale")
+        self.SharpnessScale = self.builder.get_object("sharpness_scale")
+        
+        self.builder.connect_signals(Handlers(self))
 
 # ~ da    = builder.get_object("drawingarea1")
 
-builder.connect_signals(Handlers())
+# ~ builder.connect_signals(Handlers())
 
-Gtk.main()
+# ~ Gtk.main()

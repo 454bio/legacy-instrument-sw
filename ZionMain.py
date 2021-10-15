@@ -6,6 +6,9 @@ from ZionGPIO import ZionGPIO
 from ZionCamera import ZionCamera
 from ZionEvents import check_led_timings, create_event_list, performEventList
 from ZionSession import ZionSession
+import gi
+gi.require_version('Gtk', '3.0')
+from gi.repository import Gtk
 
 ########################################################################
 ######################### User-Level Settings ##########################
@@ -71,7 +74,7 @@ mySession = ZionSession(Session_Name, Spatial_Res, Frame_Rate, Binning, Blue_Tim
 #Start preview:
 width = 640
 xpos = 560
-ypos = 38
+ypos = 75
 #window was (30,60,854,640)
 mySession.InteractivePreview(window=(xpos,ypos,width,round(width*3/4)))
 
