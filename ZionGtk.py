@@ -13,10 +13,9 @@ class Handlers:
 
     def __init__(self, gui):
 #        self.LightOn = False
-        self.awbGainsOn = True
         self.parent = gui
-        self.parent.redGainScale.set_sensitive(self.awbGainsOn)
-        self.parent.blueGainScale.set_sensitive(self.awbGainsOn)
+        self.parent.redGainScale.set_sensitive(True)
+        self.parent.blueGainScale.set_sensitive(True)
         
         #TODO: fix inital exp mode based on input
         self.ExpModeLastChoice = 2
