@@ -90,7 +90,7 @@ class Handlers:
     def on_orange_led_switch_activate(self, switch, gparam):
         if switch.get_active():
             self.printToLog('Orange LED on')
-            self.parent.Camera.GPIO.turn_off_led('Orange')
+            self.parent.Camera.GPIO.turn_on_led('Orange')
         else:
             self.printToLog('Orange LED off')
             self.parent.Camera.GPIO.turn_off_led('Orange')
@@ -98,7 +98,7 @@ class Handlers:
     def on_uv_led_switch(self, switch, gparam):
         if switch.get_active():
             self.printToLog('UV LED on')
-            self.parent.Camera.GPIO.turn_off_led('UV')
+            self.parent.Camera.GPIO.turn_on_led('UV')
         else:
             self.printToLog('UV LED off')
             self.parent.Camera.GPIO.turn_off_led('UV')
