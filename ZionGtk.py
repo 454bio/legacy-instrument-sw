@@ -118,6 +118,7 @@ class Handlers:
         if newVal.isdecimal():
             self.printToLog('Doing UV pulse of '+newVal+' milliseconds')
             newVal = int(newVal)
+       		#TODO: use different timer (from gtk?)
             self.parent.Camera.GPIO.send_uv_pulse(newVal)
         else:
             self.printToLog('Pulse time should be an integer number of milliseconds.')

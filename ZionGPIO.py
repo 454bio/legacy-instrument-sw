@@ -50,17 +50,6 @@ TEMP_OUTPUT = 13
 
 # 1 GPIOs for temp sensing (to use 1-wire):
 TEMP_INPUT_1W = 5
-'''
-TODO:
-edit /boot/config.txt
-dtoverlay=w1-gpio (for 4)
-dtoverlay=w1-gpio,gpiopin=5 (for 5)
-4.7k pull-up to 3.3v (pin 1 or 17)
-ls /sys/bus/w1/devices
-'''
-
-
-
 
 #1 GPIO for UV safety switch:
 #TODO
@@ -173,5 +162,6 @@ class ZionGPIO(pigpio.pi):
 			
 	def send_uv_pulse(self, pulsetime):
 		self.turn_on_led('UV')
+		#TODO: use different timer (from gtk?)
 		time.sleep(float(pulsetime/1000.))
 		self.turn_off_led('UV')
