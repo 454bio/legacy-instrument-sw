@@ -143,6 +143,7 @@
                                     <child>
                                       <object class="GtkTextView" id="temperature_textview">
                                         <property name="visible">True</property>
+                                        <property name="sensitive">False</property>
                                         <property name="can_focus">True</property>
                                         <property name="valign">center</property>
                                         <property name="margin_right">12</property>
@@ -693,6 +694,7 @@
                                                             <child>
                                                             <object class="GtkTextView" id="analog_gain_textview">
                                                             <property name="visible">True</property>
+                                                            <property name="sensitive">False</property>
                                                             <property name="can_focus">True</property>
                                                             <property name="editable">False</property>
                                                             <property name="cursor_visible">False</property>
@@ -730,6 +732,7 @@
                                                             <child>
                                                             <object class="GtkTextView" id="digital_gain_textview">
                                                             <property name="visible">True</property>
+                                                            <property name="sensitive">False</property>
                                                             <property name="can_focus">True</property>
                                                             <property name="editable">False</property>
                                                             <property name="cursor_visible">False</property>
@@ -776,13 +779,15 @@
                                                             <property name="visible">True</property>
                                                             <property name="can_focus">False</property>
                                                             <child>
-                                                            <object class="GtkTextView" id="exposure_time_entry">
+                                                            <object class="GtkTextView" id="exposure_time_textview">
                                                             <property name="visible">True</property>
+                                                            <property name="sensitive">False</property>
                                                             <property name="can_focus">True</property>
+                                                            <property name="editable">False</property>
+                                                            <property name="right_margin">12</property>
                                                             <property name="cursor_visible">False</property>
                                                             <property name="buffer">exposure_time_buffer</property>
                                                             <property name="accepts_tab">False</property>
-                                                            <property name="populate_all">True</property>
                                                             </object>
                                                             <packing>
                                                             <property name="expand">True</property>
@@ -791,17 +796,31 @@
                                                             </packing>
                                                             </child>
                                                             <child>
-                                                            <object class="GtkButton">
-                                                            <property name="label" translatable="yes">Set</property>
+                                                            <object class="GtkEntry" id="exposure_time_entry">
+                                                            <property name="visible">True</property>
                                                             <property name="can_focus">True</property>
-                                                            <property name="receives_default">True</property>
-                                                            <property name="halign">center</property>
-                                                            <property name="valign">center</property>
+                                                            <property name="width_chars">10</property>
                                                             </object>
                                                             <packing>
                                                             <property name="expand">False</property>
                                                             <property name="fill">True</property>
                                                             <property name="position">1</property>
+                                                            </packing>
+                                                            </child>
+                                                            <child>
+                                                            <object class="GtkButton" id="set_exposure_time_button">
+                                                            <property name="label" translatable="yes">Set</property>
+                                                            <property name="visible">True</property>
+                                                            <property name="can_focus">True</property>
+                                                            <property name="receives_default">True</property>
+                                                            <property name="halign">center</property>
+                                                            <property name="valign">center</property>
+                                                            <signal name="clicked" handler="on_set_exposure_time_button" swapped="no"/>
+                                                            </object>
+                                                            <packing>
+                                                            <property name="expand">True</property>
+                                                            <property name="fill">True</property>
+                                                            <property name="position">2</property>
                                                             </packing>
                                                             </child>
                                                             </object>
@@ -812,7 +831,7 @@
                                                           <object class="GtkLabel">
                                                             <property name="visible">True</property>
                                                             <property name="can_focus">False</property>
-                                                            <property name="label" translatable="yes">Exposure Time</property>
+                                                            <property name="label" translatable="yes">Exposure Time (ms)</property>
                                                           </object>
                                                         </child>
                                                       </object>
@@ -1418,7 +1437,7 @@
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
                         <property name="halign">center</property>
-                        <property name="label" translatable="yes">UV Pulse</property>
+                        <property name="label" translatable="yes">UV Pulse (ms)</property>
                       </object>
                     </child>
                   </object>

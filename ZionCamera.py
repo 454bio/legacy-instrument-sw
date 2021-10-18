@@ -35,6 +35,8 @@ class ZionCamera(PiCamera):
 		self.saturation = saturation_info[2]
 		self.sharpness = sharpness_info[2]
 		
+		self.framerate_range = (0.1, 10)
+		
 		self.iso=800
 		time.sleep(0.5)
 		self.exposure_mode='night' #night?
@@ -46,9 +48,9 @@ class ZionCamera(PiCamera):
 		# ~ self.framerate_range = (1, framerate)
 		#TODO fix shutter speed stuff
 		# ~ self.shutter_speed = shutter_speed
-		self.shutter_speed_default = shutter_speed
-		self.shutter_speed_step = shutter_speed_step
-		self.shutter_speed_max = shutter_speed_max
+		# ~ self.shutter_speed_default = shutter_speed
+		# ~ self.shutter_speed_step = shutter_speed_step
+		# ~ self.shutter_speed_max = shutter_speed_max
 		
 		self.BaseFilename = None
 		self.file_idx = 0
