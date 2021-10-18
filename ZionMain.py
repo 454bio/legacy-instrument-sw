@@ -20,17 +20,9 @@ Session_Name = 'session_name'
 
 # These can't change while camera is open:
 Spatial_Res = (2028, 1520)
-Frame_Rate = 10
 Binning = True
-
-# TODO: bring shutter speed back out to user
-# (right now manual shutter speed can't be changed from 1/FR)
-# Shutter Speed = Exposure Time (in microseconds)
-# ~ Shutter_Speed = round(1000./Frame_Rate)  #(0 is automatic) 
-# Shutter_Speed = round(1000000./Frame_Rate)
-# Shutter_Speed_Stepsize = 2000
-# Shutter_Speed_Max = 200000000
-# Minimum is 1/Frame_Rate
+# Frame Rate now given as a range (0.1 fps min to 10 fps maximum)
+# TODO: expand fr range and do logic with binning option (ie diy auto sensor mode)
 
 
 # LED Timing:
@@ -63,7 +55,7 @@ Repeat_N = 2
 ########################################################################
 
 # Initialization Block:
-mySession = ZionSession(Session_Name, Spatial_Res, Frame_Rate, Binning, Blue_Timing, Orange_Timing, UV_Timing, Camera_Captures, Repeat_N)
+mySession = ZionSession(Session_Name, Spatial_Res, 10, Binning, Blue_Timing, Orange_Timing, UV_Timing, Camera_Captures, Repeat_N)
 
 #Next line perform events defined above:
 # ~ mySession.RunProgram()

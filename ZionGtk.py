@@ -27,6 +27,7 @@ class Handlers:
         gains = self.parent.Camera.awb_gains
         self.parent.redGainScale.set_value(float(gains[0]))
         self.parent.blueGainScale.set_value(float(gains[1]))
+        self.lastShutterTime = self.parent.Camera.exposure_speed
         
     def on_window1_delete_event(self, *args):
         GObject.source_remove(self.source_id)
@@ -122,7 +123,8 @@ class Handlers:
             self.parent.Camera.GPIO.send_uv_pulse(newVal)
         else:
             self.printToLog('Pulse time should be an integer number of milliseconds.')
-            
+    
+    #Exposure Stuff
     def on_iso_auto_button(self, button):
         if button.get_active():
             self.printToLog('ISO set to auto')
@@ -160,7 +162,30 @@ class Handlers:
         newval = int(scale.get_value())
         self.parent.Camera.exposure_compensation = newval
         self.printToLog('Exposure compensation set to '+str(newval))
+        
+    def on_set_exposure_time_button(self, button):
+        newval = self.parent.expTimeBox.get_text()
+        try:
+            newval = float(newval)
+        except ValueError: 
+            self.printToLog('Requested exposure time must be a number!')
+            return
+        if newval==0:
+            self.parent.Camera.shutter_speed = 0
+            self.printToLog('Exposure time set to auto')
+        else:
+            self.parent.Camera.shutter_speed = round(1000*newval)
+            self.printToLog('Exposure time set to '+str(newval)+' ms')
 
+    # ~ def on_auto_exposure_time_button(self, button):
+        # ~ if button.is_active():
+            # ~ self.lastShutterTime = self.parent.Camera.exposure_speed
+            # ~ self.parent.Camera.shutter_speed = 0
+            # ~ self.printToLog('Exposure time set to auto')
+        # ~ else:
+            # ~ self.parent.Camera.shutter_speed = self.lastShutterTime
+            # ~ self.printToLog('Exposure time auto off, setting to '+str(self.lastShutterTime/1000.)+' ms')
+        
     def on_exp_mode_changed(self, combo):
         active_idx = combo.get_active()
         if not active_idx==-1:
