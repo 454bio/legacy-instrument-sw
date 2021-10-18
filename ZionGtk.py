@@ -24,6 +24,10 @@ class Handlers:
         self.source_id = GObject.timeout_add(2000, self.updateExpParams)
         # ~ self.updateTemp()
         
+        gains = self.parent.Camera.awb_gains
+        self.parent.redGainScale.set_value(float(gains[0]))
+        self.parent.blueGainScale.set_value(float(gains[1]))
+        
     def on_window1_delete_event(self, *args):
         GObject.source_remove(self.source_id)
         Gtk.main_quit(*args)
@@ -114,9 +118,9 @@ class Handlers:
         if newVal.isdecimal():
             self.printToLog('Doing UV pulse of '+newVal+' milliseconds')
             newVal = int(newVal)
-            #TODO: fill in hook for sending pulse
+            self.parent.Camera.GPIO.send_uv_pulse(newVal)
         else:
-            print('Pulse time should be an integer number of milliseconds.')
+            self.printToLog('Pulse time should be an integer number of milliseconds.')
             
     def on_iso_auto_button(self, button):
         if button.get_active():
@@ -180,9 +184,8 @@ class Handlers:
         else:
             self.parent.expModeComboBox.set_active(self.ExpModeLastChoice)
     def enable_exp_params(self, isOn):
-        #TODO: put this back in once we get the hang of it
         self.parent.isoButtonBox.set_sensitive(isOn)
-        # ~ expCompScale.set_sensitive(isOn)
+        self.parent.expCompScale.set_sensitive(isOn)
         return
 
     def on_awb_enable_button(self, switch, gparam):

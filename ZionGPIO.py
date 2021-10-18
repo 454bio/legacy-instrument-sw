@@ -170,3 +170,8 @@ class ZionGPIO(pigpio.pi):
 		else:
 			print('No digital thermometer connected')
 			return None
+			
+	def send_uv_pulse(self, pulsetime):
+		self.turn_on_led('UV')
+		time.sleep(float(pulsetime/1000.))
+		self.turn_off_led('UV')
