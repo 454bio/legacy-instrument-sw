@@ -7,34 +7,24 @@ from time import sleep
 import time
 import os
 
-brightness_info = (0,100,50,5)
-contrast_info = (-100,100,50,5)
-saturation_info = (-100,100,100,5)
-sharpness_info = (-100,100,0,5)
-
-iso_info = list(range(0,800+1,100))
-metering_mode = ['average', 'spot', 'backlit', 'matrix']
-exposure_info = (-25,25,0,1)
-exposure_mode_info = ['off', 'auto', 'night', 'nightpreview',
-					  'backlight', 'spotlight', 'sports', 'snow',
-					  'beach', 'verylong', 'fixedfps', 'antishake', 'fireworks']
-awb_mode_info = ['off','auto']
-awb_gains_red_info = (0.0, 8.0, 1.9, 0.1)
-awb_gains_blue_info = (0.0, 8.0, 1.9, 0.1)
-
 
 class ZionCamera(PiCamera):
 
-	def __init__(self, resolution, framerate, binning, shutter_speed, shutter_speed_step, shutter_speed_max, gpio_ctrl=None):
+	#def __init__(self, resolution, framerate, binning, shutter_speed, shutter_speed_step, shutter_speed_max, gpio_ctrl=None):
+	def __init__(self, resolution, framerate, binning, shutter_speed, shutter_speed_step, shutter_speed_max, parent=None):
 		
 		print('\nCamera Initializing...')
 		sensMode = 2 if binning else 3
 		super(ZionCamera,self).__init__(resolution=resolution, framerate=framerate, sensor_mode=sensMode)
-		self.brightness = brightness_info[2]
+		self.parent = parent
+        
+        
+        self.brightness = brightness_info[2]
 		self.contrast = contrast_info[2]
 		self.saturation = saturation_info[2]
 		self.sharpness = sharpness_info[2]
 		
+        #TODO: make decision on frame rate range, related to binning as well
 		self.framerate_range = (0.1, 10)
 		
 		self.iso=800

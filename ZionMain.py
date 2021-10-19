@@ -6,9 +6,6 @@ from ZionGPIO import ZionGPIO
 from ZionCamera import ZionCamera
 from ZionEvents import check_led_timings, create_event_list, performEventList
 from ZionSession import ZionSession
-import gi
-gi.require_version('Gtk', '3.0')
-from gi.repository import Gtk
 
 ########################################################################
 ######################### User-Level Settings ##########################
