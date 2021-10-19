@@ -5,7 +5,7 @@
   <object class="GtkTextBuffer" id="analog_gain_buffer"/>
   <object class="GtkAdjustment" id="blue_gain_adjust">
     <property name="upper">8</property>
-    <property name="value">1.3999999999999999</property>
+    <property name="value">1.9</property>
     <property name="step_increment">0.10000000000000001</property>
     <property name="page_increment">0.5</property>
   </object>
@@ -32,7 +32,7 @@
   <object class="GtkTextBuffer" id="exposure_time_buffer"/>
   <object class="GtkAdjustment" id="red_gain_adjust">
     <property name="upper">8</property>
-    <property name="value">1.3999999999999999</property>
+    <property name="value">1.9</property>
     <property name="step_increment">0.10000000000000001</property>
     <property name="page_increment">0.5</property>
   </object>
