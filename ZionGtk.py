@@ -236,7 +236,7 @@ class Handlers:
                 handle_id_blue = get_handler_id(self.parent.blueGainScale, "value-changed")
                 self.parent.blueGainScale.handler_block(handle_id_blue)
                 self.parent.blueGainScale.set_value(on_now[2])
-                self.parent.redGainScale.handler_unblock(handle_id_blue)
+                self.parent.blueGainScale.handler_unblock(handle_id_blue)
 
     def on_red_gain_scale_value_changed(self, scale):
         newval = scale.get_value()
