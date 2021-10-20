@@ -72,7 +72,7 @@ red_gain = 1.9
 blue_gain = 1.9
 
 class ParameterSet():
-    def __init__(self, expMode, red_gain, blue_gain,  ):
+    def __init__(self, Initial_Values):
         self = {'brightness': NumericParameter(50,0,100),
                       'contrast': NumericParameter(50,-100,100),
                       'saturation': NumericParameter(100,-100,100),
@@ -86,9 +86,9 @@ class ParameterSet():
                       'metering_mode': CategoricalParameter('average', ['average', 'spot', 'backlit', 'matrix']),
                      }
 
-class ZionSession(object): #TODO: inherit from some UI/app session class type
+class ZionSession():
 
-	def __init__(self, session_name, Spatial_Res, Frame_Rate, Binning, Blue_Timing, Orange_Timing, UV_Timing, Camera_Captures, RepeatN=0, overwrite=False):
+	def __init__(self, session_name, Spatial_Res, Frame_Rate, Binning, Initial_Values, Blue_Timing, Orange_Timing, UV_Timing, Camera_Captures, RepeatN=0, overwrite=False):
 		
 		#self.Name = session_name
         currName = session_name.copy()
@@ -100,17 +100,22 @@ class ZionSession(object): #TODO: inherit from some UI/app session class type
         os.mkdir('./'+self.Name)
         self.Dir = './'+self.Name)
         
+        
         self.GPIO = ZionGPIO()
-		
-		self.Camera = ZionCamera(Spatial_Res, Frame_Rate, Binning, Shutter_Speed, Shutter_Speed_Stepsize, Shutter_Speed_Max, parent=self)
-		
-        check_led_timings(Blue_Timing, Orange_Timing, UV_Timing)
-		self.EventList, self.NumGrps = create_event_list(Blue_Timing, Orange_Timing, UV_Timing, Camera_Captures)
-		self.RepeatN = RepeatN
+        
+		self.Camera = ZionCamera(Spatial_Res, Frame_Rate, Binning, Initial_Values, parent=self)
+        self.gui = ZionGUI(Initial_Values, parent=self)
+        
+        self.CreateProgram(Blue_Timing, Orange_Timing, UV_Timing, Camera_Captures, RepeatN)
         
         self.TimeOfLife = time.time()
-        self.gui = ZionGUI(self.Camera, 'night')
+        
+    def CreateProgram(self, blue_timing, orange_timing, uv_timing, capture_times, repeatN=0):
+        check_led_timings(blue_timing, orange_timing, uv_timing)
+		self.EventList, self.NumGrps = create_event_list(blue_timing, orange_timing, uv_Timing, capture_times)
+		self.RepeatN = RepeatN
 
+    #TODO: adjust scope for this routine
 	def RunProgram(self):
 		performEventList(self.EventList, self.Camera, self.GPIO, Repeat_N=self.RepeatN, baseFilename=(self.Dir, self.Name), baseTime=self.TimeOfLife, numGrps=self.NumGrps)
 
