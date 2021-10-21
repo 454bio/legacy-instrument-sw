@@ -104,7 +104,7 @@ class ZionSession():
         self.GPIO = ZionGPIO()
         
 		self.Camera = ZionCamera(Spatial_Res, Frame_Rate, Binning, Initial_Values, parent=self)
-        self.gui = ZionGUI(Initial_Values, parent=self)
+        self.gui = ZionGUI(Initial_Values, self)
         
         self.CreateProgram(Blue_Timing, Orange_Timing, UV_Timing, Camera_Captures, RepeatN)
         

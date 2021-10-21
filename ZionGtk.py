@@ -12,22 +12,22 @@ def get_handler_id(obj, signal_name):
 class Handlers:
 
     def __init__(self, gui):
-#        self.LightOn = False
         self.parent = gui
+        
+        #TODO: do param initialization here
         self.parent.redGainScale.set_sensitive(True)
         self.parent.blueGainScale.set_sensitive(True)
         
-        #TODO: fix inital exp mode based on input
         self.ExpModeLastChoice = 2
         
         self.updateExpParams()
         self.source_id = GObject.timeout_add(2000, self.updateExpParams)
         # ~ self.updateTemp()
         
-        gains = self.parent.Camera.awb_gains
+        gains = self.parent.parent.Camera.awb_gains
         self.parent.redGainScale.set_value(float(gains[0]))
         self.parent.blueGainScale.set_value(float(gains[1]))
-        self.lastShutterTime = self.parent.Camera.exposure_speed
+        self.lastShutterTime = self.parent.parent.Camera.exposure_speed
         
     def on_window1_delete_event(self, *args):
         GObject.source_remove(self.source_id)
@@ -39,9 +39,9 @@ class Handlers:
         self.parent.logView.scroll_to_mark(mark, 0, False, 0,0)
 
     def updateExpParams(self):
-        a_gain = float(self.parent.Camera.analog_gain)
-        d_gain = float(self.parent.Camera.digital_gain)
-        e_time = float(self.parent.Camera.exposure_speed/1000.)
+        a_gain = float(self.parent.parent.Camera.analog_gain)
+        d_gain = float(self.parent.parent.Camera.digital_gain)
+        e_time = float(self.parent.parent.Camera.exposure_speed/1000.)
         self.parent.analogGainBuffer.set_text("{:.3f}".format(a_gain))
         self.parent.digitalGainBuffer.set_text("{:.3f}".format(d_gain))
         self.parent.expTimeBuffer.set_text("{:.3f}".format(e_time))
@@ -58,55 +58,55 @@ class Handlers:
     def on_image_denoise_button(self, button):
         if button.get_active():
             self.printToLog('Image denoising on')
-            self.parent.Camera.image_denoising=True
+            self.parent.parent.Camera.image_denoising=True
         else:
             self.printToLog('Image denoising off')
-            self.parent.Camera.image_denoising=False
+            self.parent.parent.Camera.image_denoising=False
             
     def on_brightness_scale_value_changed(self, scale):
         newval = int(scale.get_value())
-        self.parent.Camera.brightness=newval
+        self.parent.parent.Camera.brightness=newval
         self.printToLog('Brightness set to '+str(newval))
         
     def on_contrast_scale_value_changed(self, scale):
         newval = int(scale.get_value())
-        self.parent.Camera.contrast=newval
+        self.parent.parent.Camera.contrast=newval
         self.printToLog('Contrast set to '+str(newval))
     
     def on_saturation_scale_value_changed(self, scale):
         newval = int(scale.get_value())
-        self.parent.Camera.saturation=newval
+        self.parent.parent.Camera.saturation=newval
         self.printToLog('Saturation set to '+str(newval))
             
     def on_sharpness_scale_value_changed(self, scale):
         newval = int(scale.get_value())
-        self.parent.Camera.sharpness=newval
+        self.parent.parent.Camera.sharpness=newval
         self.printToLog('Sharpness set to '+str(newval))
 
     # LED Control Section
     def on_blue_led_switch_activate(self, switch, gparam):
         if switch.get_active():
             self.printToLog('Blue LED on')
-            self.parent.Camera.GPIO.turn_on_led('Blue')
+            self.parent.parent.Camera.GPIO.turn_on_led('Blue')
         else:
             self.printToLog('Blue LED off')
-            self.parent.Camera.GPIO.turn_off_led('Blue')
+            self.parent.parent.Camera.GPIO.turn_off_led('Blue')
             
     def on_orange_led_switch_activate(self, switch, gparam):
         if switch.get_active():
             self.printToLog('Orange LED on')
-            self.parent.Camera.GPIO.turn_on_led('Orange')
+            self.parent.parent.Camera.GPIO.turn_on_led('Orange')
         else:
             self.printToLog('Orange LED off')
-            self.parent.Camera.GPIO.turn_off_led('Orange')
+            self.parent.parent.Camera.GPIO.turn_off_led('Orange')
             
     def on_uv_led_switch(self, switch, gparam):
         if switch.get_active():
             self.printToLog('UV LED on')
-            self.parent.Camera.GPIO.turn_on_led('UV')
+            self.parent.parent.Camera.GPIO.turn_on_led('UV')
         else:
             self.printToLog('UV LED off')
-            self.parent.Camera.GPIO.turn_off_led('UV')
+            self.parent.parent.Camera.GPIO.turn_off_led('UV')
             
     def on_uv_switch_safety_button(self, button):
         if button.get_active():
@@ -120,7 +120,7 @@ class Handlers:
             self.printToLog('Doing UV pulse of '+newVal+' milliseconds')
             newVal = int(newVal)
        		#TODO: use different timer (from gtk?)
-            self.parent.Camera.GPIO.send_uv_pulse(newVal)
+            self.parent.parent.Camera.GPIO.send_uv_pulse(newVal)
         else:
             self.printToLog('Pulse time should be an integer number of milliseconds.')
     
@@ -128,39 +128,39 @@ class Handlers:
     def on_iso_auto_button(self, button):
         if button.get_active():
             self.printToLog('ISO set to auto')
-            self.parent.Camera.iso = 0
+            self.parent.parent.Camera.iso = 0
     def on_iso_100_button(self, button):
         if button.get_active():
             self.printToLog('ISO set to 100')
-            self.parent.Camera.iso = 100
+            self.parent.parent.Camera.iso = 100
     def on_iso_200_button(self, button):
         if button.get_active():
             self.printToLog('ISO set to 200')
-            self.parent.Camera.iso = 200
+            self.parent.parent.Camera.iso = 200
     def on_iso_320_button(self, button):
         if button.get_active():
             self.printToLog('ISO set to 320')
-            self.parent.Camera.iso = 320
+            self.parent.parent.Camera.iso = 320
     def on_iso_400_button(self, button):
         if button.get_active():
             self.printToLog('ISO set to 400')
-            self.parent.Camera.iso = 400
+            self.parent.parent.Camera.iso = 400
     def on_iso_500_button(self, button):
         if button.get_active():
             self.printToLog('ISO set to 500')
-            self.parent.Camera.iso = 500
+            self.parent.parent.Camera.iso = 500
     def on_iso_640_button(self, button):
         if button.get_active():
             self.printToLog('ISO set to 640')
-            self.parent.Camera.iso = 640
+            self.parent.parent.Camera.iso = 640
     def on_iso_800_button(self, button):
         if button.get_active():
             self.printToLog('ISO set to 800')
-            self.parent.Camera.iso = 800
+            self.parent.parent.Camera.iso = 800
             
     def on_exposure_comp_scale_value_changed(self, scale):
         newval = int(scale.get_value())
-        self.parent.Camera.exposure_compensation = newval
+        self.parent.parent.Camera.exposure_compensation = newval
         self.printToLog('Exposure compensation set to '+str(newval))
         
     def on_set_exposure_time_button(self, button):
@@ -171,26 +171,26 @@ class Handlers:
             self.printToLog('Requested exposure time must be a number!')
             return
         if newval==0:
-            self.parent.Camera.shutter_speed = 0
+            self.parent.parent.Camera.shutter_speed = 0
             self.printToLog('Exposure time set to auto')
         else:
-            self.parent.Camera.shutter_speed = round(1000*newval)
+            self.parent.parent.Camera.shutter_speed = round(1000*newval)
             self.printToLog('Exposure time set to '+str(newval)+' ms')
 
     # ~ def on_auto_exposure_time_button(self, button):
         # ~ if button.is_active():
-            # ~ self.lastShutterTime = self.parent.Camera.exposure_speed
-            # ~ self.parent.Camera.shutter_speed = 0
+            # ~ self.lastShutterTime = self.parent.parent.Camera.exposure_speed
+            # ~ self.parent.parent.Camera.shutter_speed = 0
             # ~ self.printToLog('Exposure time set to auto')
         # ~ else:
-            # ~ self.parent.Camera.shutter_speed = self.lastShutterTime
+            # ~ self.parent.parent.Camera.shutter_speed = self.lastShutterTime
             # ~ self.printToLog('Exposure time auto off, setting to '+str(self.lastShutterTime/1000.)+' ms')
         
     def on_exp_mode_changed(self, combo):
         active_idx = combo.get_active()
         if not active_idx==-1:
             newmode = self.parent.expModeComboBox.get_active_text()
-            self.parent.Camera.exposure_mode = newmode
+            self.parent.parent.Camera.exposure_mode = newmode
             self.printToLog('New exposure mode: '+newmode)
             handle_id = get_handler_id(self.parent.expModeLockButton, "toggled")
             if active_idx==0:
@@ -216,13 +216,13 @@ class Handlers:
 
     def on_awb_enable_button(self, switch, gparam):
         if switch.get_active():
-            on_now = self.parent.Camera.toggle_awb()
+            on_now = self.parent.parent.Camera.toggle_awb()
             if on_now[0]:
                 self.printToLog('Auto WB enabled')
                 self.parent.redGainScale.set_sensitive(False)
                 self.parent.blueGainScale.set_sensitive(False)
         else:
-            on_now = self.parent.Camera.toggle_awb()
+            on_now = self.parent.parent.Camera.toggle_awb()
             if not on_now[0]:
                 self.printToLog('Auto WB disabled')
                 
@@ -240,19 +240,19 @@ class Handlers:
 
     def on_red_gain_scale_value_changed(self, scale):
         newval = scale.get_value()
-        gains = self.parent.Camera.awb_gains
-        self.parent.Camera.awb_gains = (newval, gains[1])
+        gains = self.parent.parent.Camera.awb_gains
+        self.parent.parent.Camera.awb_gains = (newval, gains[1])
         self.printToLog('WB Red Gain set to '+str(newval))
             
     def on_blue_gain_scale_value_changed(self, scale):
         newval = scale.get_value()
-        gains = self.parent.Camera.awb_gains
-        self.parent.Camera.awb_gains = (gains[0], newval)
+        gains = self.parent.parent.Camera.awb_gains
+        self.parent.parent.Camera.awb_gains = (gains[0], newval)
         self.printToLog('WB Blue Gain set to '+str(newval))
         
     def on_capture_button_clicked(self, button):
         #TODO:fix capture file naming here
-        self.parent.Camera.capture(('','test_pic'), cropping=(0,0,1,1), baseTime=0, group='P')              
+        self.parent.parent.Camera.capture(('','test_pic'), cropping=(0,0,1,1), baseTime=0, group='P')              
 
 
     def on_drawingarea1_draw(self,widget,cr):
@@ -283,12 +283,12 @@ class Handlers:
         # ~ widget.queue_draw()
 
 class ZionGUI():
-    def __init__(self, camera, initExpMode):#, gladefile, paramDefs=None):
+    def __init__(self, init_values, parent, glade_file='zion_layout.glade'):
         #Create Window and Maximize:
-        self.builder = Gtk.Builder.new_from_file("zion_layout.glade")
+        self.builder = Gtk.Builder.new_from_file(glade_file)
         self.mainWindow = self.builder.get_object("window1")
         Gtk.Window.maximize(self.mainWindow)
-        self.Camera = camera
+        self.parent = parent
 
     #Objects needed for handlers:
         self.redGainScale = self.builder.get_object("red_gain_scale")
