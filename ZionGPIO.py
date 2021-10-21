@@ -83,7 +83,6 @@ class ZionGPIO(pigpio.pi):
 		for bit in Orange_gpios:
 			self.Orange_Reg |= (1<<bit)
 		
-		# this pin is set directly by Camera object
 		self.Camera_Trigger = camera_trigger_gpio
         
 		self.Temp_Output_GPIO = temp_out_gpio
