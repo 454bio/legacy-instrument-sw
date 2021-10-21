@@ -7,45 +7,36 @@ from time import sleep
 import time
 import os
 
-
 class ZionCamera(PiCamera):
 
-	#def __init__(self, resolution, framerate, binning, shutter_speed, shutter_speed_step, shutter_speed_max, gpio_ctrl=None):
-	def __init__(self, resolution, framerate, binning, shutter_speed, shutter_speed_step, shutter_speed_max, parent=None):
+    def __init__(self, resolution, framerate, binning, initial_values, parent=None):
 		
 		print('\nCamera Initializing...')
-		sensMode = 2 if binning else 3
+		sensMode = 2 if binning else 3 #TODO: check framerate range too here
 		super(ZionCamera,self).__init__(resolution=resolution, framerate=framerate, sensor_mode=sensMode)
 		self.parent = parent
+        self.framerate_range = (0.1, 10)
         
-        
-        self.brightness = brightness_info[2]
+        #TODO: change the following to get from initial_values
+        self.brightness = initial_values['brightness']
 		self.contrast = contrast_info[2]
 		self.saturation = saturation_info[2]
 		self.sharpness = sharpness_info[2]
-		
-        #TODO: make decision on frame rate range, related to binning as well
-		self.framerate_range = (0.1, 10)
-		
 		self.iso=800
 		time.sleep(0.5)
 		self.exposure_mode='night' #night?
 		time.sleep(2.5)
 		self.awb_mode = 'off'
 		self.awb_gains = (awb_gains_red_info[2], awb_gains_blue_info[2])
-		# ~ self.exposure_mode='off'
-
-		# ~ self.framerate_range = (1, framerate)
-		#TODO fix shutter speed stuff
-		# ~ self.shutter_speed = shutter_speed
-		# ~ self.shutter_speed_default = shutter_speed
-		# ~ self.shutter_speed_step = shutter_speed_step
-		# ~ self.shutter_speed_max = shutter_speed_max
 		
 		self.BaseFilename = None
 		self.file_idx = 0
-		self.GPIO = gpio_ctrl
 		print('\nCamera Ready')
+        
+	def quit(self):
+		self.stop_preview()
+		self.close()
+		print('\nCamera closed')
 		
 	def capture(self, filename, cropping=(0,0,1,1), baseTime=0, group=None):
 		self.zoom = cropping
@@ -54,97 +45,14 @@ class ZionCamera(PiCamera):
 		fileToWrite = os.path.join(filename[0], group+'_'+filename[1]+'_'+str(fileTimestamp)+'.jpg')
 		# ~ group+'_'+filename+'_'+str(self.file_idx)+'_'+str(fileTimestamp)+'.jpg' if useIndex else filename+'.jpg'
 		print('\nWriting image to file '+fileToWrite)
-		if self.GPIO:
-			self.GPIO.write(self.GPIO.Camera_Trigger, True)
+		if self.parent.GPIO:
+			self.parent.GPIO.camera_trigger(True)
 		ret = super(ZionCamera,self).capture(fileToWrite)
-		if self.GPIO:
-			self.GPIO.write(self.GPIO.Camera_Trigger, False)
+		if self.parent.GPIO:
+			self.parent.GPIO.camera_trigger(False)
 		self.zoom=(0,0,1,1)
 		self.file_idx += 1
 		return ret
-		
-	def quit(self):
-		self.stop_preview()
-		self.close()
-		print('\nCamera closed')
-			
-	def interactive_preview(self, baseFilename=None, init_file_idx=0, cropping=(0,0,1,1), window=None, baseTime=0):
-		self.file_idx = init_file_idx
-		keyboard.add_hotkey('space', self.capture, args=(baseFilename, cropping, baseTime, 'P'))
-		
-		keyboard.add_hotkey('u', self.GPIO.turn_on_led, args=('Blue',))
-		keyboard.add_hotkey('j', self.GPIO.turn_off_led, args=('Blue',))
-		keyboard.add_hotkey('i', self.GPIO.turn_on_led, args=('Orange',))
-		keyboard.add_hotkey('k', self.GPIO.turn_off_led, args=('Orange',))
-		keyboard.add_hotkey('o', self.GPIO.turn_on_led, args=('UV',))
-		keyboard.add_hotkey('l', self.GPIO.turn_off_led, args=('UV',))
-		
-		keyboard.add_hotkey('tab', self.toggle_denoise)
-		
-		keyboard.add_hotkey('a', self.increase_brightness)
-		keyboard.add_hotkey('z', self.decrease_brightness)
-		keyboard.add_hotkey('q', self.reset_brightness)
-		keyboard.add_hotkey('s', self.increase_contrast)
-		keyboard.add_hotkey('x', self.decrease_contrast)
-		keyboard.add_hotkey('w', self.reset_contrast)
-		keyboard.add_hotkey('d', self.increase_saturation)
-		keyboard.add_hotkey('c', self.decrease_saturation)
-		keyboard.add_hotkey('e', self.reset_saturation)
-		keyboard.add_hotkey('f', self.increase_sharpness)
-		keyboard.add_hotkey('v', self.decrease_sharpness)
-		
-		keyboard.add_hotkey('`', self.set_iso, args=(iso_info[0],))
-		keyboard.add_hotkey('1', self.set_iso, args=(iso_info[1],))
-		keyboard.add_hotkey('2', self.set_iso, args=(iso_info[2],))
-		keyboard.add_hotkey('3', self.set_iso, args=(iso_info[3],))
-		keyboard.add_hotkey('4', self.set_iso, args=(iso_info[4],))
-		keyboard.add_hotkey('5', self.set_iso, args=(iso_info[5],))
-		keyboard.add_hotkey('6', self.set_iso, args=(iso_info[6],))
-		keyboard.add_hotkey('7', self.set_iso, args=(iso_info[7],))
-		keyboard.add_hotkey('8', self.set_iso, args=(iso_info[8],))
-		keyboard.add_hotkey('9', self.set_meter_mode, args=(metering_mode[0],))	
-		keyboard.add_hotkey('0', self.set_meter_mode, args=(metering_mode[1],))
-		keyboard.add_hotkey('-', self.set_meter_mode, args=(metering_mode[2],))
-		keyboard.add_hotkey('=', self.set_meter_mode, args=(metering_mode[3],))
-		
-		keyboard.add_hotkey('b', self.decrease_exposure)
-		keyboard.add_hotkey('g', self.increase_exposure)
-		keyboard.add_hotkey('t', self.reset_exposure)
-		# ~ keyboard.add_hotkey('n', self.decrease_shutter_speed, args=(self.shutter_speed_step,))
-		# ~ keyboard.add_hotkey('h', self.increase_shutter_speed, args=(self.shutter_speed_step,))
-		# ~ keyboard.add_hotkey('y', self.reset_shutter_speed)
-		# ~ keyboard.add_hotkey('u', self.toggle_auto_shutter_speed)
-		
-		keyboard.add_hotkey('F1', self.set_exposure_mode, args=(exposure_mode_info[0],), suppress=True)
-		keyboard.add_hotkey('F2', self.set_exposure_mode, args=(exposure_mode_info[1],), suppress=True)
-		keyboard.add_hotkey('F3', self.set_exposure_mode, args=(exposure_mode_info[2],), suppress=True)
-		# ~ keyboard.add_hotkey('F4', self.set_exposure_mode, args=(exposure_mode_info[3],), suppress=True)
-		# ~ keyboard.add_hotkey('F5', self.set_exposure_mode, args=(exposure_mode_info[4],), suppress=True)
-		# ~ keyboard.add_hotkey('F6', self.set_exposure_mode, args=(exposure_mode_info[5],), suppress=True)
-		# ~ keyboard.add_hotkey('F7', self.set_exposure_mode, args=(exposure_mode_info[6],), suppress=True)
-		# ~ keyboard.add_hotkey('F8', self.set_exposure_mode, args=(exposure_mode_info[7],), suppress=True)
-		# ~ keyboard.add_hotkey('F9', self.set_exposure_mode, args=(exposure_mode_info[8],), suppress=True)
-		keyboard.add_hotkey('F4', self.set_exposure_mode, args=(exposure_mode_info[9],), suppress=True)
-		keyboard.add_hotkey('F11', self.set_exposure_mode, args=(exposure_mode_info[10],), suppress=True)
-		keyboard.add_hotkey('F12', self.set_exposure_mode, args=(exposure_mode_info[11],), suppress=True)
-
-		keyboard.add_hotkey('\\', self.toggle_awb)
-		keyboard.add_hotkey('apostrophe', self.increase_red_awb)
-		keyboard.add_hotkey('/', self.decrease_red_awb)
-		keyboard.add_hotkey(']', self.reset_red_awb)
-		keyboard.add_hotkey(';', self.increase_blue_awb)
-		keyboard.add_hotkey('.', self.decrease_blue_awb)
-		keyboard.add_hotkey('[', self.reset_blue_awb)
-		
-		keyboard.add_hotkey('backspace', self.read_all_gains)
-		
-		#TODO: move preview to gui
-		if window:
-			self.start_preview(fullscreen=False, window=window)
-		else:
-			self.start_preview()
-		keyboard.wait('esc')
-		self.stop_preview()
 		
 	def toggle_denoise(self):
 		if self.image_denoise:
@@ -347,5 +255,81 @@ class ZionCamera(PiCamera):
 		# ~ print('\nAWB Gain (RED) = '+str(float(awb_gains[0])))
 		# ~ print('\nAWB Gain (BLUE) = '+str(float(awb_gains[1])))
 		
+		def interactive_preview(self, baseFilename=None, init_file_idx=0, cropping=(0,0,1,1), window=None, baseTime=0):
+		self.file_idx = init_file_idx
+		keyboard.add_hotkey('space', self.capture, args=(baseFilename, cropping, baseTime, 'P'))
 		
+		keyboard.add_hotkey('u', self.parent.GPIO.turn_on_led, args=('Blue',))
+		keyboard.add_hotkey('j', self.parent.GPIO.turn_off_led, args=('Blue',))
+		keyboard.add_hotkey('i', self.parent.GPIO.turn_on_led, args=('Orange',))
+		keyboard.add_hotkey('k', self.parent.GPIO.turn_off_led, args=('Orange',))
+		keyboard.add_hotkey('o', self.parent.GPIO.turn_on_led, args=('UV',))
+		keyboard.add_hotkey('l', self.parent.GPIO.turn_off_led, args=('UV',))
+		
+		keyboard.add_hotkey('tab', self.toggle_denoise)
+		
+		keyboard.add_hotkey('a', self.increase_brightness)
+		keyboard.add_hotkey('z', self.decrease_brightness)
+		keyboard.add_hotkey('q', self.reset_brightness)
+		keyboard.add_hotkey('s', self.increase_contrast)
+		keyboard.add_hotkey('x', self.decrease_contrast)
+		keyboard.add_hotkey('w', self.reset_contrast)
+		keyboard.add_hotkey('d', self.increase_saturation)
+		keyboard.add_hotkey('c', self.decrease_saturation)
+		keyboard.add_hotkey('e', self.reset_saturation)
+		keyboard.add_hotkey('f', self.increase_sharpness)
+		keyboard.add_hotkey('v', self.decrease_sharpness)
+		
+		keyboard.add_hotkey('`', self.set_iso, args=(iso_info[0],))
+		keyboard.add_hotkey('1', self.set_iso, args=(iso_info[1],))
+		keyboard.add_hotkey('2', self.set_iso, args=(iso_info[2],))
+		keyboard.add_hotkey('3', self.set_iso, args=(iso_info[3],))
+		keyboard.add_hotkey('4', self.set_iso, args=(iso_info[4],))
+		keyboard.add_hotkey('5', self.set_iso, args=(iso_info[5],))
+		keyboard.add_hotkey('6', self.set_iso, args=(iso_info[6],))
+		keyboard.add_hotkey('7', self.set_iso, args=(iso_info[7],))
+		keyboard.add_hotkey('8', self.set_iso, args=(iso_info[8],))
+		keyboard.add_hotkey('9', self.set_meter_mode, args=(metering_mode[0],))	
+		keyboard.add_hotkey('0', self.set_meter_mode, args=(metering_mode[1],))
+		keyboard.add_hotkey('-', self.set_meter_mode, args=(metering_mode[2],))
+		keyboard.add_hotkey('=', self.set_meter_mode, args=(metering_mode[3],))
+		
+		keyboard.add_hotkey('b', self.decrease_exposure)
+		keyboard.add_hotkey('g', self.increase_exposure)
+		keyboard.add_hotkey('t', self.reset_exposure)
+		# ~ keyboard.add_hotkey('n', self.decrease_shutter_speed, args=(self.shutter_speed_step,))
+		# ~ keyboard.add_hotkey('h', self.increase_shutter_speed, args=(self.shutter_speed_step,))
+		# ~ keyboard.add_hotkey('y', self.reset_shutter_speed)
+		# ~ keyboard.add_hotkey('u', self.toggle_auto_shutter_speed)
+		
+		keyboard.add_hotkey('F1', self.set_exposure_mode, args=(exposure_mode_info[0],), suppress=True)
+		keyboard.add_hotkey('F2', self.set_exposure_mode, args=(exposure_mode_info[1],), suppress=True)
+		keyboard.add_hotkey('F3', self.set_exposure_mode, args=(exposure_mode_info[2],), suppress=True)
+		# ~ keyboard.add_hotkey('F4', self.set_exposure_mode, args=(exposure_mode_info[3],), suppress=True)
+		# ~ keyboard.add_hotkey('F5', self.set_exposure_mode, args=(exposure_mode_info[4],), suppress=True)
+		# ~ keyboard.add_hotkey('F6', self.set_exposure_mode, args=(exposure_mode_info[5],), suppress=True)
+		# ~ keyboard.add_hotkey('F7', self.set_exposure_mode, args=(exposure_mode_info[6],), suppress=True)
+		# ~ keyboard.add_hotkey('F8', self.set_exposure_mode, args=(exposure_mode_info[7],), suppress=True)
+		# ~ keyboard.add_hotkey('F9', self.set_exposure_mode, args=(exposure_mode_info[8],), suppress=True)
+		keyboard.add_hotkey('F4', self.set_exposure_mode, args=(exposure_mode_info[9],), suppress=True)
+		keyboard.add_hotkey('F11', self.set_exposure_mode, args=(exposure_mode_info[10],), suppress=True)
+		keyboard.add_hotkey('F12', self.set_exposure_mode, args=(exposure_mode_info[11],), suppress=True)
+
+		keyboard.add_hotkey('\\', self.toggle_awb)
+		keyboard.add_hotkey('apostrophe', self.increase_red_awb)
+		keyboard.add_hotkey('/', self.decrease_red_awb)
+		keyboard.add_hotkey(']', self.reset_red_awb)
+		keyboard.add_hotkey(';', self.increase_blue_awb)
+		keyboard.add_hotkey('.', self.decrease_blue_awb)
+		keyboard.add_hotkey('[', self.reset_blue_awb)
+		
+		keyboard.add_hotkey('backspace', self.read_all_gains)
+		
+		#TODO: move preview to gui
+		if window:
+			self.start_preview(fullscreen=False, window=window)
+		else:
+			self.start_preview()
+		keyboard.wait('esc')
+		self.stop_preview()
 #TODO: link cropping with bounding box UI input
