@@ -20,16 +20,15 @@ Binning = True
 
 #Default Values:
 Initial_Values = {
-    'brightness': 50,         # between 0 and 100
-    'contrast': 50,           # between -100 and 100
-    'saturation': 0,          # between -100 and 100
-    'sharpness': 0,           # between -100 and 100
-    'awb': 'off',             # 'off' or 'auto'
-    'red_gain': 1.9,          # 0.0 to 8.0
-    'blue_gain': 1.9,         # 0.0 to 8.0
-    'exposure_mode': 'night', # 'auto', 'night', 'verylong', etc. (***'off')
+    'brightness':    50,      # between 0 and 100
+    'contrast':      50,      # between -100 and 100
+    'saturation':    0,       # between -100 and 100
+    'sharpness':     0,       # between -100 and 100
+    'awb':           'off',   # 'off' or 'auto'
+    'red_gain':      1.9,     # 0.0 to 8.0
+    'blue_gain':     1.9,     # 0.0 to 8.0
+    'exposure_mode': 'fireworks', # 'auto', 'night', 'verylong', etc. (***'off')
     'exposure_time': 0,       # 0 is auto
-    'iso': 800,
     }
 
 # LED Timing:
