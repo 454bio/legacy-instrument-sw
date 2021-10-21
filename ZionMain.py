@@ -20,15 +20,15 @@ Binning = True
 
 #Default Values:
 Initial_Values = {
-    'brightness': 50,
-    'contrast': 50,
-    'saturation': 0,
-    'sharpness': 0,
-    'awb': 'off',
-    'red_gain': 1.9,
-    'blue_gain': 1.9,
-    'exposure_mode': 'night',
-    'exposure_time': 0,
+    'brightness': 50,         # between 0 and 100
+    'contrast': 50,           # between -100 and 100
+    'saturation': 0,          # between -100 and 100
+    'sharpness': 0,           # between -100 and 100
+    'awb': 'off',             # 'off' or 'auto'
+    'red_gain': 1.9,          # 0.0 to 8.0
+    'blue_gain': 1.9,         # 0.0 to 8.0
+    'exposure_mode': 'night', # 'auto', 'night', 'verylong', etc. (***'off')
+    'exposure_time': 0,       # 0 is auto
     'iso': 800,
     }
 
@@ -64,10 +64,6 @@ mySession = ZionSession(Session_Name, Spatial_Res, 10, Binning, Initial_Values, 
 # ~ myGPIO.turn_off_led('UV')
 
 #Start preview:
-width = 640
-xpos = 560
-ypos = 75
-#window was (30,60,854,640)
 mySession.InteractivePreview(window=(560,75,640,480))
 
 ########################################################################
