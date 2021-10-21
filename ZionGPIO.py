@@ -11,8 +11,8 @@ GpioPins = (
 	(None, None,  None  ), #No GPIO 1
 	(3,    False, 'I2C' ),
 	(5,    False, 'I2C' ),
-	(7,    True,  '1W'  ), #Default pin for 1-wire interface
-	(29,   True,  None  ),
+	(7,    True,  None  ), #Default pin for 1-wire interface
+	(29,   True,  '1W'  ), #Using this pin for 1-wire instead (GPIO5 referenced in boot config)
 	(31,   True,  None  ),
 	(26,   False, 'SPI' ), #used for TFT
 	(24,   False, 'SPI' ), #used for TFT
@@ -46,10 +46,10 @@ ORANGE = [26,20] #pins 37,38
 CAMERA_TRIGGER = 21 #pin 40
 
 #1 GPIO for heat control:
-TEMP_OUTPUT = 13
+TEMP_OUTPUT = 13 #pin 33
 
 # 1 GPIOs for temp sensing (to use 1-wire):
-TEMP_INPUT_1W = 5
+TEMP_INPUT_1W = 5 #pin 29
 
 #1 GPIO for UV safety switch:
 #TODO
@@ -83,13 +83,13 @@ class ZionGPIO(pigpio.pi):
 		for bit in Orange_gpios:
 			self.Orange_Reg |= (1<<bit)
 		
-		# Just assign a trigger here. There is no routine here because
 		# this pin is set directly by Camera object
 		self.Camera_Trigger = camera_trigger_gpio
-		
+        
 		self.Temp_Output_GPIO = temp_out_gpio
 		#TODO: implement heat control output
-				
+        
+        #No check for Temperature Input GPIO pin, this is done in boot config file (including GPIO choice)
 		base_dir = '/sys/bus/w1/devices/'
 		try:
 			self.Temp_1W_device = glob.glob(base_dir + '28*')[0]
@@ -97,20 +97,14 @@ class ZionGPIO(pigpio.pi):
 			print('Warning: 1-Wire interface not connected.')
 			self.Temp_1W_device = None 
 		
-		# Last thing is to ensure all leds are off:
+		# Last thing is to ensure all gpio outputs are off:
 		self.turn_off_led('all')
+        self.camera_trigger(False)
 		
-		
-		# ~ #TODO: led pwm stuff here, why doesnt clear bank work to turn it off?
-		# ~ super(ZionGPIO,self).set_PWM_frequency(19, 8000)
-		# ~ super(ZionGPIO,self).set_PWM_dutycycle(19, 255)
-		# ~ time.sleep(5)
-		# ~ super(ZionGPIO,self).set_PWM_dutycycle(19, 128)
-		# ~ time.sleep(5)
-		
-		# ~ # Last thing is to ensure all leds are off:
-		# ~ super(ZionGPIO,self).set_PWM_dutycycle(19, 0)
-		
+        
+    def camera_trigger(self, bEnable):
+        super(ZionGPIO, self).write(self.Camera_Trigger, bEnable)
+
 		
 	def turn_on_led(self, color):
 		if color=='all':
