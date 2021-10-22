@@ -173,23 +173,24 @@ class Handlers:
             self.parent.parent.Camera.set_exp_mode(newmode)
             self.parent.printToLog('New exposure mode: '+newmode)
             handle_id = get_handler_id(self.parent.expModeLockButton, "toggled")
+            self.parent.expModeLockButton.handler_block(handle_id)
             if active_idx==0:
-                self.parent.expModeLockButton.handler_block(handle_id)
                 self.parent.expModeLockButton.set_active(True)
-                self.parent.expModeLockButton.handler_unblock(handle_id)
                 self.enable_exp_params(False)
             else:
                 self.ExpModeLastChoice = active_idx
-                self.parent.expModeLockButton.handler_block(handle_id)
                 self.parent.expModeLockButton.set_active(False)
-                self.parent.expModeLockButton.handler_unblock(handle_id)
                 self.enable_exp_params(True)
+            self.parent.expModeLockButton.handler_unblock(handle_id)
                 
     def on_lock_exp_mode_button(self, button):
         if button.get_active():
+            self.parent.printToLog('Exposure settings locked')
             self.parent.expModeComboBox.set_active(0)
         else:
+            self.parent.printToLog('Exposure settings unlocked')
             self.parent.expModeComboBox.set_active(self.ExpModeLastChoice)
+
     def enable_exp_params(self, isOn):
         self.parent.isoButtonBox.set_sensitive(isOn)
         self.parent.expCompScale.set_sensitive(isOn)
@@ -223,20 +224,19 @@ class Handlers:
         newval = scale.get_value()
         self.parent.parent.Camera.set_red_gain(newval)
         self.parent.printToLog('WB Red Gain set to '+str(newval))
-            
+
     def on_blue_gain_scale_value_changed(self, scale):
         newval = scale.get_value()
         self.parent.parent.Camera.set_red_gain(newval)
         self.parent.printToLog('WB Blue Gain set to '+str(newval))
-        
+
     def on_capture_button_clicked(self, button):
         #TODO: get cropping from some self object here
         self.parent.parent.CaptureImage(group='P')
-        
-    def on_run_program_button_clicked(self,button):
-        self.parent.parent.RunProgram()
-        
 
+    def on_run_program_button_clicked(self,button):
+        self.parent.expModeComboBox.set_active(0)
+        self.parent.parent.RunProgram()
 
     def on_drawingarea1_draw(self,widget,cr):
         w = widget.get_allocated_width()
