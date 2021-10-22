@@ -102,7 +102,7 @@ class ZionSession():
 
     def CreateProgram(self, blue_timing, orange_timing, uv_timing, capture_times, repeatN=0):
         check_led_timings(blue_timing, orange_timing, uv_timing)
-        self.EventList, self.NumGrps = create_event_list(blue_timing, orange_timing, uv_timing, capture_times)
+        self.EventList = create_event_list(blue_timing, orange_timing, uv_timing, capture_times)
         self.RepeatN = repeatN
 
     def RunProgram(self):
@@ -111,9 +111,9 @@ class ZionSession():
             time.sleep(self.EventList[0][0]/1000.)
             for e in range(len(self.EventList)-1):
                 event = self.EventList[e]
-                performEvent(event, self.Camera, self.GPIO, repeat_idx=n*self.NumGrps)
+                performEvent(event, self.Camera, self.GPIO)
                 time.sleep((self.EventList[e+1][0]-event[0])/1000.)
-            performEvent(self.EventList[-1], self.Camera, self.GPIO, repeat_idx=n*self.NumGrps)
+            performEvent(self.EventList[-1], self.Camera, self.GPIO)
 
     def InteractivePreview(self, window):
         self.Camera.start_preview(fullscreen=False, window=window)

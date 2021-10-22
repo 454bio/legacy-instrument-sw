@@ -57,14 +57,11 @@ def create_event_list(LED_Blu_Timing, LED_Or_Timing, LED_UV_Timing, Camera_Captu
 	eventList += [(time_pair[1], 'led_off', 'UV', time_pair[1]) for time_pair in LED_UV_Timing]
 	for capture_event in Camera_Capture_Times:
 		eventList += [(capture_event[0], 'take_snapshot', capture_event[1], capture_event[2])]
-	#TODO: dependency on group number starting at 1 and incrementing by 1
-	# ~ numGrps = Camera_Capture_Times[-1][2]
-	numGrps = 0
 	#Now sort by time:
 	eventList.sort(key=itemgetter(0))
 	
 	# TODO: add refractory period?
-	return eventList, numGrps
+	return eventList
 		
 def performEvent(event, camera, gpio_ctrl, repeat_idx=0):
 	event_type=event[1]
