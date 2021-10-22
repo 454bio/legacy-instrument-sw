@@ -58,7 +58,8 @@ def create_event_list(LED_Blu_Timing, LED_Or_Timing, LED_UV_Timing, Camera_Captu
 	for capture_event in Camera_Capture_Times:
 		eventList += [(capture_event[0], 'take_snapshot', capture_event[1], capture_event[2])]
 	#TODO: dependency on group number starting at 1 and incrementing by 1
-	numGrps = Camera_Capture_Times[-1][2]
+	# ~ numGrps = Camera_Capture_Times[-1][2]
+	numGrps = 0
 	#Now sort by time:
 	eventList.sort(key=itemgetter(0))
 	
@@ -70,12 +71,12 @@ def performEvent(event, camera, gpio_ctrl, repeat_idx=0):
 	if event_type == 'take_snapshot':
 		if event[2]:
 			if event[3]:
-				camera.parent.CaptureImage(cropping=event[2], group=event[3]+repeat_idx, verbose=True)
+				camera.parent.CaptureImage(cropping=event[2], group=event[3], verbose=True)
 			else:
 				camera.parent.CaptureImage(cropping=event[2], verbose=True)
 		else:
 			if event[3]:
-				camera.parent.CaptureImage(group=event[3]+repeat_idx, verbose=True)
+				camera.parent.CaptureImage(group=event[3], verbose=True)
 			else:
 				camera.parent.CaptureImage(verbose=True)
 	elif event_type == 'led_off':

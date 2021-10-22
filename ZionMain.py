@@ -38,16 +38,16 @@ UV_Timing = [ (6000, 7000) ]
 
 # Camera Capture Timing:
 Camera_Captures = [
-(2500, None, 1),
-(4500, None, 1),
-(6000, None, 2),
+(2500, None, 'Z'),
+(4500, None, 'Z'),
+(6000, None, 'W'),
 (7500, None, 2),
 (8500, None, 3)
 ]
 #all 3 > blue > blue + orange > orange
 
 # Repeat whole process N number of (additional) times
-Repeat_N = 0
+Repeat_N = 1
 
 ########################################################################
 ############################# Main Script ##############################
