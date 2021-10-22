@@ -32,22 +32,22 @@ Initial_Values = {
     }
 
 # LED Timing:
-Blue_Timing = [ (120000, 126000) ]
-Orange_Timing = [ (120000, 122000), (124000,130000) ]
-UV_Timing = [ (1, 122000) ]
+Blue_Timing = [ (2000, 3000) ]
+Orange_Timing = [ (4000, 5000), (8000,9000) ]
+UV_Timing = [ (6000, 7000) ]
 
 # Camera Capture Timing:
 Camera_Captures = [
-(4000, None, 1),
+(2500, None, 1),
 (4500, None, 1),
 (6000, None, 2),
 (7500, None, 2),
-(8000, None, 3)
+(8500, None, 3)
 ]
 #all 3 > blue > blue + orange > orange
 
 # Repeat whole process N number of (additional) times
-Repeat_N = 2
+Repeat_N = 0
 
 ########################################################################
 ############################# Main Script ##############################

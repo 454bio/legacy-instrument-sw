@@ -58,8 +58,10 @@ class ZionGPIO(pigpio.pi):
 	
 	#TODO: add UV off command to appropriate error handles?
 	
-	def __init__(self, UV_gpios=UV, Blue_gpios=BLUE, Orange_gpios=ORANGE, temp_out_gpio=TEMP_OUTPUT, temp_in_gpio=TEMP_INPUT_1W, camera_trigger_gpio=CAMERA_TRIGGER):
+	def __init__(self, UV_gpios=UV, Blue_gpios=BLUE, Orange_gpios=ORANGE, temp_out_gpio=TEMP_OUTPUT, temp_in_gpio=TEMP_INPUT_1W, camera_trigger_gpio=CAMERA_TRIGGER, parent=None):
 		super(ZionGPIO, self).__init__()
+		
+		self.parent=parent
 
 		# Check that GPIO settings are valid:
 		#TODO: may need adjustment for temperature output (eg if it takes more than one pin)
@@ -103,34 +105,50 @@ class ZionGPIO(pigpio.pi):
 	def camera_trigger(self, bEnable):
 		super(ZionGPIO, self).write(self.Camera_Trigger, bEnable)
 
-	def turn_on_led(self, color):
+	def turn_on_led(self, color, verbose=False):
 		if color=='all':
 			print('\nTurning all LEDs on')
+			if verbose:
+				self.parent.gui.printToLog('Turning all LEDs on')
 			super(ZionGPIO,self).set_bank_1( self.UV_Reg | self.Blue_Reg | self.Orange_Reg )
 		elif color=='UV':
 			print('\nTurning UV on')
+			if verbose:
+				self.parent.gui.printToLog('Turning UV on')
 			super(ZionGPIO,self).set_bank_1( self.UV_Reg )
 		elif color == 'Blue':
 			print('\nTurning Blue on')
+			if verbose:
+				self.parent.gui.printToLog('Turning Blue on')
 			super(ZionGPIO,self).set_bank_1( self.Blue_Reg )	
 		elif color == 'Orange':
 			print('\nTurning Orange on')
+			if verbose:
+				self.parent.gui.printToLog('Turning Orange on')
 			super(ZionGPIO,self).set_bank_1( self.Orange_Reg )
 		else:
 			raise ValueError('Invalid color choice!')
 
-	def turn_off_led(self, color):
+	def turn_off_led(self, color, verbose=False):
 		if color=='all':
 			print('\nTurning all LEDs off')
+			if verbose:
+				self.parent.gui.printToLog('Turning all LEDs off')
 			super(ZionGPIO,self).clear_bank_1( self.UV_Reg | self.Blue_Reg | self.Orange_Reg )
 		elif color=='UV':
 			print('\nTurning UV off')
+			if verbose:
+				self.parent.gui.printToLog('Turning UV off')
 			super(ZionGPIO,self).clear_bank_1( self.UV_Reg )
 		elif color == 'Blue':
 			print('\nTurning Blue off')
+			if verbose:
+				self.parent.gui.printToLog('Turning Blue off')
 			super(ZionGPIO,self).clear_bank_1( self.Blue_Reg )	
 		elif color == 'Orange':
 			print('\nTurning Orange off')
+			if verbose:
+				self.parent.gui.printToLog('Turning Orange off')
 			super(ZionGPIO,self).clear_bank_1( self.Orange_Reg )
 		else:
 			raise ValueError('Invalid color choice!')

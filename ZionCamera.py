@@ -33,14 +33,13 @@ class ZionCamera(PiCamera):
 		self.close()
 		print('\nCamera Closed')
 		
-	def capture(self, filename, cropping=(0,0,1,1)):
+	def capture(self, filename, cropping=(0,0,1,1), use_video_port=False):
 		self.zoom = cropping
-		# ~ fileToWrite = filename+'_'+str(self.CaptureCount).zfill(3)+'.jpg'
 		fileToWrite = filename+'.jpg'
 		print('\nWriting image to file '+fileToWrite)
 		if self.parent:
 			self.parent.GPIO.camera_trigger(True)
-		ret = super(ZionCamera,self).capture(fileToWrite)
+		ret = super(ZionCamera,self).capture(fileToWrite, use_video_port=use_video_port)
 		if self.parent:
 			self.parent.GPIO.camera_trigger(False)
 		self.zoom=(0,0,1,1)
