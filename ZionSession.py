@@ -92,6 +92,7 @@ class ZionSession():
         self.TimeOfLife = time.time()
         
     def CaptureImage(self, cropping=(0,0,1,1), group=None):
+        group = '' if group is None else group
         filename = os.path.join(self.Dir, str(group)+'_'+self.Name)
         self.CaptureCount += 1
         filename += '_'+str(self.CaptureCount).zfill(3)+'_'+str(round(1000*(time.time()-self.TimeOfLife)))
