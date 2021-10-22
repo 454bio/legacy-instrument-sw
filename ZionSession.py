@@ -7,7 +7,7 @@ from gi.repository import Gtk
 import keyboard
 from ZionCamera import ZionCamera
 from ZionGPIO import ZionGPIO
-from ZionEvents import check_led_timings, create_event_list, performEventList
+from ZionEvents import check_led_timings, create_event_list, performEvent
 from ZionGtk import ZionGUI
 
 # ~ class Parameter():
@@ -80,7 +80,7 @@ class ZionSession():
         print('Creating directory '+str(self.Dir))
         os.mkdir(self.Dir)
         
-        self.GPIO = ZionGPIO()
+        self.GPIO = ZionGPIO(parent=self)
         
         self.Camera = ZionCamera(Spatial_Res, Frame_Rate, Binning, Initial_Values, parent=self)
         self.CaptureCount = 0
@@ -91,11 +91,13 @@ class ZionSession():
         
         self.TimeOfLife = time.time()
         
-    def CaptureImage(self, cropping=(0,0,1,1), group=None):
+    def CaptureImage(self, cropping=(0,0,1,1), group=None, verbose=False):
         group = '' if group is None else group
         filename = os.path.join(self.Dir, str(group)+'_'+self.Name)
         self.CaptureCount += 1
         filename += '_'+str(self.CaptureCount).zfill(3)+'_'+str(round(1000*(time.time()-self.TimeOfLife)))
+        if verbose:
+            self.gui.printToLog('Writing image to file '+filename+'.jpg')
         return self.Camera.capture(filename, cropping=cropping)
 
     def CreateProgram(self, blue_timing, orange_timing, uv_timing, capture_times, repeatN=0):
@@ -103,9 +105,15 @@ class ZionSession():
         self.EventList, self.NumGrps = create_event_list(blue_timing, orange_timing, uv_timing, capture_times)
         self.RepeatN = repeatN
 
-    #TODO: adjust scope for this routine
     def RunProgram(self):
-        performEventList(self.EventList, self.Camera, self.GPIO, Repeat_N=self.RepeatN, baseFilename=(self.Dir, self.Name), baseTime=self.TimeOfLife, numGrps=self.NumGrps)
+        self.TimeOfLife = time.time()
+        for n in range(self.RepeatN+1):
+            time.sleep(self.EventList[0][0]/1000.)
+            for e in range(len(self.EventList)-1):
+                event = self.EventList[e]
+                performEvent(event, self.Camera, self.GPIO, repeat_idx=n*self.NumGrps)
+                time.sleep((self.EventList[e+1][0]-event[0])/1000.)
+            performEvent(self.EventList[-1], self.Camera, self.GPIO, repeat_idx=n*self.NumGrps)
 
     def InteractivePreview(self, window):
         self.Camera.start_preview(fullscreen=False, window=window)
