@@ -1,38 +1,40 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from time import sleep
-from ZionGPIO import ZionGPIO
-from ZionCamera import ZionCamera
-from ZionEvents import check_led_timings, create_event_list, performEventList
 from ZionSession import ZionSession
-import gi
-gi.require_version('Gtk', '3.0')
-from gi.repository import Gtk
 
 ########################################################################
 ######################### User-Level Settings ##########################
 ######################################################################## 
 
-Session_Name = 'session_name'
+# Session Name: This will be the name of the folder.
+Session_Name = 'Test_Session'
 
 # Camera Properties:
-
-# These can't change while camera is open:
+    # These can't change while camera is open:
 Spatial_Res = (2028, 1520)
 Binning = True
-# Frame Rate now given as a range (0.1 fps min to 10 fps maximum)
-# TODO: expand fr range and do logic with binning option (ie diy auto sensor mode)
+    # w/  binning: 0.1 < framerate < 42
+    # w/o binning: 0.05 < framerate < 10 fps
+# Frame Rate now given in range 0.1-10
 
+#Default Values:
+Initial_Values = {
+    'brightness':    50,      # between 0 and 100
+    'contrast':      50,      # between -100 and 100
+    'saturation':    0,       # between -100 and 100
+    'sharpness':     0,       # between -100 and 100
+    'awb':           'off',   # 'off' or 'auto'
+    'red_gain':      1.9,     # 0.0 to 8.0
+    'blue_gain':     1.9,     # 0.0 to 8.0
+    'exposure_mode': 'night', # 'auto', 'night', 'verylong', etc. (***'off')
+    'exposure_time': 0,       # 0 is auto
+    }
 
 # LED Timing:
-# ~ Blue_Timing = [ (120000, 126000) ]
-# ~ Orange_Timing = [ (120000, 122000), (124000,130000) ]
-# ~ UV_Timing = [ (1, 122000) ]
-Blue_Timing = [ (5000, 6000) ]
-Orange_Timing = [ (5500, 6500) ]
-UV_Timing = [ (7000, 8000) ]
-# ~ UV_Timing =  [ (3000, 4000), (6000, 7000), (9000, 10000) ]
+Blue_Timing = [ (120000, 126000) ]
+Orange_Timing = [ (120000, 122000), (124000,130000) ]
+UV_Timing = [ (1, 122000) ]
 
 # Camera Capture Timing:
 Camera_Captures = [
@@ -47,15 +49,12 @@ Camera_Captures = [
 # Repeat whole process N number of (additional) times
 Repeat_N = 2
 
-# TODO: Overwrite
-# ~ overWrite=False
-
 ########################################################################
 ############################# Main Script ##############################
 ########################################################################
 
 # Initialization Block:
-mySession = ZionSession(Session_Name, Spatial_Res, 10, Binning, Blue_Timing, Orange_Timing, UV_Timing, Camera_Captures, Repeat_N)
+mySession = ZionSession(Session_Name, Spatial_Res, 10, Binning, Initial_Values, Blue_Timing, Orange_Timing, UV_Timing, Camera_Captures, Repeat_N)
 
 #Next line perform events defined above:
 # ~ mySession.RunProgram()
@@ -64,11 +63,7 @@ mySession = ZionSession(Session_Name, Spatial_Res, 10, Binning, Blue_Timing, Ora
 # ~ myGPIO.turn_off_led('UV')
 
 #Start preview:
-width = 640
-xpos = 560
-ypos = 75
-#window was (30,60,854,640)
-mySession.InteractivePreview(window=(xpos,ypos,width,round(width*3/4)))
+mySession.InteractivePreview(window=(560,75,640,480))
 
 ########################################################################
 ######################### Shutdown Script ##############################
