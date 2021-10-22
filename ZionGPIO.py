@@ -98,10 +98,10 @@ class ZionGPIO(pigpio.pi):
 		
 		# Last thing is to ensure all gpio outputs are off:
 		self.turn_off_led('all')
-		self.write_gpio(self.Camera_Trigger, False)
+		self.camera_trigger(False)
 		
-	def write_gpio(self, gpio, bEnable):
-		super(ZionGPIO, self).write(gpio, bEnable)
+	def camera_trigger(self, bEnable):
+		super(ZionGPIO, self).write(self.Camera_Trigger, bEnable)
 
 	def turn_on_led(self, color):
 		if color=='all':
