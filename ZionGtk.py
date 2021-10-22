@@ -111,7 +111,7 @@ class Handlers:
         if newVal.isdecimal():
             self.printToLog('Doing UV pulse of '+newVal+' milliseconds')
             newVal = int(newVal)
-       		#TODO: use different timer (from gtk?)
+            #TODO: use different timer (from gtk?)
             self.parent.parent.GPIO.send_uv_pulse(newVal)
         else:
             self.printToLog('Pulse time should be an integer number of milliseconds!')
@@ -175,7 +175,6 @@ class Handlers:
         active_idx = combo.get_active()
         if not active_idx==-1:
             newmode = self.parent.expModeComboBox.get_active_text()
-            # ~ self.parent.parent.Camera.exposure_mode = newmode
             self.parent.parent.Camera.set_exp_mode(newmode)
             self.printToLog('New exposure mode: '+newmode)
             handle_id = get_handler_id(self.parent.expModeLockButton, "toggled")
