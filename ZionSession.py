@@ -10,17 +10,6 @@ from ZionGPIO import ZionGPIO
 from ZionEvents import check_led_timings, create_event_list, performEventList
 from ZionGtk import ZionGUI
 
-# ~ #Default values:
-# ~ brightness = 50
-# ~ contrast = 50
-# ~ saturation = 100
-# ~ sharpness = 0
-# ~ red_gain = 1.9
-# ~ blue_gain = 1.9
-# ~ exposure_mode = 'night'
-# ~ metering_mode = 'average'
-
-
 # ~ class Parameter():
     # ~ def __init__(self, initValue, name=None):
         # ~ if name is not None:
@@ -64,13 +53,6 @@ from ZionGtk import ZionGUI
         # ~ else:
             # ~ return False
 
-# ~ brightness = 50
-# ~ contrast = 50
-# ~ saturation = 100
-# ~ sharpness = 0
-# ~ red_gain = 1.9
-# ~ blue_gain = 1.9
-
 # ~ class ParameterSet():
     # ~ def __init__(self, Initial_Values):
         # ~ self = {'brightness': NumericParameter(50,0,100),
@@ -90,25 +72,31 @@ class ZionSession():
 
     def __init__(self, session_name, Spatial_Res, Frame_Rate, Binning, Initial_Values, Blue_Timing, Orange_Timing, UV_Timing, Camera_Captures, RepeatN=0, overwrite=False):
 
-        currName = session_name
-        currSuffix = 0
-        while os.path.exists('./'+currName):
+        self.Name=session_name
+        currSuffix = 1
+        while os.path.exists(session_name+"_{:02}".format(currSuffix)):
             currSuffix+=1
-            currName += '_'+str(currSuffix).zfill(3)
-        self.Name = currName
-        os.mkdir('./'+self.Name)
-        self.Dir = './'+self.Name
-        
+        self.Dir = session_name+"_{:02}".format(currSuffix)
+        print('Creating directory '+str(self.Dir))
+        os.mkdir(self.Dir)
         
         self.GPIO = ZionGPIO()
         
         self.Camera = ZionCamera(Spatial_Res, Frame_Rate, Binning, Initial_Values, parent=self)
+        self.CaptureCount = 0
+
         self.gui = ZionGUI(Initial_Values, self)
         
         self.CreateProgram(Blue_Timing, Orange_Timing, UV_Timing, Camera_Captures, RepeatN)
         
         self.TimeOfLife = time.time()
         
+    def CaptureImage(self, cropping=(0,0,1,1), group=None):
+        filename = os.path.join(self.Dir, str(group)+'_'+self.Name)
+        self.CaptureCount += 1
+        filename += '_'+str(self.CaptureCount).zfill(3)+'_'+str(round(1000*(time.time()-self.TimeOfLife)))
+        return self.Camera.capture(filename, cropping=cropping)
+
     def CreateProgram(self, blue_timing, orange_timing, uv_timing, capture_times, repeatN=0):
         check_led_timings(blue_timing, orange_timing, uv_timing)
         self.EventList, self.NumGrps = create_event_list(blue_timing, orange_timing, uv_timing, capture_times)
@@ -118,9 +106,7 @@ class ZionSession():
     def RunProgram(self):
         performEventList(self.EventList, self.Camera, self.GPIO, Repeat_N=self.RepeatN, baseFilename=(self.Dir, self.Name), baseTime=self.TimeOfLife, numGrps=self.NumGrps)
 
-	#TODO: move interactive preview here:
     def InteractivePreview(self, window):
-		# ~ self.Camera.interactive_preview(baseFilename=(self.Dir, self.Name), window=window, baseTime=self.TimeOfLife)
         self.Camera.start_preview(fullscreen=False, window=window)
         Gtk.main()
         self.Camera.stop_preview()

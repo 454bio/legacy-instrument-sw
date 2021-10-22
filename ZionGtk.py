@@ -223,7 +223,7 @@ class Handlers:
                 handle_id_blue = get_handler_id(self.parent.blueGainScale, "value-changed")
                 self.parent.blueGainScale.handler_block(handle_id_blue)
                 self.parent.blueGainScale.set_value(on_now[2])
-                self.parent.redGainScale.handler_unblock(handle_id_blue)
+                self.parent.blueGainScale.handler_unblock(handle_id_blue)
 
     def on_red_gain_scale_value_changed(self, scale):
         newval = scale.get_value()
@@ -236,8 +236,9 @@ class Handlers:
         self.printToLog('WB Blue Gain set to '+str(newval))
         
     def on_capture_button_clicked(self, button):
-        #TODO:fix capture file naming here
-        self.parent.parent.Camera.capture(('','test_pic'), cropping=(0,0,1,1), baseTime=0, group='P')              
+        #TODO: get cropping from some self object here
+        self.parent.parent.CaptureImage(group='P')
+        
 
 
     def on_drawingarea1_draw(self,widget,cr):

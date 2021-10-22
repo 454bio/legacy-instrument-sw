@@ -26,8 +26,6 @@ class ZionCamera(PiCamera):
 		self.exposure_mode = initial_values['exposure_mode']
 		self.exposure_time = initial_values['exposure_time']
 
-		self.BaseFilename = None
-		self.file_idx = 0 #TODO: move to session
 		print('\nCamera Ready')
 
 	def quit(self):
@@ -35,12 +33,10 @@ class ZionCamera(PiCamera):
 		self.close()
 		print('\nCamera Closed')
 		
-	def capture(self, filename, cropping=(0,0,1,1), baseTime=0, group=None):
+	def capture(self, filename, cropping=(0,0,1,1)):
 		self.zoom = cropping
-		fileTimestamp = round(1000*(time.time()-baseTime))
-		group = str(group) if group else ''
-		fileToWrite = os.path.join(filename[0], group+'_'+filename[1]+'_'+str(fileTimestamp)+'.jpg')
-		# ~ group+'_'+filename+'_'+str(self.file_idx)+'_'+str(fileTimestamp)+'.jpg' if useIndex else filename+'.jpg'
+		# ~ fileToWrite = filename+'_'+str(self.CaptureCount).zfill(3)+'.jpg'
+		fileToWrite = filename+'.jpg'
 		print('\nWriting image to file '+fileToWrite)
 		if self.parent:
 			self.parent.GPIO.camera_trigger(True)
@@ -48,7 +44,6 @@ class ZionCamera(PiCamera):
 		if self.parent:
 			self.parent.GPIO.camera_trigger(False)
 		self.zoom=(0,0,1,1)
-		self.file_idx += 1
 		return ret
 
 	def set_image_denoising(self, bOn):
@@ -117,6 +112,5 @@ class ZionCamera(PiCamera):
 		awb_gains = self.awb_gains
 		self.awb_gains = (awb_gains[0], val)
 		print('\nSetting AWB blue gain to '+str(val))
-
 
 #TODO: link cropping with bounding box UI input
