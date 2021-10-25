@@ -97,7 +97,7 @@
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
                                 <property name="receives_default">False</property>
-                                <property name="active">True</property>
+                                <property name="active">False</property>
                                 <property name="draw_indicator">True</property>
                                 <signal name="toggled" handler="on_image_denoise_button" swapped="no"/>
                               </object>

@@ -70,7 +70,7 @@ from ZionGtk import ZionGUI
 
 class ZionSession():
 
-    def __init__(self, session_name, Spatial_Res, Frame_Rate, Binning, Initial_Values, Blue_Timing, Orange_Timing, UV_Timing, Camera_Captures, RepeatN=0, overwrite=False):
+    def __init__(self, session_name, Frame_Rate, Binning, Initial_Values, Blue_Timing, Orange_Timing, UV_Timing, Camera_Captures, RepeatN=0, overwrite=False):
 
         self.Name=session_name
         currSuffix = 1
@@ -82,7 +82,7 @@ class ZionSession():
         
         self.GPIO = ZionGPIO(parent=self)
         
-        self.Camera = ZionCamera(Spatial_Res, Frame_Rate, Binning, Initial_Values, parent=self)
+        self.Camera = ZionCamera(Frame_Rate, Binning, Initial_Values, parent=self)
         self.CaptureCount = 0
 
         self.gui = ZionGUI(Initial_Values, self)

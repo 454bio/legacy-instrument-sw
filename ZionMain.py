@@ -12,8 +12,7 @@ Session_Name = 'Test_Session'
 
 # Camera Properties:
     # These can't change while camera is open:
-Spatial_Res = (2028, 1520)
-Binning = True
+Binning = False
     # w/  binning: 0.1 < framerate < 42
     # w/o binning: 0.05 < framerate < 10 fps
 # Frame Rate now given in range 0.1-10
@@ -54,7 +53,7 @@ Repeat_N = 1
 ########################################################################
 
 # Initialization Block:
-mySession = ZionSession(Session_Name, Spatial_Res, 10, Binning, Initial_Values, Blue_Timing, Orange_Timing, UV_Timing, Camera_Captures, Repeat_N)
+mySession = ZionSession(Session_Name, 10, Binning, Initial_Values, Blue_Timing, Orange_Timing, UV_Timing, Camera_Captures, Repeat_N)
 
 #Next line perform events defined above:
 # ~ mySession.RunProgram()

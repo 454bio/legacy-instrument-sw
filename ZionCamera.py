@@ -9,14 +9,24 @@ import os
 
 class ZionCamera(PiCamera):
 
-	def __init__(self, resolution, framerate, binning, initial_values, parent=None):
+	def __init__(self, framerate, binning, initial_values, parent=None):
 
 		print('\nCamera Initializing...')
-		sensMode = 2 if binning else 3 #TODO: check framerate range too here
-		super(ZionCamera,self).__init__(resolution=resolution, framerate=framerate, sensor_mode=sensMode)
+		
+		if binning:
+			resolution = (2028, 1520)
+			sensor_mode = 2
+			framerate_range = (0.1, 42)
+		else:
+			resolution = (4056, 3040)
+			sensor_mode = 3
+			framerate_range = (0.05, 10)
+		
+		super(ZionCamera,self).__init__(resolution=resolution, framerate=framerate, sensor_mode=sensor_mode)
 		self.parent = parent
-		self.framerate_range = (0.1, 10)
-
+		self.framerate_range = framerate_range
+		
+		self.image_denoise = False
 		self.brightness = initial_values['brightness']
 		self.contrast = initial_values['contrast']
 		self.saturation = initial_values['saturation']
@@ -35,11 +45,12 @@ class ZionCamera(PiCamera):
 		
 	def capture(self, filename, cropping=(0,0,1,1), use_video_port=False):
 		self.zoom = cropping
-		fileToWrite = filename+'.jpg'
+		# ~ fileToWrite = filename+'.jpg'
+		fileToWrite = filename+'.raw'
 		print('\nWriting image to file '+fileToWrite)
 		if self.parent:
 			self.parent.GPIO.camera_trigger(True)
-		ret = super(ZionCamera,self).capture(fileToWrite, use_video_port=use_video_port)
+		ret = super(ZionCamera,self).capture(fileToWrite, use_video_port=use_video_port, format='bgr', bayer=False)
 		if self.parent:
 			self.parent.GPIO.camera_trigger(False)
 		self.zoom=(0,0,1,1)
