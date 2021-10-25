@@ -45,12 +45,12 @@ class ZionCamera(PiCamera):
 		
 	def capture(self, filename, cropping=(0,0,1,1), use_video_port=False):
 		self.zoom = cropping
-		# ~ fileToWrite = filename+'.jpg'
-		fileToWrite = filename+'.raw'
+		fileToWrite = filename+'.jpg'
+		# ~ fileToWrite = filename+'.raw'
 		print('\nWriting image to file '+fileToWrite)
 		if self.parent:
 			self.parent.GPIO.camera_trigger(True)
-		ret = super(ZionCamera,self).capture(fileToWrite, use_video_port=use_video_port, format='bgr', bayer=False)
+		ret = super(ZionCamera,self).capture(fileToWrite, use_video_port=use_video_port)
 		if self.parent:
 			self.parent.GPIO.camera_trigger(False)
 		self.zoom=(0,0,1,1)
