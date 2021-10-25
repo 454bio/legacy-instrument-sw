@@ -1,8 +1,10 @@
 from picamera import PiCamera, PiRenderer
+from picamera.array import PiRGBArray
 import pigpio
 import keyboard
 # ~ from operator import itemgetter
-from PIL import Image as PIL_Image
+from io import BytesIO
+from PIL import Image
 from time import sleep
 import time
 import os
@@ -39,11 +41,21 @@ class ZionCamera(PiCamera):
 		print('\nWriting image to file '+fileToWrite)
 		if self.parent:
 			self.parent.GPIO.camera_trigger(True)
-		ret = super(ZionCamera,self).capture(fileToWrite, use_video_port=use_video_port)
+		ret = super(ZionCamera,self).capture(fileToWrite, use_video_port=use_video_port, bayer=True)
 		if self.parent:
 			self.parent.GPIO.camera_trigger(False)
 		self.zoom=(0,0,1,1)
 		return ret
+
+	def stream_preview(self):
+		stream = BytesIO()
+		#quality is 1 to 40, 20-25 recommended
+		super(ZionCamera, self).start_recording(stream, format='h264', quality=23)
+		super(ZionCamera, self).wait_recording(15)
+		super(ZionCamera, self).stop_recording()
+		stream.seek(0)
+		image = Image.open(stream)
+		#use capture_sequence()
 
 	def set_image_denoising(self, bOn):
 		if not bOn:
