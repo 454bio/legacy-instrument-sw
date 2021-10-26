@@ -42,24 +42,47 @@ class ZionCamera(PiCamera):
 		time.sleep(2)
 		
 		
-		stream = BytesIO()
-		super(ZionCamera,self).capture(stream, format='jpeg', bayer=True)
-		data = stream.getvalue()[-18711040:]
-		data = data[32768:]
-		data = np.fromstring(data, dtype=np.uint8)
-		data = data.reshape((3056, 6112))[:3040, :6084].astype(np.uint16)
-		img = np.zeros((3040, 4056), dtype=np.uint16)
-		for byte in range(2):
-			img[:,byte::2] = (data[:,byte::3] << 4) | ( (data[:,2::3]>>(byte*4)) & 0b1111)
-		data = img
-		self.center_pixel_value = data[1520, 2048]
-
+		# ~ stream = BytesIO()
+		# ~ super(ZionCamera,self).capture(stream, format='jpeg', bayer=True)
+		# ~ data = stream.getvalue()[-18711040:]
+		# ~ data = data[32768:]
+		# ~ data = np.fromstring(data, dtype=np.uint8)
+		# ~ data = data.reshape((3056, 6112))[:3040, :6084].astype(np.uint16)
+		# ~ img = np.zeros((3040, 4056), dtype=np.uint16)
+		# ~ for byte in range(2):
+			# ~ img[:,byte::2] = (data[:,byte::3] << 4) | ( (data[:,2::3]>>(byte*4)) & 0b1111)
+		# ~ data = img
+		# ~ self.center_pixel_value = data[1520, 2048]
+	
 		print('\nCamera Ready')
 
 	def quit(self):
 		self.stop_preview()
 		self.close()
 		print('\nCamera Closed')
+		
+	def get_all_params(self):
+		params_list = {
+			
+			'brightness':    self.brightness,
+			'contrast':      self.contrast,
+			'saturation':    self.saturation,
+			'sharpness':     self.sharpness,
+			'awb':           self.awb_mode,
+			'red_gain':      float(self.awb_gains[0]),
+			'blue_gain':     float(self.awb_gains[1]),
+			'exposure_mode': self.exposure_mode,
+			'exposure_time': self.exposure_speed,
+			'shutter_time':  self.shutter_speed,
+			
+			'exposure_comp': self.exposure_compensation,
+			'ISO':			 self.iso,
+			'denoise':		 self.image_denoise,
+			
+			'a_gain':   	 float(self.analog_gain),
+			'd_gain':    	 float(self.digital_gain),    
+		}
+		return params_list
 		
 	def capture(self, filename, cropping=(0,0,1,1), use_video_port=False):
 		self.zoom = cropping
