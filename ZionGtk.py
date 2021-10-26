@@ -241,7 +241,7 @@ class Handlers:
         self.parent.expModeComboBox.set_active(0)
         comment = self.parent.commentBox.get_text()
         self.parent.parent.SaveParameterFile(comment, True)
-        # ~ self.parent.parent.RunProgram()
+        self.parent.parent.RunProgram()
 
     def on_drawingarea1_draw(self,widget,cr):
         w = widget.get_allocated_width()
