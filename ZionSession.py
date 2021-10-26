@@ -99,6 +99,18 @@ class ZionSession():
         if verbose:
             self.gui.printToLog('Writing image to file '+filename+'.jpg')
         return self.Camera.capture(filename, cropping=cropping)
+        
+    def SaveParameterFile(self, comment, bSession):
+        params = self.Camera.get_all_params()
+        params['comment'] = comment
+        if bSession:
+            filename = os.path.join(self.Dir, self.Name)
+        else:
+            filename = os.path.join(self.Dir, 'P_'+self.Name)		
+            filename += '_'+str(self.CaptureCount).zfill(3)+'_'+str(round(1000*(time.time()-self.TimeOfLife)))	
+        with open(filename+'.txt', 'w') as f:
+            for key in params.keys():
+                f.write(key + ': '+str(params[key])+'\n')
 
     def CreateProgram(self, blue_timing, orange_timing, uv_timing, capture_times, repeatN=0):
         check_led_timings(blue_timing, orange_timing, uv_timing)

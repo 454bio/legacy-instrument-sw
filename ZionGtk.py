@@ -233,11 +233,15 @@ class Handlers:
 
     def on_capture_button_clicked(self, button):
         #TODO: get cropping from some self object here
+        comment = self.parent.commentBox.get_text()
+        self.parent.parent.SaveParameterFile(comment, False)
         self.parent.parent.CaptureImage(group='P')
 
     def on_run_program_button_clicked(self,button):
         self.parent.expModeComboBox.set_active(0)
-        self.parent.parent.RunProgram()
+        comment = self.parent.commentBox.get_text()
+        self.parent.parent.SaveParameterFile(comment, True)
+        # ~ self.parent.parent.RunProgram()
 
     def on_drawingarea1_draw(self,widget,cr):
         w = widget.get_allocated_width()
@@ -317,6 +321,8 @@ class ZionGUI():
         self.logView = self.builder.get_object("textview_log")
         self.temperatureBuffer = self.builder.get_object("temperature_buffer")
         
+        self.commentBox = self.builder.get_object("comment_entry")
+        
         if initial_values['exposure_mode']=='off':
             self.expModeLockButton.set_active(True)
             self.isoButtonBox.set_sensitive(False)
@@ -334,7 +340,7 @@ class ZionGUI():
         
         self.builder.connect_signals(Handlers(self))
         
-        self.printToLog('Center Pixel Value = '+str(self.parent.Camera.center_pixel_value))
+        # ~ self.printToLog('Center Pixel Value = '+str(self.parent.Camera.center_pixel_value))
         
     def printToLog(self, text):
         self.logBuffer.insert_at_cursor(text+'\n')
