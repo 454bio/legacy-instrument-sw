@@ -334,6 +334,8 @@ class ZionGUI():
         
         self.builder.connect_signals(Handlers(self))
         
+        self.printToLog('Center Pixel Value = '+str(self.parent.Camera.center_pixel_value))
+        
     def printToLog(self, text):
         self.logBuffer.insert_at_cursor(text+'\n')
         mark = self.logBuffer.create_mark(None, self.logBuffer.get_end_iter(), False)
