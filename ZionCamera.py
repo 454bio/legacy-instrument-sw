@@ -2,6 +2,7 @@ from picamera import PiCamera, PiRenderer
 from picamera.array import PiRGBArray
 import pigpio
 import keyboard
+import numpy as np
 # ~ from operator import itemgetter
 from io import BytesIO
 from PIL import Image
@@ -37,6 +38,21 @@ class ZionCamera(PiCamera):
 		self.awb_gains = (initial_values['red_gain'], initial_values['blue_gain'])
 		self.exposure_mode = initial_values['exposure_mode']
 		self.exposure_time = initial_values['exposure_time']
+		
+		time.sleep(2)
+		
+		
+		stream = BytesIO()
+		super(ZionCamera,self).capture(stream, format='jpeg', bayer=True)
+		data = stream.getvalue()[-18711040:]
+		data = data[32768:]
+		data = np.fromstring(data, dtype=np.uint8)
+		data = data.reshape((3056, 6112))[:3040, :6084].astype(np.uint16)
+		img = np.zeros((3040, 4056), dtype=np.uint16)
+		for byte in range(2):
+			img[:,byte::2] = (data[:,byte::3] << 4) | ( (data[:,2::3]>>(byte*4)) & 0b1111)
+		data = img
+		self.center_pixel_value = data[1520, 2048]
 
 		print('\nCamera Ready')
 
