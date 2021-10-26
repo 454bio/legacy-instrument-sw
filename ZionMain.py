@@ -26,7 +26,7 @@ Initial_Values = {
     'awb':           'off',   # 'off' or 'auto'
     'red_gain':      1.9,     # 0.0 to 8.0
     'blue_gain':     1.9,     # 0.0 to 8.0
-    'exposure_mode': 'night', # 'auto', 'night', 'verylong', etc. (***'off')
+    'exposure_mode': 'off', # 'auto', 'night', 'verylong', etc. (***'off')
     'exposure_time': 0,       # 0 is auto
     }
 
