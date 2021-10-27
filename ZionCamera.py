@@ -29,6 +29,8 @@ class ZionCamera(PiCamera):
 		self.parent = parent
 		self.framerate_range = framerate_range
 		
+		self.vflip = True
+		
 		self.image_denoise = False
 		self.brightness = initial_values['brightness']
 		self.contrast = initial_values['contrast']
