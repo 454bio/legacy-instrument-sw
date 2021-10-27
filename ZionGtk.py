@@ -373,9 +373,12 @@ class Handlers:
             self.parent.redGainScale.handler_unblock(handler_id_2)
             self.parent.blueGainScale.handler_unblock(handler_id_3)
                 
-        elif response == Gtk.ResponseType.Cancel:
+        elif response == Gtk.ResponseType.CANCEL:
             # ~ print('cancel')
             self.parent.paramFileChooser.hide()
+            
+    def on_param_file_chooser_close(self, *args):
+        self.parent.paramFileChooser.hide()
 
     def on_drawingarea1_draw(self,widget,cr):
         w = widget.get_allocated_width()

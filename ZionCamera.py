@@ -3,7 +3,6 @@ from picamera.array import PiRGBArray
 import pigpio
 import keyboard
 import numpy as np
-# ~ from operator import itemgetter
 from io import BytesIO
 from PIL import Image
 from time import sleep
@@ -43,7 +42,9 @@ class ZionCamera(PiCamera):
 		
 		time.sleep(2)
 		
+		# TODO: check for zero for Jose
 		
+		# TODO: when getting bayer data, need to account for vflip we introduced
 		# ~ stream = BytesIO()
 		# ~ super(ZionCamera,self).capture(stream, format='jpeg', bayer=True)
 		# ~ data = stream.getvalue()[-18711040:]
