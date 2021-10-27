@@ -84,6 +84,35 @@ class ZionCamera(PiCamera):
 		}
 		return params_list
 		
+	def load_params(self, params):
+		for key in params.keys():
+			if key=='brightness':
+				self.brightness = params[key]
+			elif key=='contrast':
+				self.contrast = params[key]
+			elif key=='saturation':
+				self.saturation = params[key]
+			elif key=='sharpness':
+				self.sharpness = params[key]
+			elif key=='awb':
+				self.awb_mode = params[key]
+			elif key=='red_gain':
+				self.awb_gains =  (params[key], self.awb_gains[1])
+			elif key=='blue_gain':
+				self.awb_gains = (self.awb_gains[0], params[key])
+			elif key=='exposure_mode':
+				self.exposure_mode = params[key]
+			elif key=='shutter_time':
+				self.shutter_speed = params[key]
+			elif key=='ISO':
+				self.iso = params[key]
+			elif key=='exposure_comp':
+				self.exposure_compensation = params[key]
+			elif key=='denoise':
+				self.image_denoise = params[key]
+			else:
+				pass
+
 	def capture(self, filename, cropping=(0,0,1,1), use_video_port=False):
 		self.zoom = cropping
 		fileToWrite = filename+'.jpg'
