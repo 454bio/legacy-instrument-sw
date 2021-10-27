@@ -30,6 +30,69 @@
     <property name="page_increment">1</property>
   </object>
   <object class="GtkTextBuffer" id="exposure_time_buffer"/>
+  <object class="GtkFileChooserDialog" id="param_file_chooser_dialog">
+    <property name="can_focus">False</property>
+    <property name="window_position">center</property>
+    <property name="type_hint">dialog</property>
+    <property name="deletable">False</property>
+    <property name="create_folders">False</property>
+    <signal name="realize" handler="on_param_file_chooser_dialog_realize" swapped="no"/>
+    <child>
+      <placeholder/>
+    </child>
+    <child internal-child="vbox">
+      <object class="GtkBox">
+        <property name="visible">True</property>
+        <property name="can_focus">False</property>
+        <property name="orientation">vertical</property>
+        <property name="spacing">2</property>
+        <child internal-child="action_area">
+          <object class="GtkButtonBox">
+            <property name="can_focus">False</property>
+            <property name="layout_style">end</property>
+            <child>
+              <object class="GtkButton" id="param_file_chooser_cancel">
+                <property name="label" translatable="yes">Cancel</property>
+                <property name="visible">True</property>
+                <property name="can_focus">True</property>
+                <property name="can_default">True</property>
+                <property name="receives_default">True</property>
+              </object>
+              <packing>
+                <property name="expand">True</property>
+                <property name="fill">True</property>
+                <property name="position">0</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkButton" id="param_file_chooser_ok">
+                <property name="label" translatable="yes">OK</property>
+                <property name="visible">True</property>
+                <property name="can_focus">True</property>
+                <property name="can_default">True</property>
+                <property name="has_default">True</property>
+                <property name="receives_default">True</property>
+              </object>
+              <packing>
+                <property name="expand">True</property>
+                <property name="fill">True</property>
+                <property name="position">1</property>
+              </packing>
+            </child>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">False</property>
+            <property name="position">0</property>
+          </packing>
+        </child>
+      </object>
+    </child>
+    <action-widgets>
+      <action-widget response="-6">param_file_chooser_cancel</action-widget>
+      <action-widget response="-5">param_file_chooser_ok</action-widget>
+    </action-widgets>
+  </object>
   <object class="GtkAdjustment" id="red_gain_adjust">
     <property name="upper">8</property>
     <property name="value">1.8999999999999999</property>
@@ -1286,7 +1349,6 @@
                         <child>
                           <object class="GtkBox">
                             <property name="visible">True</property>
-                            <property name="sensitive">False</property>
                             <property name="can_focus">False</property>
                             <child>
                               <object class="GtkButton" id="save_params_button">
@@ -1307,6 +1369,7 @@
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
                                 <property name="receives_default">True</property>
+                                <signal name="clicked" handler="on_load_params_button" swapped="no"/>
                               </object>
                               <packing>
                                 <property name="expand">False</property>

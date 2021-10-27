@@ -111,6 +111,34 @@ class ZionSession():
         with open(filename+'.txt', 'w') as f:
             for key in params.keys():
                 f.write(key + ': '+str(params[key])+'\n')
+        return filename+'.txt'
+
+    def LoadParameterFile(self, filename):
+        params = dict()
+        with open(filename) as f:
+            for line in f:
+                linesplit = line.split(':')
+                parameter_key = linesplit[0]
+                parameter_value = linesplit[1][1:].strip()
+                if parameter_value[0]=='-':
+                    if parameter_value[1:].isdecimal():
+                        params[parameter_key] = int(parameter_value)
+                    else:
+                        try:
+                            params[parameter_key] = float(parameter_value)
+                        except ValueError:
+                            params[parameter_key] = parameter_value
+                else:
+                    if parameter_value.isdecimal():
+                        params[parameter_key] = int(parameter_value)
+                    else:
+                        try:
+                            params[parameter_key] = float(parameter_value)
+                        except ValueError:
+                        #therefore it must be a string:
+                            params[parameter_key] = parameter_value
+        self.Camera.load_params(params)
+        return params
 
     def CreateProgram(self, blue_timing, orange_timing, uv_timing, capture_times, repeatN=0):
         check_led_timings(blue_timing, orange_timing, uv_timing)
