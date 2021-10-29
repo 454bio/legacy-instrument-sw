@@ -58,32 +58,38 @@ class ZionGPIO(pigpio.pi):
 	
 	#TODO: add UV off command to appropriate error handles?
 	
-	def __init__(self, UV_gpios=UV, Blue_gpios=BLUE, Orange_gpios=ORANGE, temp_out_gpio=TEMP_OUTPUT, temp_in_gpio=TEMP_INPUT_1W, camera_trigger_gpio=CAMERA_TRIGGER, parent=None):
+	def __init__(self, pwm_freq, UV_gpios=UV, Blue_gpios=BLUE, Orange_gpios=ORANGE, temp_out_gpio=TEMP_OUTPUT, temp_in_gpio=TEMP_INPUT_1W, camera_trigger_gpio=CAMERA_TRIGGER, parent=None):
 		super(ZionGPIO, self).__init__()
 		
 		self.parent=parent
+		self.frequency = pwm_freq
 
 		# Check that GPIO settings are valid:
 		#TODO: may need adjustment for temperature output (eg if it takes more than one pin)
 		for g in UV_gpios+Blue_gpios+Orange_gpios+[temp_out_gpio, camera_trigger_gpio]:
 			if GpioPins[g][1]:
-				super(ZionGPIO, self).set_mode(g, pigpio.OUTPUT)
+				super(ZionGPIO,self).set_mode(g, pigpio.OUTPUT)
+				if g in UV_gpios+Blue_gpios+Orange_gpios:
+					# ~ super(ZionGPIO,self).set_pull_up_down(g, pigpio.PUD_DOWN)
+					super(ZionGPIP,self).set_PWM_range(g, 100)
 			else:
 				raise ValueError('Chosen GPIO is not enabled!')
 
-		#Now set up register methods of setting/clearing led outputs:		
 		self.UV_GPIOs = UV_gpios
 		self.Blue_GPIOs = Blue_gpios
 		self.Orange_GPIOs = Orange_gpios
-		self.UV_Reg = 0
-		for bit in UV_gpios:
-			self.UV_Reg |= (1<<bit)
-		self.Blue_Reg = 0
-		for bit in Blue_gpios:
-			self.Blue_Reg |= (1<<bit)
-		self.Orange_Reg = 0
-		for bit in Orange_gpios:
-			self.Orange_Reg |= (1<<bit)
+		
+		#Now set up register methods of setting/clearing led outputs:		
+		# (not used for pwm)
+		# ~ self.UV_Reg = 0
+		# ~ for bit in UV_gpios:
+			# ~ self.UV_Reg |= (1<<bit)
+		# ~ self.Blue_Reg = 0
+		# ~ for bit in Blue_gpios:
+			# ~ self.Blue_Reg |= (1<<bit)
+		# ~ self.Orange_Reg = 0
+		# ~ for bit in Orange_gpios:
+			# ~ self.Orange_Reg |= (1<<bit)
 		
 		self.Camera_Trigger = camera_trigger_gpio
         
@@ -105,54 +111,6 @@ class ZionGPIO(pigpio.pi):
 	def camera_trigger(self, bEnable):
 		super(ZionGPIO, self).write(self.Camera_Trigger, bEnable)
 
-	def turn_on_led(self, color, verbose=False):
-		if color=='all':
-			print('\nTurning all LEDs on')
-			if verbose:
-				self.parent.gui.printToLog('Turning all LEDs on')
-			super(ZionGPIO,self).set_bank_1( self.UV_Reg | self.Blue_Reg | self.Orange_Reg )
-		elif color=='UV':
-			print('\nTurning UV on')
-			if verbose:
-				self.parent.gui.printToLog('Turning UV on')
-			super(ZionGPIO,self).set_bank_1( self.UV_Reg )
-		elif color == 'Blue':
-			print('\nTurning Blue on')
-			if verbose:
-				self.parent.gui.printToLog('Turning Blue on')
-			super(ZionGPIO,self).set_bank_1( self.Blue_Reg )	
-		elif color == 'Orange':
-			print('\nTurning Orange on')
-			if verbose:
-				self.parent.gui.printToLog('Turning Orange on')
-			super(ZionGPIO,self).set_bank_1( self.Orange_Reg )
-		else:
-			raise ValueError('Invalid color choice!')
-
-	def turn_off_led(self, color, verbose=False):
-		if color=='all':
-			print('\nTurning all LEDs off')
-			if verbose:
-				self.parent.gui.printToLog('Turning all LEDs off')
-			super(ZionGPIO,self).clear_bank_1( self.UV_Reg | self.Blue_Reg | self.Orange_Reg )
-		elif color=='UV':
-			print('\nTurning UV off')
-			if verbose:
-				self.parent.gui.printToLog('Turning UV off')
-			super(ZionGPIO,self).clear_bank_1( self.UV_Reg )
-		elif color == 'Blue':
-			print('\nTurning Blue off')
-			if verbose:
-				self.parent.gui.printToLog('Turning Blue off')
-			super(ZionGPIO,self).clear_bank_1( self.Blue_Reg )	
-		elif color == 'Orange':
-			print('\nTurning Orange off')
-			if verbose:
-				self.parent.gui.printToLog('Turning Orange off')
-			super(ZionGPIO,self).clear_bank_1( self.Orange_Reg )
-		else:
-			raise ValueError('Invalid color choice!')
-	
 	def read_temperature(self):
 		if self.Temp_1W_device:
 			f = open(self.Temp_1W_device+'/w1_slave', 'r')
@@ -166,11 +124,19 @@ class ZionGPIO(pigpio.pi):
 				print('\nTemperature = '+str(temp_c)+' C')
 			return temp_c
 		else:
-			print('No digital thermometer connected')
+			# ~ print('No digital thermometer connected')
 			return None
 			
+	def set_pulse_start_in_fraction(self, gpio, start):
+		
+		
+	def turn_on_led(self, color, verbose=False):
+
+	def turn_off_led(self, color, verbose=False):
+
 	def send_uv_pulse(self, pulsetime):
 		self.turn_on_led('UV')
 		#TODO: use different timer (from gtk?)
 		time.sleep(float(pulsetime/1000.))
 		self.turn_off_led('UV')
+
