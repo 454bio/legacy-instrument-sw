@@ -31,6 +31,7 @@ Initial_Values = {
     }
 
 # LED Timing:
+PWM_Frequency = 1000 #{8k, 4k, 2k, 1.6k, 1k, 800, 500, 400, 320, 250, 200, 160, 100, 80, 50, 40, 20, 10}
 Blue_Timing = [ (2000, 3000) ]
 Orange_Timing = [ (4000, 5000), (8000,9000) ]
 UV_Timing = [ (6000, 7000) ]
@@ -53,7 +54,7 @@ Repeat_N = 1
 ########################################################################
 
 # Initialization Block:
-mySession = ZionSession(Session_Name, 10, Binning, Initial_Values, Blue_Timing, Orange_Timing, UV_Timing, Camera_Captures, Repeat_N)
+mySession = ZionSession(Session_Name, 10, Binning, Initial_Values, PWM_Frequency, Blue_Timing, Orange_Timing, UV_Timing, Camera_Captures, Repeat_N)
 
 #Next line perform events defined above:
 # ~ mySession.RunProgram()
