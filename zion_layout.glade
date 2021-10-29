@@ -1199,7 +1199,7 @@
               </packing>
             </child>
             <child>
-              <object class="GtkGrid">
+              <object class="GtkGrid" id="event_list_grid">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
                 <child>
@@ -1287,7 +1287,7 @@
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkComboBoxText">
+                  <object class="GtkComboBoxText" id="event_list_event0_type">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
                     <property name="active">0</property>
@@ -1296,6 +1296,7 @@
                       <item translatable="yes">LED</item>
                       <item translatable="yes">Capture</item>
                     </items>
+                    <signal name="changed" handler="on_event_list_event0_type_changed" swapped="no"/>
                   </object>
                   <packing>
                     <property name="left_attach">1</property>
