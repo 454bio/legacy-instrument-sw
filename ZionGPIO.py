@@ -56,9 +56,9 @@ TEMP_INPUT_1W = 5 #pin 29
 
 class ZionGPIO(pigpio.pi):
 	
-	UV = 0
-	BLUE = 1
-	ORANGE = 2
+	UV_idx = 0
+	BLUE_idx = 1
+	ORANGE_idx = 2
 	
 	#TODO: add UV off command to appropriate error handles?
 	
@@ -71,12 +71,15 @@ class ZionGPIO(pigpio.pi):
 
 		# Check that GPIO settings are valid:
 		#TODO: may need adjustment for temperature output (eg if it takes more than one pin)
+		print(UV_gpios)
+		print(Blue_gpios)
+		print(Orange_gpios)
 		for g in UV_gpios+Blue_gpios+Orange_gpios+[temp_out_gpio, camera_trigger_gpio]:
 			if GpioPins[g][1]:
 				super(ZionGPIO,self).set_mode(g, pigpio.OUTPUT)
 				if g in UV_gpios+Blue_gpios+Orange_gpios:
 					# ~ super(ZionGPIO,self).set_pull_up_down(g, pigpio.PUD_DOWN)
-					super(ZionGPIP,self).set_PWM_range(g, 100)
+					super(ZionGPIO,self).set_PWM_range(g, 100)
 			else:
 				raise ValueError('Chosen GPIO is not enabled!')
 		self.gpioList = [UV_gpios, Blue_gpios, Orange_gpios] #Order is important
@@ -111,7 +114,8 @@ class ZionGPIO(pigpio.pi):
 			self.Temp_1W_device = None 
 		
 		# Last thing is to ensure all gpio outputs are off:
-		self.turn_off_led('all')
+		#TODO:
+		# ~ self.turn_off_led('all')
 		self.camera_trigger(False)
 		
 	def camera_trigger(self, bEnable):
@@ -187,20 +191,30 @@ class ZionGPIO(pigpio.pi):
 
 	def enable_led(self, color, amt, verbose=False):
 		amt = float(amt)
-		if amt<0 or amt>1:
-			raise ValueError("Duty Cycle must be between 0 and 1!")
+		# ~ if amt<0 or amt>1:
+			# ~ raise ValueError("Duty Cycle must be between 0 and 1!")
 		if color=='UV':
-			self.set_duty_cycle(ZionGPIO.UV, amt)
+			self.set_duty_cycle(ZionGPIO.UV_idx, amt)
+			print('\nSetting UV to '+str(amt))
 			if verbose:
-				print
+				self.parent.gui.printToLog('UV set to '+str(amt))
 		if color=='Blue':
-			self.set_duty_cycle(ZionGPIO.Blue, amt)
+			self.set_duty_cycle(ZionGPIO.BLUE_idx, amt)
+			print('\nSetting Blue to '+str(amt))
+			if verbose:
+				self.parent.gui.printToLog('Blue set to '+str(amt))
 		if color=='Orange':
-			self.set_duty_cycle(ZionGPIO.Orange, amt)
+			self.set_duty_cycle(ZionGPIO.ORANGE_idx, amt)
+			print('\nSetting to '+str(amt))
+			if verbose:
+				self.parent.gui.printToLog('Orange set to '+str(amt))
+		self.update_pwm_settings()
 
 	def send_uv_pulse(self, pulsetime):
-		self.turn_on_led('UV')
-		#TODO: use different timer (from gtk?)
-		time.sleep(float(pulsetime/1000.))
-		self.turn_off_led('UV')
+		
+		
+		# ~ self.turn_on_led('UV')
+		# ~ #TODO: use different timer (from gtk?)
+		# ~ time.sleep(float(pulsetime/1000.))
+		# ~ self.turn_off_led('UV')
 
