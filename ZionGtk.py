@@ -73,26 +73,26 @@ class Handlers:
     def on_blue_led_switch_activate(self, switch, gparam):
         if switch.get_active():
             self.parent.printToLog('Blue LED on')
-            self.parent.parent.GPIO.turn_on_led('Blue')
+            self.parent.parent.GPIO.enable_led('Blue',0.5)
         else:
             self.parent.printToLog('Blue LED off')
-            self.parent.parent.GPIO.turn_off_led('Blue')
+            self.parent.parent.GPIO.enable_led('Blue',0)
             
     def on_orange_led_switch_activate(self, switch, gparam):
         if switch.get_active():
             self.parent.printToLog('Orange LED on')
-            self.parent.parent.GPIO.turn_on_led('Orange')
+            self.parent.parent.GPIO.enable_led('Orange',1)
         else:
             self.parent.printToLog('Orange LED off')
-            self.parent.parent.GPIO.turn_off_led('Orange')
+            self.parent.parent.GPIO.enable_led('Orange',0)
             
     def on_uv_led_switch(self, switch, gparam):
         if switch.get_active():
             self.parent.printToLog('UV LED on')
-            self.parent.parent.GPIO.turn_on_led('UV')
+            self.parent.parent.GPIO.enable_led('UV',0.5)
         else:
             self.parent.printToLog('UV LED off')
-            self.parent.parent.GPIO.turn_off_led('UV')
+            self.parent.parent.GPIO.enable_led('UV',0)
             
     def on_uv_switch_safety_button(self, button):
         if button.get_active():
