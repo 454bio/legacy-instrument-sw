@@ -56,13 +56,18 @@ TEMP_INPUT_1W = 5 #pin 29
 
 class ZionGPIO(pigpio.pi):
 	
+	UV = 0
+	BLUE = 1
+	ORANGE = 2
+	
 	#TODO: add UV off command to appropriate error handles?
 	
 	def __init__(self, pwm_freq, UV_gpios=UV, Blue_gpios=BLUE, Orange_gpios=ORANGE, temp_out_gpio=TEMP_OUTPUT, temp_in_gpio=TEMP_INPUT_1W, camera_trigger_gpio=CAMERA_TRIGGER, parent=None):
 		super(ZionGPIO, self).__init__()
 		
 		self.parent=parent
-		self.frequency = pwm_freq
+		self.frequency = pwm_freq #not changing for different gpios
+		self.micros = 1000000./self.frequency #period in microseconds
 
 		# Check that GPIO settings are valid:
 		#TODO: may need adjustment for temperature output (eg if it takes more than one pin)
@@ -74,10 +79,11 @@ class ZionGPIO(pigpio.pi):
 					super(ZionGPIP,self).set_PWM_range(g, 100)
 			else:
 				raise ValueError('Chosen GPIO is not enabled!')
-
-		self.UV_GPIOs = UV_gpios
-		self.Blue_GPIOs = Blue_gpios
-		self.Orange_GPIOs = Orange_gpios
+		self.gpioList = [UV_gpios, Blue_gpios, Orange_gpios] #Order is important
+		self.pS = [0.0]*3 #UV, Blue, Orange
+		self.dc = [0.0]*3
+		self.old_wid = None
+		self.stop = False
 		
 		#Now set up register methods of setting/clearing led outputs:		
 		# (not used for pwm)
@@ -127,12 +133,70 @@ class ZionGPIO(pigpio.pi):
 			# ~ print('No digital thermometer connected')
 			return None
 			
-	def set_pulse_start_in_fraction(self, gpio, start):
-		
-		
-	def turn_on_led(self, color, verbose=False):
+	def set_pulse_start_in_micros(self, color, start):
+		start %= self.micros
+		self.pS[color] = start / self.micros
+	
+	def set_duty_cycle(self, color, dc):
+		self.dc[color] = dc
 
-	def turn_off_led(self, color, verbose=False):
+	def update_pwm_settings(self):
+
+		null_wave = True
+		for color in range(len(self.gpioList)):
+			for g in self.gpioList[color]:
+				null_wave = False
+				on = int(self.pS[color] * self.micros)
+				length = int(self.dc[color] * self.micros)
+				micros = int(self.micros)
+				if length <= 0:
+					self.wave_add_generic([pigpio.pulse(0, 1<<g, micros)])
+				elif length >= micros:
+					self.wave_add_generic([pigpio.pulse(1<<g, 0, micros)])
+				else:
+					off = (on + length) % micros
+					if on<off:
+						self.wave_add_generic([
+							pigpio.pulse(   0, 1<<g,           on),
+							pigpio.pulse(1<<g,    0,     off - on),
+							pigpio.pulse(   0, 1<<g, micros - off),
+						])
+					else:
+						self.pi.wave_add_generic([
+							pigpio.pulse(1<<g,    0,         off),
+							pigpio.pulse(   0, 1<<g,    on - off),
+							pigpio.pulse(1<<g,    0, micros - on),
+						])
+		if not null_wave:
+			if not self.stop:
+				new_wid = self.wave_create()
+				if self.old_wid is not None:
+					self.wave_send_using_mode(new_wid, pigpio.WAVE_MODE_REPEAT_SYNC)
+					while self.wave_tx_at() != new_wid:
+						pass
+					self.wave_delete(self.old_wid)
+				else:
+					self.wave_send_repeat(new_wid)
+				self.old_wid = new_wid
+				
+	def cancel_PWM(self):
+		self.stop = True
+		self.wave_tx_stop()
+		if self.old_wid is not None:
+			self.wave_delete(self.old_wid)
+
+	def enable_led(self, color, amt, verbose=False):
+		amt = float(amt)
+		if amt<0 or amt>1:
+			raise ValueError("Duty Cycle must be between 0 and 1!")
+		if color=='UV':
+			self.set_duty_cycle(ZionGPIO.UV, amt)
+			if verbose:
+				print
+		if color=='Blue':
+			self.set_duty_cycle(ZionGPIO.Blue, amt)
+		if color=='Orange':
+			self.set_duty_cycle(ZionGPIO.Orange, amt)
 
 	def send_uv_pulse(self, pulsetime):
 		self.turn_on_led('UV')
