@@ -70,26 +70,41 @@ class Handlers:
         self.parent.printToLog('Sharpness set to '+str(newval))
 
     # LED Control Section
-    def on_blue_led_switch_activate(self, switch, gparam):
+    def on_blue_led_button_toggled(self, switch):
         if switch.get_active():
-            self.parent.printToLog('Blue LED on')
-            self.parent.parent.GPIO.enable_led('Blue',0.5)
+            try:
+                dc = int(self.parent.blueDCEntry.get_text())
+            except ValueError:
+                self.parent.printToLog('Duty Cycle must be an integer from 0-100!')
+                return
+            self.parent.printToLog('Blue LED on, set to '+str(dc)+'% duty cycle')
+            self.parent.parent.GPIO.enable_led('Blue',dc/100.)
         else:
             self.parent.printToLog('Blue LED off')
             self.parent.parent.GPIO.enable_led('Blue',0)
             
-    def on_orange_led_switch_activate(self, switch, gparam):
+    def on_orange_led_button_toggled(self, switch):
         if switch.get_active():
-            self.parent.printToLog('Orange LED on')
-            self.parent.parent.GPIO.enable_led('Orange',1)
+            try:
+                dc = int(self.parent.orangeDCEntry.get_text())
+            except ValueError:
+                self.parent.printToLog('Duty Cycle must be an integer from 0-100!')
+                return
+            self.parent.printToLog('Orange LED on, set to '+str(dc)+'% duty cycle')
+            self.parent.parent.GPIO.enable_led('Orange',dc/100.)
         else:
             self.parent.printToLog('Orange LED off')
             self.parent.parent.GPIO.enable_led('Orange',0)
             
-    def on_uv_led_switch(self, switch, gparam):
+    def on_uv_led_button_toggled(self, switch):
         if switch.get_active():
-            self.parent.printToLog('UV LED on')
-            self.parent.parent.GPIO.enable_led('UV',0.5)
+            try:
+                dc = int(self.parent.uvDCEntry.get_text())
+            except ValueError:
+                self.parent.printToLog('Duty Cycle must be an integer from 0-100!')
+                return
+            self.parent.printToLog('UV LED on, set to '+str(dc)+'% duty cycle')
+            self.parent.parent.GPIO.enable_led('UV',dc/100.)
         else:
             self.parent.printToLog('UV LED off')
             self.parent.parent.GPIO.enable_led('UV',0)
@@ -452,8 +467,13 @@ class ZionGUI():
         self.expTimeBox = self.builder.get_object("exposure_time_entry")
         self.analogGainBuffer = self.builder.get_object("analog_gain_buffer")
         self.digitalGainBuffer = self.builder.get_object("digital_gain_buffer")
-        self.pulseTextInput = self.builder.get_object("uv_led_entry")
-        self.secretUVSwitchButton = self.builder.get_object("uv_led_switch")
+        
+        # ~ self.pulseTextInput = self.builder.get_object("uv_led_entry")
+        # ~ self.secretUVSwitchButton = self.builder.get_object("uv_led_switch")
+        self.blueDCEntry = self.builder.get_object("blue_led_dc_entry")
+        self.orangeDCEntry = self.builder.get_object("orange_led_dc_entry")
+        self.uvDCEntry = self.builder.get_object("uv_led_dc_entry")
+        
         self.logBuffer = self.builder.get_object("textbuffer_log")
         self.logView = self.builder.get_object("textview_log")
         self.temperatureBuffer = self.builder.get_object("temperature_buffer")

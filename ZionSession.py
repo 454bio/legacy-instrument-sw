@@ -103,5 +103,6 @@ class ZionSession():
         self.Camera.stop_preview()
 
     def QuitSession(self):
-        self.GPIO.turn_off_led('all')
+      #TODO
+        # ~ self.GPIO.turn_off_led('all')
         self.Camera.quit()

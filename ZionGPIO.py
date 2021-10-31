@@ -71,9 +71,6 @@ class ZionGPIO(pigpio.pi):
 
 		# Check that GPIO settings are valid:
 		#TODO: may need adjustment for temperature output (eg if it takes more than one pin)
-		print(UV_gpios)
-		print(Blue_gpios)
-		print(Orange_gpios)
 		for g in UV_gpios+Blue_gpios+Orange_gpios+[temp_out_gpio, camera_trigger_gpio]:
 			if GpioPins[g][1]:
 				super(ZionGPIO,self).set_mode(g, pigpio.OUTPUT)
@@ -161,7 +158,7 @@ class ZionGPIO(pigpio.pi):
 					off = (on + length) % micros
 					if on<off:
 						self.wave_add_generic([
-							pigpio.pulse(   0, 1<<g,           on),
+							# ~ pigpio.pulse(   0, 1<<g,           on),
 							pigpio.pulse(1<<g,    0,     off - on),
 							pigpio.pulse(   0, 1<<g, micros - off),
 						])
@@ -210,7 +207,7 @@ class ZionGPIO(pigpio.pi):
 				self.parent.gui.printToLog('Orange set to '+str(amt))
 		self.update_pwm_settings()
 
-	def send_uv_pulse(self, pulsetime):
+	# ~ def send_uv_pulse(self, pulsetime):
 		
 		
 		# ~ self.turn_on_led('UV')
