@@ -1666,7 +1666,7 @@
                               </packing>
                             </child>
                             <child>
-                              <object class="GtkCheckButton" id="orange_led_button">
+                              <object class="GtkCheckButton" id="orange_led_switch">
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
                                 <property name="receives_default">False</property>
@@ -1702,7 +1702,7 @@
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
                     <property name="label_xalign">0</property>
-                    <property name="shadow_type">in</property>
+                    <property name="shadow_type">none</property>
                     <child>
                       <object class="GtkAlignment">
                         <property name="visible">True</property>
@@ -1768,7 +1768,7 @@
                                   </packing>
                                 </child>
                                 <child>
-                                  <object class="GtkCheckButton" id="uv_led_button">
+                                  <object class="GtkCheckButton" id="uv_led_switch">
                                     <property name="visible">True</property>
                                     <property name="can_focus">True</property>
                                     <property name="receives_default">False</property>
@@ -1797,7 +1797,7 @@
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
                         <property name="halign">center</property>
-                        <property name="label" translatable="yes">UV Pulse (ms)</property>
+                        <property name="label" translatable="yes">Toggle UV</property>
                       </object>
                     </child>
                   </object>
@@ -1806,6 +1806,20 @@
                     <property name="fill">True</property>
                     <property name="padding">6</property>
                     <property name="position">4</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkButton" id="led__off_button">
+                    <property name="label" translatable="yes">All Off</property>
+                    <property name="can_focus">True</property>
+                    <property name="receives_default">True</property>
+                    <property name="valign">center</property>
+                    <signal name="clicked" handler="on_led__off_button_clicked" swapped="no"/>
+                  </object>
+                  <packing>
+                    <property name="expand">False</property>
+                    <property name="fill">True</property>
+                    <property name="position">5</property>
                   </packing>
                 </child>
               </object>

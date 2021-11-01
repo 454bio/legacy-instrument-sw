@@ -22,6 +22,7 @@ class Handlers:
         self.lastShutterTime = self.parent.parent.Camera.exposure_speed
         
     def on_window1_delete_event(self, *args):
+        self.parent.parent.GPIO.cancel_PWM()
         GObject.source_remove(self.source_id)
         Gtk.main_quit(*args)
 
@@ -126,6 +127,12 @@ class Handlers:
             self.parent.parent.GPIO.send_uv_pulse(newVal)
         else:
             self.parent.printToLog('Pulse time should be an integer number of milliseconds!')
+            
+    def on_led__off_button_clicked(self, button):
+        self.parent.parent.GPIO.cancel_PWM()
+        self.parent.blueSwitch.set_active(False)
+        self.parent.orangeSwitch.set_active(False)
+        self.parent.uvSwitch.set_active(False)
     
     #Exposure Stuff
     def on_iso_auto_button(self, button):
@@ -473,6 +480,9 @@ class ZionGUI():
         self.blueDCEntry = self.builder.get_object("blue_led_dc_entry")
         self.orangeDCEntry = self.builder.get_object("orange_led_dc_entry")
         self.uvDCEntry = self.builder.get_object("uv_led_dc_entry")
+        self.blueSwitch = self.builder.get_object("blue_led_switch")
+        self.orangeSwitch = self.builder.get_object("orange_led_switch")
+        self.uvSwitch = self.builder.get_object("uv_led_switch")
         
         self.logBuffer = self.builder.get_object("textbuffer_log")
         self.logView = self.builder.get_object("textview_log")

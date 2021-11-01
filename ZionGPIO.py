@@ -158,7 +158,7 @@ class ZionGPIO(pigpio.pi):
 					off = (on + length) % micros
 					if on<off:
 						self.wave_add_generic([
-							# ~ pigpio.pulse(   0, 1<<g,           on),
+							pigpio.pulse(   0, 1<<g,           on),
 							pigpio.pulse(1<<g,    0,     off - on),
 							pigpio.pulse(   0, 1<<g, micros - off),
 						])
@@ -181,10 +181,13 @@ class ZionGPIO(pigpio.pi):
 				self.old_wid = new_wid
 				
 	def cancel_PWM(self):
-		self.stop = True
-		self.wave_tx_stop()
-		if self.old_wid is not None:
-			self.wave_delete(self.old_wid)
+		for color in range(3):
+			self.set_duty_cycle(color, 0)
+		self.update_pwm_settings()
+		# ~ self.stop = True
+		# ~ self.wave_tx_stop()
+		# ~ if self.old_wid is not None:
+			# ~ self.wave_delete(self.old_wid)
 
 	def enable_led(self, color, amt, verbose=False):
 		amt = float(amt)
@@ -202,7 +205,7 @@ class ZionGPIO(pigpio.pi):
 				self.parent.gui.printToLog('Blue set to '+str(amt))
 		if color=='Orange':
 			self.set_duty_cycle(ZionGPIO.ORANGE_idx, amt)
-			print('\nSetting to '+str(amt))
+			print('\nSetting Orange to '+str(amt))
 			if verbose:
 				self.parent.gui.printToLog('Orange set to '+str(amt))
 		self.update_pwm_settings()
