@@ -116,7 +116,7 @@ class ZionCamera(PiCamera):
 			else:
 				pass
 
-	def capture(self, filename, cropping=(0,0,1,1), use_video_port=True):
+	def capture(self, filename, cropping=(0,0,1,1), use_video_port=False):
 		self.zoom = cropping
 		fileToWrite = filename+'.jpg'
 		# ~ fileToWrite = filename+'.raw'

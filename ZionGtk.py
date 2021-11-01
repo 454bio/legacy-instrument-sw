@@ -23,9 +23,6 @@ class Handlers:
         # ~ self.updateTemp()
         self.lastShutterTime = self.parent.parent.Camera.exposure_speed
         
-        self.capture_thread = threading.Thread(target=self.parent.parent.CaptureImage)
-        self.capture_thread.daemon = True
-        
     def on_window1_delete_event(self, *args):
         self.parent.parent.GPIO.cancel_PWM()
         GObject.source_remove(self.source_id)
@@ -263,7 +260,9 @@ class Handlers:
         comment = self.parent.commentBox.get_text()
         self.parent.parent.SaveParameterFile(comment, False)
         # ~ self.parent.parent.CaptureImage(group='P')
-        self.capture_thread.start()
+        capture_thread = threading.Thread(target=self.parent.parent.CaptureImage)
+        capture_thread.daemon = True
+        capture_thread.start()
 
     def on_run_program_button_clicked(self,button):
         self.parent.expModeComboBox.set_active(0)
