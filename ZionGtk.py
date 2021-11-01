@@ -5,6 +5,8 @@ gi.require_version('Gtk', '3.0')
 gi.require_version('Gst', '1.0')
 from gi.repository import Gtk, GObject, Gst
 
+import threading
+
 def get_handler_id(obj, signal_name):
     signal_id, detail = GObject.signal_parse_name(signal_name, obj, True)
     return GObject.signal_handler_find(obj, GObject.SignalMatchType.ID, signal_id, detail, None, None, None)
@@ -20,6 +22,9 @@ class Handlers:
         #TODO: do temperature routine
         # ~ self.updateTemp()
         self.lastShutterTime = self.parent.parent.Camera.exposure_speed
+        
+        self.capture_thread = threading.Thread(target=self.parent.parent.CaptureImage)
+        self.capture_thread.daemon = True
         
     def on_window1_delete_event(self, *args):
         self.parent.parent.GPIO.cancel_PWM()
@@ -257,7 +262,8 @@ class Handlers:
         #TODO: get cropping from some self object here
         comment = self.parent.commentBox.get_text()
         self.parent.parent.SaveParameterFile(comment, False)
-        self.parent.parent.CaptureImage(group='P')
+        # ~ self.parent.parent.CaptureImage(group='P')
+        self.capture_thread.start()
 
     def on_run_program_button_clicked(self,button):
         self.parent.expModeComboBox.set_active(0)
