@@ -85,6 +85,10 @@ class ZionGPIO(pigpio.pi):
 		self.old_wid = None
 		self.stop = False
 		
+		self.Blue_DC = 100
+		self.Orange_DC = 100
+		self.UV_DC = 100
+		
 		#Now set up register methods of setting/clearing led outputs:		
 		# (not used for pwm)
 		# ~ self.UV_Reg = 0
@@ -140,6 +144,12 @@ class ZionGPIO(pigpio.pi):
 	
 	def set_duty_cycle(self, color, dc):
 		self.dc[color] = dc
+		if color==ZionGPIO.UV_idx:
+			self.UV_DC = int(dc*100)
+		elif color==ZionGPIO.Blue_idx:
+			self.Blue_DC = int(dc*100)
+		elif color==ZionGPIO.Orange_idx:
+			self.Orange_DC = int(dc*100)
 
 	def update_pwm_settings(self):
 
@@ -190,7 +200,7 @@ class ZionGPIO(pigpio.pi):
 			# ~ self.wave_delete(self.old_wid)
 
 	def enable_led(self, color, amt, verbose=False):
-		amt = float(amt)
+		amt = int(amt)
 		# ~ if amt<0 or amt>1:
 			# ~ raise ValueError("Duty Cycle must be between 0 and 1!")
 		if color=='UV':
@@ -210,6 +220,26 @@ class ZionGPIO(pigpio.pi):
 				self.parent.gui.printToLog('Orange set to '+str(amt))
 		self.update_pwm_settings()
 
+	def turn_on_led(self, color, verbose=False):
+		if color=='UV':
+			amt = self.UV_DC/100.
+			self.set_duty_cycle(ZionGPIO.UV_idx, self.UV_DC/100.)
+			print('\nSetting UV to '+str(amt))
+			if verbose:
+				self.parent.gui.printToLog('UV set to '+str(amt))
+		if color=='Blue':
+			amt = self.Blue_DC/100.
+			self.set_duty_cycle(ZionGPIO.BLUE_idx, amt)
+			print('\nSetting Blue to '+str(amt))
+			if verbose:
+				self.parent.gui.printToLog('Blue set to '+str(amt))
+		if color=='Orange':
+			amt = self.Orange_DC/100.
+			self.set_duty_cycle(ZionGPIO.ORANGE_idx, amt)
+			print('\nSetting Orange to '+str(amt))
+			if verbose:
+				self.parent.gui.printToLog('Orange set to '+str(amt))
+		self.update_pwm_settings()
 	# ~ def send_uv_pulse(self, pulsetime):
 		
 		
