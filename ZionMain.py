@@ -19,16 +19,17 @@ Binning = False
 
 #Default Values:
 Initial_Values = {
-    'brightness':    50,      # between 0 and 100
+    'brightness':    61,      # between 0 and 100
     'contrast':      50,      # between -100 and 100
-    'saturation':    0,       # between -100 and 100
+    'saturation':    60,       # between -100 and 100
     'sharpness':     0,       # between -100 and 100
     'awb':           'off',   # 'off' or 'auto'
     'red_gain':      1.9,     # 0.0 to 8.0
-    'blue_gain':     1.9,     # 0.0 to 8.0
-    'exposure_mode': 'off', # 'auto', 'night', 'verylong', etc. (***'off')
-    'exposure_time': 0,       # 0 is auto
+    'blue_gain':     1.52,     # 0.0 to 8.0
+    'exposure_mode': 'night', # 'auto', 'night', 'verylong', etc. (***'off')
+    'exposure_time': 500,       # 0 is auto
     }
+
 
 # LED Timing:
 PWM_Frequency = 8000 #{8k, 4k, 2k, 1.6k, 1k, 800, 500, 400, 320, 250, 200, 160, 100, 80, 50, 40, 20, 10}
