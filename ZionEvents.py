@@ -77,9 +77,9 @@ def performEvent(event, camera, gpio_ctrl, repeat_idx=0):
 			else:
 				camera.parent.CaptureImage(verbose=True)
 	elif event_type == 'led_off':
-		gpio_ctrl.turn_off_led(event[2], verbose=True)
+		gpio_ctrl.enable_led(event[2], 0, verbose=True)
 	elif event_type == 'led_on':
-		gpio_ctrl.turn_on_led(event[2], verbose=True)
+		gpio_ctrl.enable_led(event[2], 1, verbose=True)
 	elif event == 'wait':
 		pass
 	else:
