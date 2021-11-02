@@ -260,7 +260,7 @@ class Handlers:
         comment = self.parent.commentBox.get_text()
         self.parent.parent.SaveParameterFile(comment, False)
         # ~ self.parent.parent.CaptureImage(group='P')
-        capture_thread = threading.Thread(target=self.parent.parent.CaptureImage)
+        capture_thread = threading.Thread(target=self.parent.parent.CaptureImage, kwargs={'group': 'P'})
         capture_thread.daemon = True
         capture_thread.start()
 
