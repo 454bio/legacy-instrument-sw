@@ -111,8 +111,8 @@ class ZionGPIO(pigpio.pi):
 			self.Temp_1W_device = None 
 		
 		# Last thing is to ensure all gpio outputs are off:
-		#TODO:
-		# ~ self.turn_off_led('all')
+		for color in range(3):
+			self.enable_led(color, 0)
 		self.camera_trigger(False)
 		
 	def camera_trigger(self, bEnable):
