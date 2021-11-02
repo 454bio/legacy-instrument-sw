@@ -79,7 +79,7 @@ class Handlers:
                 self.parent.printToLog('Duty Cycle must be an integer from 0-100!')
                 return
             self.parent.printToLog('Blue LED on, set to '+str(dc)+'% duty cycle')
-            self.parent.parent.GPIO.enable_led('Blue',dc/100.)
+            self.parent.parent.GPIO.enable_led('Blue',float(dc/100.))
         else:
             self.parent.printToLog('Blue LED off')
             self.parent.parent.GPIO.enable_led('Blue',0)
@@ -92,7 +92,7 @@ class Handlers:
                 self.parent.printToLog('Duty Cycle must be an integer from 0-100!')
                 return
             self.parent.printToLog('Orange LED on, set to '+str(dc)+'% duty cycle')
-            self.parent.parent.GPIO.enable_led('Orange',dc/100.)
+            self.parent.parent.GPIO.enable_led('Orange',float(dc/100.))
         else:
             self.parent.printToLog('Orange LED off')
             self.parent.parent.GPIO.enable_led('Orange',0)
@@ -105,7 +105,7 @@ class Handlers:
                 self.parent.printToLog('Duty Cycle must be an integer from 0-100!')
                 return
             self.parent.printToLog('UV LED on, set to '+str(dc)+'% duty cycle')
-            self.parent.parent.GPIO.enable_led('UV',dc/100.)
+            self.parent.parent.GPIO.enable_led('UV',float(dc/100.))
         else:
             self.parent.printToLog('UV LED off')
             self.parent.parent.GPIO.enable_led('UV',0)

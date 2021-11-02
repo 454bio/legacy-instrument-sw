@@ -146,9 +146,9 @@ class ZionGPIO(pigpio.pi):
 		self.dc[color] = dc
 		if color==ZionGPIO.UV_idx:
 			self.UV_DC = int(dc*100)
-		elif color==ZionGPIO.Blue_idx:
+		elif color==ZionGPIO.BLUE_idx:
 			self.Blue_DC = int(dc*100)
-		elif color==ZionGPIO.Orange_idx:
+		elif color==ZionGPIO.ORANGE_idx:
 			self.Orange_DC = int(dc*100)
 
 	def update_pwm_settings(self):
@@ -200,7 +200,7 @@ class ZionGPIO(pigpio.pi):
 			# ~ self.wave_delete(self.old_wid)
 
 	def enable_led(self, color, amt, verbose=False):
-		amt = int(amt)
+		# ~ amt = amt
 		# ~ if amt<0 or amt>1:
 			# ~ raise ValueError("Duty Cycle must be between 0 and 1!")
 		if color=='UV':
@@ -223,7 +223,7 @@ class ZionGPIO(pigpio.pi):
 	def turn_on_led(self, color, verbose=False):
 		if color=='UV':
 			amt = self.UV_DC/100.
-			self.set_duty_cycle(ZionGPIO.UV_idx, self.UV_DC/100.)
+			self.set_duty_cycle(ZionGPIO.UV_idx, amt)
 			print('\nSetting UV to '+str(amt))
 			if verbose:
 				self.parent.gui.printToLog('UV set to '+str(amt))
