@@ -10,6 +10,8 @@ from ZionGPIO import ZionGPIO
 from ZionEvents import check_led_timings, create_event_list, performEvent
 from ZionGtk import ZionGUI
 
+import threading
+
 class ZionSession():
 
     def __init__(self, session_name, Frame_Rate, Binning, Initial_Values, PWM_freq, Blue_Timing, Orange_Timing, UV_Timing, Camera_Captures, RepeatN=0, overwrite=False):
@@ -33,7 +35,10 @@ class ZionSession():
         
         self.TimeOfLife = time.time()
         
+        # ~ self._capture_lock = threading.Lock()
+        
     def CaptureImage(self, cropping=(0,0,1,1), group=None, verbose=False):
+        time.sleep(2)
         group = '' if group is None else group
         filename = os.path.join(self.Dir, str(group)+'_'+self.Name)
         self.CaptureCount += 1

@@ -277,9 +277,12 @@ class Handlers:
         self.parent.expModeComboBox.set_active(0)
         comment = self.parent.commentBox.get_text()
         self.parent.parent.SaveParameterFile(comment, True)
+        #TODO disable pwm buttons (and capture button?) while script is running
         run_thread = threading.Thread(target=self.parent.parent.RunProgram)
         run_thread.daemon=True
         run_thread.start()
+        
+        #TODO turn buttons back on (thread join?)
         
     def on_param_file_chooser_dialog_realize(self, widget):
         Gtk.Window.maximize(self.parent.paramFileChooser)
