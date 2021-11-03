@@ -18,15 +18,16 @@ class Handlers:
         self.parent = gui
         self.ExpModeLastChoice = self.parent.Def_row_idx if self.parent.Def_row_idx else 1
         self.updateExpParams()
-        self.source_id = GObject.timeout_add(1000, self.updateExpParams)
-        self.updateTemp()
-        self.source_id2 = GObject.timeout_add(2000, self.updateTemp)
+        self.source_id = GObject.timeout_add(2000, self.updateExpParams)
+        # ~ self.updateTemp()
+        # ~ self.source_id2 = GObject.timeout_add(2000, self.updateTemp)
         self.lastShutterTime = self.parent.parent.Camera.exposure_speed
+        self._capture_lock = threading.Lock()
         
     def on_window1_delete_event(self, *args):
         self.parent.parent.GPIO.cancel_PWM()
         GObject.source_remove(self.source_id)
-        GObject.source_remove(self.source_id2)
+        # ~ GObject.source_remove(self.source_id2)
         Gtk.main_quit(*args)
 
     def updateExpParams(self):
@@ -268,7 +269,6 @@ class Handlers:
         #TODO: get cropping from some self object here
         comment = self.parent.commentBox.get_text()
         self.parent.parent.SaveParameterFile(comment, False)
-        # ~ self.parent.parent.CaptureImage(group='P')
         capture_thread = threading.Thread(target=self.parent.parent.CaptureImage, kwargs={'group': 'P'})
         capture_thread.daemon = True
         capture_thread.start()
@@ -277,7 +277,9 @@ class Handlers:
         self.parent.expModeComboBox.set_active(0)
         comment = self.parent.commentBox.get_text()
         self.parent.parent.SaveParameterFile(comment, True)
-        self.parent.parent.RunProgram()
+        run_thread = threading.Thread(target=self.parent.parent.RunProgram)
+        run_thread.daemon=True
+        run_thread.start()
         
     def on_param_file_chooser_dialog_realize(self, widget):
         Gtk.Window.maximize(self.parent.paramFileChooser)
