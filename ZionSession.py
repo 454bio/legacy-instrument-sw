@@ -36,7 +36,7 @@ class ZionSession():
         
         self.TimeOfLife = time.time()
 
-    def CaptureImage(self, cropping=(0,0,1,1), group=None, verbose=False):
+    def CaptureImage(self, cropping=(0,0,1,1), group=None, verbose=False, comment=''):
         group = '' if group is None else group
         filename = os.path.join(self.Dir, str(group)+'_'+self.Name)
         self.CaptureCount += 1
@@ -46,6 +46,8 @@ class ZionSession():
         try:
             self.Camera.capture(filename, cropping=cropping)
             ret = 0
+            if group=='P':
+                self.SaveParameterFile(comment, False)
         except PiCameraValueError:
             print('Camera Busy! '+filename+' not written!')
             if verbose:
