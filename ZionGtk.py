@@ -268,6 +268,7 @@ class Handlers:
     def on_capture_button_clicked(self, button):
         #TODO: get cropping from some self object here
         comment = self.parent.commentBox.get_text()
+        #TODO: make param file save dependent on successful thread completion
         self.parent.parent.SaveParameterFile(comment, False)
         capture_thread = threading.Thread(target=self.parent.parent.CaptureImage, kwargs={'group': 'P'})
         capture_thread.daemon = True
@@ -278,6 +279,7 @@ class Handlers:
         comment = self.parent.commentBox.get_text()
         self.parent.parent.SaveParameterFile(comment, True)
         #TODO disable pwm buttons (and capture button?) while script is running
+        # ~ self.parent.parent.RunProgram()
         run_thread = threading.Thread(target=self.parent.parent.RunProgram)
         run_thread.daemon=True
         run_thread.start()
