@@ -18,14 +18,15 @@ class Handlers:
         self.parent = gui
         self.ExpModeLastChoice = self.parent.Def_row_idx if self.parent.Def_row_idx else 1
         self.updateExpParams()
-        self.source_id = GObject.timeout_add(2000, self.updateExpParams)
-        #TODO: do temperature routine
-        # ~ self.updateTemp()
+        self.source_id = GObject.timeout_add(1000, self.updateExpParams)
+        self.updateTemp()
+        self.source_id2 = GObject.timeout_add(2000, self.updateTemp)
         self.lastShutterTime = self.parent.parent.Camera.exposure_speed
         
     def on_window1_delete_event(self, *args):
         self.parent.parent.GPIO.cancel_PWM()
         GObject.source_remove(self.source_id)
+        GObject.source_remove(self.source_id2)
         Gtk.main_quit(*args)
 
     def updateExpParams(self):
@@ -37,6 +38,14 @@ class Handlers:
         self.parent.expTimeBuffer.set_text("{:07.1f}".format(e_time))
         return True
         
+    def updateTemp(self):
+        temp = self.parent.parent.GPIO.read_temperature()
+        if temp:
+            self.parent.temperatureBuffer.set_text("{:02.1f}".format(temp))
+        else:
+            self.parent.temperatureBuffer.set_text("-")
+        return True
+                        
     def reset_button_click(self, *args):
         self.parent.printToLog('Setting Video Params to Defaults')
         self.parent.BrightnessScale.set_value(self.parent.Default_Brightness)
