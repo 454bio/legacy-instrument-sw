@@ -115,8 +115,8 @@ class ZionGPIO(pigpio.pi):
 			self.Temp_1W_device = None 
 		
 		# Last thing is to ensure all gpio outputs are off:
-		#TODO:
-		# ~ self.turn_off_led('all')
+		for color in range(3):
+			self.enable_led(color, 0)
 		self.camera_trigger(False)
 		
 	def camera_trigger(self, bEnable):
@@ -132,10 +132,9 @@ class ZionGPIO(pigpio.pi):
 			else:
 				equals_pos = lines[1].find('t=')
 				temp_c = float(lines[1][equals_pos+2:])/1000.
-				print('\nTemperature = '+str(temp_c)+' C')
+				# ~ print('\nTemperature = '+str(temp_c)+' C')
 			return temp_c
 		else:
-			# ~ print('No digital thermometer connected')
 			return None
 			
 	def set_pulse_start_in_micros(self, color, start):

@@ -205,5 +205,8 @@ class ZionCamera(PiCamera):
 		awb_gains = self.awb_gains
 		self.awb_gains = (awb_gains[0], val)
 		print('\nSetting AWB blue gain to '+str(val))
+		
+	def start_preview(self, fullscreen=False, window=(560,75,640,480)):
+		super(ZionCamera,self).start_preview(fullscreen=False, window=window)
 
 #TODO: link cropping with bounding box UI input

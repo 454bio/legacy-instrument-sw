@@ -5,6 +5,8 @@ gi.require_version('Gtk', '3.0')
 gi.require_version('Gst', '1.0')
 from gi.repository import Gtk, GObject, Gst
 
+import threading
+
 def get_handler_id(obj, signal_name):
     signal_id, detail = GObject.signal_parse_name(signal_name, obj, True)
     return GObject.signal_handler_find(obj, GObject.SignalMatchType.ID, signal_id, detail, None, None, None)
@@ -17,13 +19,15 @@ class Handlers:
         self.ExpModeLastChoice = self.parent.Def_row_idx if self.parent.Def_row_idx else 1
         self.updateExpParams()
         self.source_id = GObject.timeout_add(2000, self.updateExpParams)
-        #TODO: do temperature routine
         # ~ self.updateTemp()
+        # ~ self.source_id2 = GObject.timeout_add(2000, self.updateTemp)
         self.lastShutterTime = self.parent.parent.Camera.exposure_speed
+        self._capture_lock = threading.Lock()
         
     def on_window1_delete_event(self, *args):
         self.parent.parent.GPIO.cancel_PWM()
         GObject.source_remove(self.source_id)
+        # ~ GObject.source_remove(self.source_id2)
         Gtk.main_quit(*args)
 
     def updateExpParams(self):
@@ -35,6 +39,14 @@ class Handlers:
         self.parent.expTimeBuffer.set_text("{:07.1f}".format(e_time))
         return True
         
+    def updateTemp(self):
+        temp = self.parent.parent.GPIO.read_temperature()
+        if temp:
+            self.parent.temperatureBuffer.set_text("{:02.1f}".format(temp))
+        else:
+            self.parent.temperatureBuffer.set_text("-")
+        return True
+                        
     def reset_button_click(self, *args):
         self.parent.printToLog('Setting Video Params to Defaults')
         self.parent.BrightnessScale.set_value(self.parent.Default_Brightness)
@@ -256,15 +268,18 @@ class Handlers:
     def on_capture_button_clicked(self, button):
         #TODO: get cropping from some self object here
         comment = self.parent.commentBox.get_text()
-        self.parent.parent.SaveParameterFile(comment, False)
-        self.parent.parent.CaptureImage(group='P')
+        capture_thread = threading.Thread(target=self.parent.parent.CaptureImage, kwargs={'group': 'P', 'comment': comment})
+        capture_thread.daemon = True
+        capture_thread.start()
 
     def on_run_program_button_clicked(self,button):
         self.parent.expModeComboBox.set_active(0)
         comment = self.parent.commentBox.get_text()
         self.parent.parent.SaveParameterFile(comment, True)
-        self.parent.parent.RunProgram()
-        
+        run_thread = threading.Thread(target=self.parent.parent.RunProgram)
+        run_thread.daemon=True
+        run_thread.start()
+
     def on_param_file_chooser_dialog_realize(self, widget):
         Gtk.Window.maximize(self.parent.paramFileChooser)
         

@@ -9,6 +9,9 @@ from ZionCamera import ZionCamera
 from ZionGPIO import ZionGPIO
 from ZionEvents import check_led_timings, create_event_list, performEvent
 from ZionGtk import ZionGUI
+from picamera.exc import PiCameraValueError
+
+import threading
 
 class ZionSession():
 
@@ -32,15 +35,25 @@ class ZionSession():
         self.CreateProgram(Blue_Timing, Orange_Timing, UV_Timing, Camera_Captures, RepeatN)
         
         self.TimeOfLife = time.time()
-        
-    def CaptureImage(self, cropping=(0,0,1,1), group=None, verbose=False):
+
+    def CaptureImage(self, cropping=(0,0,1,1), group=None, verbose=False, comment=''):
         group = '' if group is None else group
         filename = os.path.join(self.Dir, str(group)+'_'+self.Name)
         self.CaptureCount += 1
         filename += '_'+str(self.CaptureCount).zfill(3)+'_'+str(round(1000*(time.time()-self.TimeOfLife)))
         if verbose:
             self.gui.printToLog('Writing image to file '+filename+'.jpg')
-        return self.Camera.capture(filename, cropping=cropping)
+        try:
+            self.Camera.capture(filename, cropping=cropping)
+            ret = 0
+            if group=='P':
+                self.SaveParameterFile(comment, False)
+        except PiCameraValueError:
+            print('Camera Busy! '+filename+' not written!')
+            if verbose:
+                self.gui.printToLog('Camera Busy! '+filename+' not written!')
+            ret = 1
+        return ret
         
     def SaveParameterFile(self, comment, bSession):
         params = self.Camera.get_all_params()
