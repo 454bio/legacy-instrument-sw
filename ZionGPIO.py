@@ -143,12 +143,13 @@ class ZionGPIO(pigpio.pi):
 	
 	def set_duty_cycle(self, color, dc):
 		self.dc[color] = dc
-		if color==ZionGPIO.UV_idx:
-			self.UV_DC = int(dc*100)
-		elif color==ZionGPIO.BLUE_idx:
-			self.Blue_DC = int(dc*100)
-		elif color==ZionGPIO.ORANGE_idx:
-			self.Orange_DC = int(dc*100)
+		if dc>0:
+			if color==ZionGPIO.UV_idx:
+				self.UV_DC = int(dc*100)
+			elif color==ZionGPIO.BLUE_idx:
+				self.Blue_DC = int(dc*100)
+			elif color==ZionGPIO.ORANGE_idx:
+				self.Orange_DC = int(dc*100)
 
 	def update_pwm_settings(self):
 
