@@ -48,7 +48,7 @@ Camera_Captures = [
 #all 3 > blue > blue + orange > orange
 
 # Repeat whole process N number of (additional) times
-Repeat_N = 1
+Repeat_N = 0
 
 ########################################################################
 ############################# Main Script ##############################
