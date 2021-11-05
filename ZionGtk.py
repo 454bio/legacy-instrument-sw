@@ -22,7 +22,8 @@ class Handlers:
         # ~ self.updateTemp()
         # ~ self.source_id2 = GObject.timeout_add(2000, self.updateTemp)
         self.lastShutterTime = self.parent.parent.Camera.exposure_speed
-        self._capture_lock = threading.Lock()
+        # ~ self._capture_lock = threading.Lock()
+        self.run_threads = []
         
     def on_window1_delete_event(self, *args):
         self.parent.parent.GPIO.cancel_PWM()
@@ -276,9 +277,9 @@ class Handlers:
         self.parent.expModeComboBox.set_active(0)
         comment = self.parent.commentBox.get_text()
         self.parent.parent.SaveParameterFile(comment, True)
-        run_thread = threading.Thread(target=self.parent.parent.RunProgram)
-        run_thread.daemon=True
-        run_thread.start()
+        self.run_threads.append(threading.Thread(target=self.parent.parent.RunProgram))
+        self.run_threads[-1].daemon=True
+        self.run_threads[-1].start()
 
     def on_param_file_chooser_dialog_realize(self, widget):
         Gtk.Window.maximize(self.parent.paramFileChooser)

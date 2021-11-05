@@ -7,7 +7,7 @@ from gi.repository import Gtk
 import keyboard
 from ZionCamera import ZionCamera
 from ZionGPIO import ZionGPIO
-from ZionEvents import check_led_timings, create_event_list, performEvent
+from ZionEvents import check_led_timings, EventList
 from ZionGtk import ZionGUI
 from picamera.exc import PiCameraValueError
 
@@ -97,18 +97,17 @@ class ZionSession():
 
     def CreateProgram(self, blue_timing, orange_timing, uv_timing, capture_times, repeatN=0):
         check_led_timings(blue_timing, orange_timing, uv_timing)
-        self.EventList = create_event_list(blue_timing, orange_timing, uv_timing, capture_times)
-        self.RepeatN = repeatN
+        self.EventList = EventList(blue_timing, orange_timing, uv_timing, capture_times, N=repeatN)
 
     def RunProgram(self):
         self.TimeOfLife = time.time()
-        for n in range(self.RepeatN+1):
-            time.sleep(self.EventList[0][0]/1000.)
-            for e in range(len(self.EventList)-1):
-                event = self.EventList[e]
-                performEvent(event, self.Camera, self.GPIO)
-                time.sleep((self.EventList[e+1][0]-event[0])/1000.)
-            performEvent(self.EventList[-1], self.Camera, self.GPIO)
+        for n in range(self.EventList.N+1):
+            time.sleep(self.EventList.Events[0][0]/1000.)
+            for e in range(len(self.EventList.Events)-1):
+                event = self.EventList.Events[e]
+                self.EventList.performEvent(event, self.Camera, self.GPIO)
+                time.sleep((self.EventList.Events[e+1][0]-event[0])/1000.)
+            self.EventList.performEvent(self.EventList.Events[-1], self.Camera, self.GPIO)
 
     def InteractivePreview(self, window):
         self.Camera.start_preview(fullscreen=False, window=window)
