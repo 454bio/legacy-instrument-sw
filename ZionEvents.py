@@ -1,6 +1,7 @@
 from time import sleep
 from operator import itemgetter
 import keyboard
+import threading
 
 # ~ class ZionScript():
 	# ~ def __init__(LED_Blu_Timing, LED_Or_Timing, LED_UV_Timing, Camera_Capture_Times, Repeat_N=0):
@@ -68,14 +69,21 @@ def performEvent(event, camera, gpio_ctrl, repeat_idx=0):
 	if event_type == 'take_snapshot':
 		if event[2]:
 			if event[3]:
-				camera.parent.CaptureImage(cropping=event[2], group=event[3], verbose=True)
+				kwargs = {'cropping':event[2], 'group':event[3], 'verbose':True}
+				# ~ camera.parent.CaptureImage(cropping=event[2], group=event[3], verbose=True)
 			else:
-				camera.parent.CaptureImage(cropping=event[2], verbose=True)
+				kwargs = {'cropping':event[2], 'verbose':True}
+				# ~ camera.parent.CaptureImage(cropping=event[2], verbose=True)
 		else:
 			if event[3]:
-				camera.parent.CaptureImage(group=event[3], verbose=True)
+				kwargs = {'group':event[3], 'verbose':True}
+				# ~ camera.parent.CaptureImage(group=event[3], verbose=True)
 			else:
-				camera.parent.CaptureImage(verbose=True)
+				kwargs = {'verbose':True}
+				# ~ camera.parent.CaptureImage(verbose=True)
+		capture_thread = threading.Thread(target=camera.parent.CaptureImage, kwargs=kwargs)
+		capture_thread.daemon = True
+		capture_thread.start()
 	elif event_type == 'led_off':
 		gpio_ctrl.enable_led(event[2], 0, verbose=True)
 	elif event_type == 'led_on':
