@@ -115,12 +115,7 @@ class Handlers:
         # ~ self.updateTemp()
         # ~ self.source_id2 = GObject.timeout_add(2000, self.updateTemp)
         self.lastShutterTime = self.parent.parent.Camera.exposure_speed
-<<<<<<< HEAD
-        self._capture_lock = threading.Lock()
-        
-=======
 
->>>>>>> gui
     def on_window1_delete_event(self, *args):
         self.parent.parent.GPIO.cancel_PWM()
         GObject.source_remove(self.source_id)
@@ -373,13 +368,9 @@ class Handlers:
         self.parent.expModeComboBox.set_active(0)
         comment = self.parent.commentBox.get_text()
         self.parent.parent.SaveParameterFile(comment, True)
-<<<<<<< HEAD
         run_thread = threading.Thread(target=self.parent.parent.RunProgram)
         run_thread.daemon=True
         run_thread.start()
-
-=======
-        self.parent.parent.RunProgram()
         
     def on_new_event_button_clicked(self, button):
         self.parent.EventEntries.append( EventEntry(self.parent, False) )
@@ -396,7 +387,6 @@ class Handlers:
         # ~ mark = self.logBuffer.create_mark(None, self.logBuffer.get_end_iter(), False)
         # ~ self.logView.scroll_to_mark(mark, 0, False, 0,0)
         
->>>>>>> gui
     def on_param_file_chooser_dialog_realize(self, widget):
         Gtk.Window.maximize(self.parent.paramFileChooser)
         
