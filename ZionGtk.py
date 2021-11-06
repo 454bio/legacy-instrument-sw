@@ -11,6 +11,99 @@ def get_handler_id(obj, signal_name):
     signal_id, detail = GObject.signal_parse_name(signal_name, obj, True)
     return GObject.signal_handler_find(obj, GObject.SignalMatchType.ID, signal_id, detail, None, None, None)
 
+class Placeholder(Gtk.Entry):
+    def __init__(self, *args):
+        super(Placeholder,self).__init__(*args)
+        self.set_sensitive(False)
+        
+class TrashButton(Gtk.Button):
+    def __init__(self, *args):
+        super(TrashButton,self).__init__(*args)
+        img = Gtk.Image.new_from_icon_name("edit-delete-symbolic", 4)
+        self.add(img)
+        
+class LEDColorComboBox(Gtk.ComboBoxText):
+    def __init__(self, *args):
+        super(LEDColorComboBox,self).__init__(*args)
+        self.append(None, 'Bl')
+        self.append(None, 'Or')
+        self.append(None, 'UV')
+
+class EventTypeComboBox(Gtk.ComboBoxText):
+    def __init__(self, *args):
+        super(EventTypeComboBox,self).__init__(*args)
+        self.append(None, 'None')
+        self.append(None, 'LED')
+        self.append(None, 'Capture')
+        self.set_active(0)
+
+class EventEntry(Gtk.HBox): 
+    def __init__(self, parent, safe, *args):
+        super(EventEntry,self).__init__(*args)
+        self.parent = parent
+        self.Safe = safe
+        self.TimeEntry = Gtk.Entry()
+        self.TimeEntry.set_width_chars(14)
+        self.TypeComboBox = EventTypeComboBox()
+        self.Parameter1 = Placeholder()
+        self.Parameter2 = Placeholder()
+        self.DeleteButton = TrashButton()
+        if self.Safe:
+            self.DeleteButton.set_sensitive(False)
+        self.pack_start( self.DeleteButton, False, False, 0)
+        self.pack_start( self.TimeEntry, False, False, 0)
+        self.pack_start( self.TypeComboBox, False, False, 0)
+        self.TypeComboBox.connect("changed", self.on_event_type_changed)
+        self.DeleteButton.connect("clicked", self.on_event_delete_button)
+
+    def on_event_delete_button(self, button):
+        if not self.Safe:
+            self.destroy()
+
+    def load_parameter_widgets(self):
+        self.pack_start( self.Parameter1, False, False, 0 )
+        self.pack_start( self.Parameter2, False, False, 0 )
+
+    def on_event_type_changed(self, combo):
+        active_idx = combo.get_active()
+        if active_idx==1: #LED:
+            self.Parameter1.destroy()
+            self.Parameter2.destroy()
+            self.Parameter1 = LEDColorComboBox()
+            self.Parameter2 = Gtk.Entry()
+            self.Parameter2.set_width_chars(14)
+            self.load_parameter_widgets()
+            self.show_all()
+        elif active_idx==2: #Capture:
+            self.Parameter1.destroy()
+            self.Parameter2.destroy()
+            self.Parameter1 = Gtk.Entry()
+            self.Parameter1.set_width_chars(4)
+            self.Parameter1.set_margin_right(1)
+            self.Parameter2 = Gtk.Entry()
+            self.Parameter2.set_width_chars(14)
+            self.load_parameter_widgets()
+            self.show_all()
+        else:
+            self.Parameter1.destroy()
+            self.Parameter2.destroy()
+
+class LED_EventEntry(EventEntry):
+    def __init__(self, parent, safe, *args):
+        super(LED_EventEntry, self).__init__(parent, safe, *args)
+        self.Parameter1 = Gtk.ComboBoxText()
+        self.Parameter1.append(None, 'Blue')
+        self.Parameter1.append(None, 'Orange')
+        self.Parameter1.append(None, 'UV')
+        self.Parameter2 = Gtk.Entry() #This is numerical (duty cycle)
+        super(LED_EventEntry,self).load_parameter_widgets()
+
+class Capture_EventEntry(EventEntry):
+    def __init__(self, parent, safe, *args):
+        super(Capture_EventEntry, self).__init__(parent, safe, *args)
+        self.Parameter1 = Gtk.Entry() # This is group (ie filename prefix), a string
+        self.Parameter2 = Gtk.Entry() # This is a tuple representing cropping, or None
+        super(Capture_EventEntry,self).load_parameter_widgets()
 
 class Handlers:
 
@@ -22,8 +115,12 @@ class Handlers:
         # ~ self.updateTemp()
         # ~ self.source_id2 = GObject.timeout_add(2000, self.updateTemp)
         self.lastShutterTime = self.parent.parent.Camera.exposure_speed
+<<<<<<< HEAD
         self._capture_lock = threading.Lock()
         
+=======
+
+>>>>>>> gui
     def on_window1_delete_event(self, *args):
         self.parent.parent.GPIO.cancel_PWM()
         GObject.source_remove(self.source_id)
@@ -276,10 +373,30 @@ class Handlers:
         self.parent.expModeComboBox.set_active(0)
         comment = self.parent.commentBox.get_text()
         self.parent.parent.SaveParameterFile(comment, True)
+<<<<<<< HEAD
         run_thread = threading.Thread(target=self.parent.parent.RunProgram)
         run_thread.daemon=True
         run_thread.start()
 
+=======
+        self.parent.parent.RunProgram()
+        
+    def on_new_event_button_clicked(self, button):
+        self.parent.EventEntries.append( EventEntry(self.parent, False) )
+        self.parent.EventList.pack_start( self.parent.EventEntries[-1], False, False, 0 )
+        self.parent.EventList.show_all()
+        
+    def on_event_scroll_size_allocate(self, scroll, rectangle):
+        #TODO scroll to bottom
+        # ~ adjustment = scroll.get_vadjustment()
+        # ~ adjustment.set_value(adjustment.get_upper())
+        adjustment = scroll.get_vadjustment()
+        adjustment.set_value(adjustment.get_upper())
+        # ~ Gtk.Widget.show(self.parent.EventListScroll)
+        # ~ mark = self.logBuffer.create_mark(None, self.logBuffer.get_end_iter(), False)
+        # ~ self.logView.scroll_to_mark(mark, 0, False, 0,0)
+        
+>>>>>>> gui
     def on_param_file_chooser_dialog_realize(self, widget):
         Gtk.Window.maximize(self.parent.paramFileChooser)
         
@@ -445,7 +562,7 @@ class Handlers:
         # ~ widget.queue_draw()
 
 class ZionGUI():
-    def __init__(self, initial_values, parent, glade_file='zion_layout.glade'):
+    def __init__(self, initial_values, parent, glade_file='zion_layout_event.glade'):
         #Create Window and Maximize:
         self.builder = Gtk.Builder.new_from_file(glade_file)
         self.mainWindow = self.builder.get_object("window1")
@@ -533,6 +650,12 @@ class ZionGUI():
             self.expModeComboBox.set_active(self.Def_row_idx)
             
         self.paramFileChooser = self.builder.get_object('param_file_chooser_dialog')
+        
+        self.EventList = self.builder.get_object("event_list")
+        self.EventEntries = [EventEntry(self, True)]
+        self.EventList.pack_start(self.EventEntries[0], False, True, 0)
+        self.EventList.show_all()
+        self.EventListScroll = self.builder.get_object("eventlist_scroll")
         
         self.builder.connect_signals(Handlers(self))
         
