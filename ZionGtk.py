@@ -115,6 +115,8 @@ class Handlers:
         # ~ self.updateTemp()
         # ~ self.source_id2 = GObject.timeout_add(2000, self.updateTemp)
         self.lastShutterTime = self.parent.parent.Camera.exposure_speed
+        self.run_thread = None
+        self.stop_run_thread = False
 
     def on_window1_delete_event(self, *args):
         self.parent.parent.GPIO.cancel_PWM()
@@ -365,12 +367,29 @@ class Handlers:
         capture_thread.start()
 
     def on_run_program_button_clicked(self,button):
-        self.parent.expModeComboBox.set_active(0)
-        comment = self.parent.commentBox.get_text()
-        self.parent.parent.SaveParameterFile(comment, True)
-        run_thread = threading.Thread(target=self.parent.parent.RunProgram)
-        run_thread.daemon=True
-        run_thread.start()
+        if button.get_active():
+            self.parent.expModeComboBox.set_active(0)
+            comment = self.parent.commentBox.get_text()
+            self.parent.parent.SaveParameterFile(comment, True)
+            self.stop_run_thread = False
+            button.set_sensitive(False)
+            self.run_thread = threading.Thread(target=self.parent.parent.RunProgram, args=(lambda:self.stop_run_thread,) )
+            self.run_thread.daemon=True
+            self.run_thread.start()
+        
+    def on_stop_program_button_clicked(self, button):
+        if self.run_thread:
+            self.stop_run_thread = True
+            self.parent.printToLog('Thread stopping')
+            self.run_thread.join()
+            self.run_thread = None
+            self.parent.parent.GPIO.enable_led('UV',0)
+            self.parent.parent.GPIO.enable_led('Blue',0)
+            self.parent.parent.GPIO.enable_led('Orange',0)
+            self.parent.runProgramButton.set_active(False)
+            self.parent.runProgramButton.set_sensitive(True)
+
+
         
     def on_new_event_button_clicked(self, button):
         self.parent.EventEntries.append( EventEntry(self.parent, False) )
@@ -552,7 +571,7 @@ class Handlers:
         # ~ widget.queue_draw()
 
 class ZionGUI():
-    def __init__(self, initial_values, parent, glade_file='zion_layout_event.glade'):
+    def __init__(self, initial_values, parent, glade_file='zion_layout.glade'):
         #Create Window and Maximize:
         self.builder = Gtk.Builder.new_from_file(glade_file)
         self.mainWindow = self.builder.get_object("window1")
@@ -621,6 +640,7 @@ class ZionGUI():
         self.isoButton640 = self.builder.get_object("radiobutton6")
         self.isoButton800 = self.builder.get_object("radiobutton7")
 
+
         
         self.commentBox = self.builder.get_object("comment_entry")
         
@@ -646,6 +666,8 @@ class ZionGUI():
         self.EventList.pack_start(self.EventEntries[0], False, True, 0)
         self.EventList.show_all()
         self.EventListScroll = self.builder.get_object("eventlist_scroll")
+        
+        self.runProgramButton = self.builder.get_object("run_program_button")
         
         self.builder.connect_signals(Handlers(self))
         
