@@ -115,15 +115,9 @@ class Handlers:
         # ~ self.updateTemp()
         # ~ self.source_id2 = GObject.timeout_add(2000, self.updateTemp)
         self.lastShutterTime = self.parent.parent.Camera.exposure_speed
-<<<<<<< HEAD
-        # ~ self._capture_lock = threading.Lock()
-        self.run_threads = []
-        
-=======
         self.run_thread = None
         self.stop_run_thread = False
 
->>>>>>> gui
     def on_window1_delete_event(self, *args):
         self.parent.parent.GPIO.cancel_PWM()
         GObject.source_remove(self.source_id)
