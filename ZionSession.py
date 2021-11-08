@@ -99,15 +99,20 @@ class ZionSession():
         check_led_timings(blue_timing, orange_timing, uv_timing)
         self.EventList = EventList(blue_timing, orange_timing, uv_timing, capture_times, N=repeatN)
 
-    def RunProgram(self):
+    def RunProgram(self, stop):
         self.TimeOfLife = time.time()
-        for n in range(self.EventList.N+1):
-            time.sleep(self.EventList.Events[0][0]/1000.)
-            for e in range(len(self.EventList.Events)-1):
-                event = self.EventList.Events[e]
-                self.EventList.performEvent(event, self.Camera, self.GPIO)
-                time.sleep((self.EventList.Events[e+1][0]-event[0])/1000.)
-            self.EventList.performEvent(self.EventList.Events[-1], self.Camera, self.GPIO)
+        for n in range(self.RepeatN+1):
+            time.sleep(self.EventList[0][0]/1000.)
+            for e in range(len(self.EventList)-1):
+                if stop():
+                    break
+                event = self.EventList[e]
+                performEvent(event, self.Camera, self.GPIO)
+                time.sleep((self.EventList[e+1][0]-event[0])/1000.)
+            if not stop():
+                performEvent(self.EventList[-1], self.Camera, self.GPIO)
+        self.gui.runProgramButton.set_active(False)
+        self.gui.runProgramButton.set_sensitive(True)
 
     def InteractivePreview(self, window):
         self.Camera.start_preview(fullscreen=False, window=window)
