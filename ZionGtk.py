@@ -4,8 +4,8 @@ import gi
 gi.require_version('Gtk', '3.0')
 gi.require_version('Gst', '1.0')
 from gi.repository import Gtk, GObject, Gst
-
 import threading
+from ZionEvents import print_eventList
 
 def get_handler_id(obj, signal_name):
     signal_id, detail = GObject.signal_parse_name(signal_name, obj, True)
@@ -88,22 +88,22 @@ class EventEntry(Gtk.HBox):
             self.Parameter1.destroy()
             self.Parameter2.destroy()
 
-class LED_EventEntry(EventEntry):
-    def __init__(self, parent, safe, *args):
-        super(LED_EventEntry, self).__init__(parent, safe, *args)
-        self.Parameter1 = Gtk.ComboBoxText()
-        self.Parameter1.append(None, 'Blue')
-        self.Parameter1.append(None, 'Orange')
-        self.Parameter1.append(None, 'UV')
-        self.Parameter2 = Gtk.Entry() #This is numerical (duty cycle)
-        super(LED_EventEntry,self).load_parameter_widgets()
+# ~ class LED_EventEntry(EventEntry):
+    # ~ def __init__(self, parent, safe, *args):
+        # ~ super(LED_EventEntry, self).__init__(parent, safe, *args)
+        # ~ self.Parameter1 = Gtk.ComboBoxText()
+        # ~ self.Parameter1.append(None, 'Blue')
+        # ~ self.Parameter1.append(None, 'Orange')
+        # ~ self.Parameter1.append(None, 'UV')
+        # ~ self.Parameter2 = Gtk.Entry() #This is numerical (duty cycle)
+        # ~ super(LED_EventEntry,self).load_parameter_widgets()
 
-class Capture_EventEntry(EventEntry):
-    def __init__(self, parent, safe, *args):
-        super(Capture_EventEntry, self).__init__(parent, safe, *args)
-        self.Parameter1 = Gtk.Entry() # This is group (ie filename prefix), a string
-        self.Parameter2 = Gtk.Entry() # This is a tuple representing cropping, or None
-        super(Capture_EventEntry,self).load_parameter_widgets()
+# ~ class Capture_EventEntry(EventEntry):
+    # ~ def __init__(self, parent, safe, *args):
+        # ~ super(Capture_EventEntry, self).__init__(parent, safe, *args)
+        # ~ self.Parameter1 = Gtk.Entry() # This is group (ie filename prefix), a string
+        # ~ self.Parameter2 = Gtk.Entry() # This is a tuple representing cropping, or None
+        # ~ super(Capture_EventEntry,self).load_parameter_widgets()
 
 class Handlers:
 
@@ -117,6 +117,47 @@ class Handlers:
         self.lastShutterTime = self.parent.parent.Camera.exposure_speed
         self.run_thread = None
         self.stop_run_thread = False
+        
+    def on_script_save_button_clicked(self, button):
+        eventList = []
+        for eventEntry in self.parent.EventEntries:
+            eventType = eventEntry.TypeComboBox.get_active()
+            eventTime = eventEntry.TimeEntry.get_text()
+            # ~ self.parent.printToLog('event time: '+eventTime+' ms')
+            if not eventTime.isdecimal():
+                self.parent.printToLog('Event Time '+eventTime+' must be an integer in milliseconds!')
+                return
+            eventTime = int(eventTime)
+            if eventType == 1: #LED Event
+                if eventEntry.Parameter2.get_text().isdecimal():
+                    dc = int(eventEntry.Parameter2.get_text())
+                else:
+                    self.parent.printToLog('Duty Cycle must be an integer percent!')
+                    return
+                event = (eventTime, 'LED')
+                if eventEntry.Parameter1.get_active_text() == 'UV':
+                    event += ('UV',)
+                elif eventEntry.Parameter1.get_active_text() == 'Bl':
+                    event += ('Blue',)
+                elif eventEntry.Parameter1.get_active_text() == 'Or':
+                    event += ('Orange',)
+                event += (dc,)
+                eventList.append(event)
+            elif eventType == 2: #Capture event
+                event = (eventTime, 'Capture', eventEntry.Parameter1.get_text())
+                #TODO: check cropping is a valid tuple!
+                cropping = eventEntry.Parameter2.get_active_text()
+                cropping = None #if cropping=='' else cropping
+                event += (cropping,)
+                eventList.append(event)
+            else: #TODO: should we add None "wait" events?
+                pass
+                # ~ print('this is an unknown event')
+        print_eventList(eventList)
+        # ~ self.parent.parent.    
+
+    def on_script_load_button_clicked(self, button):
+        pass
 
     def on_window1_delete_event(self, *args):
         self.parent.parent.GPIO.cancel_PWM()
@@ -404,13 +445,6 @@ class Handlers:
         # ~ Gtk.Widget.show(self.parent.EventListScroll)
         # ~ mark = self.logBuffer.create_mark(None, self.logBuffer.get_end_iter(), False)
         # ~ self.logView.scroll_to_mark(mark, 0, False, 0,0)
-        
-    def on_script_save_button_clicked(self, button):
-        pass
-    
-    
-    def on_script_load_button_clicked(self, button):
-        pass
         
     def on_param_file_chooser_dialog_realize(self, widget):
         Gtk.Window.maximize(self.parent.paramFileChooser)
