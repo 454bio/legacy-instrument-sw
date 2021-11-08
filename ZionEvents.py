@@ -114,5 +114,5 @@ def check_led_timings(LED_Blu_Timing, LED_Or_Timing, LED_UV_Timing, UV_duty_cycl
 		# ~ return LED_UV_Timing[-1][1]-LED_UV_Timing[-1][0]
 
 def print_eventList(eventList): #for testing
-	for event in eventList.Events:
+	for event in eventList:
 		print(event)
