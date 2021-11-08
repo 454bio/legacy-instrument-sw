@@ -101,16 +101,16 @@ class ZionSession():
 
     def RunProgram(self, stop):
         self.TimeOfLife = time.time()
-        for n in range(self.RepeatN+1):
-            time.sleep(self.EventList[0][0]/1000.)
-            for e in range(len(self.EventList)-1):
+        for n in range(self.EventList.N+1):
+            time.sleep(self.EventList.Events[0][0]/1000.)
+            for e in range(len(self.EventList.Events)-1):
                 if stop():
                     break
-                event = self.EventList[e]
-                performEvent(event, self.Camera, self.GPIO)
-                time.sleep((self.EventList[e+1][0]-event[0])/1000.)
+                event = self.EventList.Events[e]
+                self.EventList.performEvent(event, self.Camera, self.GPIO)
+                time.sleep((self.EventList.Events[e+1][0]-event[0])/1000.)
             if not stop():
-                performEvent(self.EventList[-1], self.Camera, self.GPIO)
+                self.EventList.performEvent(self.EventList.Events[-1], self.Camera, self.GPIO)
         self.gui.runProgramButton.set_active(False)
         self.gui.runProgramButton.set_sensitive(True)
 

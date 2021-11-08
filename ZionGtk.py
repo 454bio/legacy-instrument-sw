@@ -362,7 +362,7 @@ class Handlers:
     def on_capture_button_clicked(self, button):
         #TODO: get cropping from some self object here
         comment = self.parent.commentBox.get_text()
-        capture_thread = threading.Thread(target=self.parent.parent.CaptureImage, kwargs={'group': 'P', 'comment': comment})
+        capture_thread = threading.Thread(target=self.parent.parent.CaptureImage, kwargs={'group': 'P', 'comment': comment,'verbose': True})
         capture_thread.daemon = True
         capture_thread.start()
 
@@ -380,7 +380,8 @@ class Handlers:
     def on_stop_program_button_clicked(self, button):
         if self.run_thread:
             self.stop_run_thread = True
-            self.parent.printToLog('Thread stopping')
+            self.parent.printToLog('Requesting script to stop')
+            print('Requesting thread to stop')
             self.run_thread.join()
             self.run_thread = None
             self.parent.parent.GPIO.enable_led('UV',0)
@@ -403,6 +404,13 @@ class Handlers:
         # ~ Gtk.Widget.show(self.parent.EventListScroll)
         # ~ mark = self.logBuffer.create_mark(None, self.logBuffer.get_end_iter(), False)
         # ~ self.logView.scroll_to_mark(mark, 0, False, 0,0)
+        
+    def on_script_save_button_clicked(self, button):
+        pass
+    
+    
+    def on_script_load_button_clicked(self, button):
+        pass
         
     def on_param_file_chooser_dialog_realize(self, widget):
         Gtk.Window.maximize(self.parent.paramFileChooser)
