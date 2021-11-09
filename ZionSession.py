@@ -7,7 +7,7 @@ from gi.repository import Gtk
 import keyboard
 from ZionCamera import ZionCamera
 from ZionGPIO import ZionGPIO
-from ZionEvents import check_led_timings, EventList
+from ZionEvents import check_led_timings, ZionProtocol
 from ZionGtk import ZionGUI
 from picamera.exc import PiCameraValueError
 
@@ -29,10 +29,12 @@ class ZionSession():
         
         self.Camera = ZionCamera(Frame_Rate, Binning, Initial_Values, parent=self)
         self.CaptureCount = 0
+        self.ProtocolCount = 0
 
+        self.LoadProtocolFile('ZionDefaultProtocol.txt')
         self.gui = ZionGUI(Initial_Values, self)
         
-        self.CreateProgram(Blue_Timing, Orange_Timing, UV_Timing, Camera_Captures, RepeatN)
+        # ~ self.CreateProgram(Blue_Timing, Orange_Timing, UV_Timing, Camera_Captures, RepeatN)
         
         self.TimeOfLife = time.time()
 
@@ -94,10 +96,26 @@ class ZionSession():
                             params[parameter_key] = parameter_value
         self.Camera.load_params(params)
         return params
+        
+    def SaveProtocolFile(self, default=False):
+        if default:
+            filename = 'Zion_Default_Protocol.txt'
+        else:
+            self.ProtocolCount += 1
+            filename = os.path.join(self.Dir, self.Name+'_Protocol_'+str(self.ProtocolCount).zfill(2))
+        with open(filename+'.txt', 'w') as f:
+            f.write('N='+str(self.EventList.N)+'\n')
+            for event in self.EventList.Events:
+                f.write(str(event)+'\n')
+        return filename+'.txt'
+
+    def LoadProtocolFile(self, filename):
+        self.EventList = ZionProtocol(filename)
+        return self.EventList
 
     def CreateProgram(self, blue_timing, orange_timing, uv_timing, capture_times, repeatN=0):
         check_led_timings(blue_timing, orange_timing, uv_timing)
-        self.EventList = EventList(blue_timing, orange_timing, uv_timing, capture_times, N=repeatN)
+        self.EventList = None #EventList(blue_timing, orange_timing, uv_timing, capture_times, N=repeatN)
 
     def RunProgram(self, stop):
         self.TimeOfLife = time.time()
@@ -111,8 +129,8 @@ class ZionSession():
                 time.sleep((self.EventList.Events[e+1][0]-event[0])/1000.)
             if not stop():
                 self.EventList.performEvent(self.EventList.Events[-1], self.Camera, self.GPIO)
-        self.gui.runProgramButton.set_active(False)
-        self.gui.runProgramButton.set_sensitive(True)
+        # ~ self.gui.runProgramButton.set_active(False)
+        # ~ self.gui.runProgramButton.set_sensitive(True)
 
     def InteractivePreview(self, window):
         self.Camera.start_preview(fullscreen=False, window=window)
