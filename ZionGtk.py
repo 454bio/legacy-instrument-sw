@@ -58,7 +58,10 @@ class EventEntry(Gtk.HBox):
 
     def on_event_delete_button(self, button):
         if not self.Safe:
+            idx = self.parent.EventEntries.index(self)
             self.destroy()
+            print('idx to remove = '+str(idx))
+            del(self.parent.EventEntries[idx])
 
     def load_parameter_widgets(self):
         self.pack_start( self.Parameter1, False, False, 0 )
@@ -117,6 +120,7 @@ class Handlers:
         self.lastShutterTime = self.parent.parent.Camera.exposure_speed
         self.run_thread = None
         self.stop_run_thread = False
+        self.load_eventList(self.parent.parent.EventList)
         
     def on_script_save_button_clicked(self, button):
         eventList = []
@@ -146,18 +150,68 @@ class Handlers:
             elif eventType == 2: #Capture event
                 event = (eventTime, 'Capture', eventEntry.Parameter1.get_text())
                 #TODO: check cropping is a valid tuple!
-                cropping = eventEntry.Parameter2.get_active_text()
+                cropping = eventEntry.Parameter2.get_text().strip(' ')
                 cropping = None #if cropping=='' else cropping
                 event += (cropping,)
                 eventList.append(event)
             else: #TODO: should we add None "wait" events?
                 pass
                 # ~ print('this is an unknown event')
-        print_eventList(eventList)
-        # ~ self.parent.parent.    
+        # ~ print_eventList(eventList)
+        N = self.parent.RepeatNEntry.get_value_as_int()
+        # ~ with open('ZionDefaultProtocol.txt','w') as f:
+            # ~ f.write('N='+str(N)+'\n')
+            # ~ for e in eventList:
+                # ~ f.write(str(e)+'\n')
 
     def on_script_load_button_clicked(self, button):
-        pass
+        response = self.parent.paramFileChooser.run()
+        if response == Gtk.ResponseType.OK:
+            filename = self.parent.paramFileChooser.get_filename()
+            self.parent.paramFileChooser.hide()
+            eventList = self.parent.parent.LoadProtocolFile(filename)
+            self.load_eventList(eventList)
+        elif response == Gtk.ResponseType.CANCEL:
+            self.parent.paramFileChooser.hide()
+            
+    def load_eventList(self, eventList):
+            self.parent.RepeatNEntry.set_value(eventList.N)
+            self.parent.EventEntries[0].TimeEntry.set_text(str(eventList.Events[0][0]))
+            if eventList.Events[0][1]=='LED':
+                self.parent.EventEntries[0].TypeComboBox.set_active(1)
+                if eventList.Events[0][2]=='Blue':
+                    self.parent.EventEntries[0].Parameter1.set_active(0)
+                elif eventList.Events[0][2]=='Orange':
+                    self.parent.EventEntries[0].Parameter1.set_active(1)
+                elif eventList.Events[0][2]=='UV':
+                    self.parent.EventEntries[0].Parameter1.set_active(2)
+                self.parent.EventEntries[0].Parameter2.set_text(str(eventList.Events[0][3]))
+            elif eventList.Events[0][1]=='Capture':
+                self.parent.EventEntries[0].TypeComboBox.set_active(2)
+                self.parent.EventEntries[1].Parameter1.set_text(eventList.Events[0][2])
+            else:
+                self.parent.EventEntries[0].TypeComboBox.set_active(0)
+                
+            for event in eventList.Events[1:]:
+                eventEntry = EventEntry(self.parent, False)
+                eventEntry.TimeEntry.set_text(str(event[0]))
+                if event[1]=='LED':
+                    eventEntry.TypeComboBox.set_active(1)
+                    if event[2]=='Blue':
+                        eventEntry.Parameter1.set_active(0)
+                    elif event[2]=='Orange':
+                        eventEntry.Parameter1.set_active(1)
+                    elif event[2]=='UV':
+                        eventEntry.Parameter1.set_active(2)
+                    eventEntry.Parameter2.set_text(str(event[3]))
+                elif event[1]=='Capture':
+                    eventEntry.TypeComboBox.set_active(2)
+                    eventEntry.Parameter1.set_text(event[2])
+                else:
+                    eventEntry.TypeComboBox.set_active(0)
+                self.parent.EventEntries.append( eventEntry )
+                self.parent.EventList.pack_start( self.parent.EventEntries[-1], False, False, 0 )
+            self.parent.EventList.show_all()
 
     def on_window1_delete_event(self, *args):
         self.parent.parent.GPIO.cancel_PWM()
@@ -412,8 +466,9 @@ class Handlers:
             self.parent.expModeComboBox.set_active(0)
             comment = self.parent.commentBox.get_text()
             self.parent.parent.SaveParameterFile(comment, True)
+            self.parent.parent.SaveProtocolFile()
             self.stop_run_thread = False
-            button.set_sensitive(False)
+            # ~ button.set_sensitive(False)
             self.run_thread = threading.Thread(target=self.parent.parent.RunProgram, args=(lambda:self.stop_run_thread,) )
             self.run_thread.daemon=True
             self.run_thread.start()
@@ -680,8 +735,6 @@ class ZionGUI():
         self.isoButton640 = self.builder.get_object("radiobutton6")
         self.isoButton800 = self.builder.get_object("radiobutton7")
 
-
-        
         self.commentBox = self.builder.get_object("comment_entry")
         
         if initial_values['exposure_mode']=='off':
@@ -708,6 +761,8 @@ class ZionGUI():
         self.EventListScroll = self.builder.get_object("eventlist_scroll")
         
         self.runProgramButton = self.builder.get_object("run_program_button")
+        
+        self.RepeatNEntry = self.builder.get_object("repeat_n_spin_button")
         
         self.builder.connect_signals(Handlers(self))
         

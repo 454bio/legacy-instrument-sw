@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from ZionSession import ZionSession
+from ZionEvents import ZionProtocol
 
 ########################################################################
 ######################### User-Level Settings ##########################
