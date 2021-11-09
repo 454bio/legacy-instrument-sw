@@ -242,6 +242,7 @@ class Handlers:
         self.parent.ContrastScale.set_value(self.parent.Default_Contrast)
         self.parent.SaturationScale.set_value(self.parent.Default_Saturation)
         self.parent.SharpnessScale.set_value(self.parent.Default_Sharpness)
+
         
     def on_image_denoise_button(self, button):
         if button.get_active():
@@ -451,7 +452,7 @@ class Handlers:
 
     def on_blue_gain_scale_value_changed(self, scale):
         newval = scale.get_value()
-        self.parent.parent.Camera.set_red_gain(newval)
+        self.parent.parent.Camera.set_blue_gain(newval)
         self.parent.printToLog('WB Blue Gain set to '+str(newval))
 
     def on_capture_button_clicked(self, button):

@@ -100,9 +100,13 @@ class ZionCamera(PiCamera):
 			elif key=='awb':
 				self.awb_mode = params[key]
 			elif key=='red_gain':
-				self.awb_gains =  (params[key], self.awb_gains[1])
+				self.set_red_gain(params[key])
+				sleep(0.1)
+				# ~ self.awb_gains =  (params[key], self.awb_gains[1])
 			elif key=='blue_gain':
-				self.awb_gains = (self.awb_gains[0], params[key])
+				self.set_blue_gain(params[key])
+				sleep(0.1)
+				# ~ self.awb_gains = (self.awb_gains[0], params[key])
 			elif key=='exposure_mode':
 				self.exposure_mode = params[key]
 			elif key=='shutter_time':
