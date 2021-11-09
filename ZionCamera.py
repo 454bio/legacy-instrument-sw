@@ -39,7 +39,7 @@ class ZionCamera(PiCamera):
 		self.awb_gains = (initial_values['red_gain'], initial_values['blue_gain'])
 		self.exposure_mode = initial_values['exposure_mode']
 		self.exposure_time = initial_values['exposure_time']
-		
+		self.iso = 0
 		time.sleep(2)
 		
 		# TODO: check for zero for Jose
