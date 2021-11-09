@@ -588,11 +588,11 @@ class Handlers:
             row_idx = rowList.index(params['exposure_mode'])
             self.parent.expModeComboBox.set_active(row_idx)
             if not row_idx:
-                self.parent.expModeLockButton.set_sensitive(False)
+                self.parent.expModeLockButton.set_active(True)
                 self.parent.expCompScale.set_sensitive(False)
                 self.parent.isoButtonBox.set_sensitive(False)
             else:
-                self.parent.expModeLockButton.set_sensitive(True)
+                self.parent.expModeLockButton.set_active(False)
                 self.parent.expCompScale.set_sensitive(True)
                 self.parent.isoButtonBox.set_sensitive(True)
                     
