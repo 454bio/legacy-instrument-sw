@@ -4,7 +4,7 @@ import keyboard
 import threading
 
 class ZionProtocol:
-	def __init__(self, filename):
+	def __init__(self, filename=None):
 		eventList = []
 		if filename:
 			with open(filename) as f:
@@ -30,6 +30,7 @@ class ZionProtocol:
 			self.N = 0
 			self.Events = []
 			self.capture_threads = []
+			
 
 # ~ class EventList:
 	# ~ def __init__(self, LED_Blu_Timing, LED_Or_Timing, LED_UV_Timing, Camera_Capture_Times, N=0):
