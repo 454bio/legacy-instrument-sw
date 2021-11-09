@@ -33,9 +33,7 @@ class ZionSession():
 
         self.LoadProtocolFile('ZionDefaultProtocol.txt')
         self.gui = ZionGUI(Initial_Values, self)
-        
-        # ~ self.CreateProgram(Blue_Timing, Orange_Timing, UV_Timing, Camera_Captures, RepeatN)
-        
+                
         self.TimeOfLife = time.time()
 
     def CaptureImage(self, cropping=(0,0,1,1), group=None, verbose=False, comment=''):
