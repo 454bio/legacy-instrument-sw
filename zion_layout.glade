@@ -557,8 +557,8 @@
                                                         <property name="visible">True</property>
                                                         <property name="can_focus">True</property>
                                                         <property name="receives_default">False</property>
+                                                        <property name="active">True</property>
                                                         <property name="draw_indicator">True</property>
-                                                        <property name="group">radiobutton7</property>
                                                         <signal name="toggled" handler="on_iso_auto_button" swapped="no"/>
                                                       </object>
                                                       <packing>
@@ -574,7 +574,7 @@
                                                         <property name="can_focus">True</property>
                                                         <property name="receives_default">False</property>
                                                         <property name="draw_indicator">True</property>
-                                                        <property name="group">radiobutton7</property>
+                                                        <property name="group">radiobutton0</property>
                                                         <signal name="toggled" handler="on_iso_100_button" swapped="no"/>
                                                       </object>
                                                       <packing>
@@ -590,7 +590,7 @@
                                                         <property name="can_focus">True</property>
                                                         <property name="receives_default">False</property>
                                                         <property name="draw_indicator">True</property>
-                                                        <property name="group">radiobutton7</property>
+                                                        <property name="group">radiobutton0</property>
                                                         <signal name="toggled" handler="on_iso_200_button" swapped="no"/>
                                                       </object>
                                                       <packing>
@@ -606,7 +606,7 @@
                                                         <property name="can_focus">True</property>
                                                         <property name="receives_default">False</property>
                                                         <property name="draw_indicator">True</property>
-                                                        <property name="group">radiobutton7</property>
+                                                        <property name="group">radiobutton0</property>
                                                         <signal name="toggled" handler="on_iso_320_button" swapped="no"/>
                                                       </object>
                                                       <packing>
@@ -622,7 +622,7 @@
                                                         <property name="can_focus">True</property>
                                                         <property name="receives_default">False</property>
                                                         <property name="draw_indicator">True</property>
-                                                        <property name="group">radiobutton7</property>
+                                                        <property name="group">radiobutton0</property>
                                                         <signal name="toggled" handler="on_iso_400_button" swapped="no"/>
                                                       </object>
                                                       <packing>
@@ -638,7 +638,7 @@
                                                         <property name="can_focus">True</property>
                                                         <property name="receives_default">False</property>
                                                         <property name="draw_indicator">True</property>
-                                                        <property name="group">radiobutton7</property>
+                                                        <property name="group">radiobutton0</property>
                                                         <signal name="toggled" handler="on_iso_500_button" swapped="no"/>
                                                       </object>
                                                       <packing>
@@ -654,7 +654,7 @@
                                                         <property name="can_focus">True</property>
                                                         <property name="receives_default">False</property>
                                                         <property name="draw_indicator">True</property>
-                                                        <property name="group">radiobutton7</property>
+                                                        <property name="group">radiobutton0</property>
                                                         <signal name="toggled" handler="on_iso_640_button" swapped="no"/>
                                                       </object>
                                                       <packing>
@@ -669,8 +669,8 @@
                                                         <property name="visible">True</property>
                                                         <property name="can_focus">True</property>
                                                         <property name="receives_default">False</property>
-                                                        <property name="active">True</property>
                                                         <property name="draw_indicator">True</property>
+                                                        <property name="group">radiobutton0</property>
                                                         <signal name="toggled" handler="on_iso_800_button" swapped="no"/>
                                                       </object>
                                                       <packing>

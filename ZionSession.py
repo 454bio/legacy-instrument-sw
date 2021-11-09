@@ -31,11 +31,9 @@ class ZionSession():
         self.CaptureCount = 0
         self.ProtocolCount = 0
 
-        self.LoadProtocolFile('ZionDefaultProtocol.txt')
+        self.LoadProtocolFromFile('ZionDefaultProtocol.txt')
         self.gui = ZionGUI(Initial_Values, self)
-        
-        # ~ self.CreateProgram(Blue_Timing, Orange_Timing, UV_Timing, Camera_Captures, RepeatN)
-        
+                
         self.TimeOfLife = time.time()
 
     def CaptureImage(self, cropping=(0,0,1,1), group=None, verbose=False, comment=''):
@@ -100,7 +98,7 @@ class ZionSession():
         
     def SaveProtocolFile(self, default=False):
         if default:
-            filename = 'Zion_Default_Protocol.txt'
+            filename = 'Zion_Default_Protocol'
         else:
             self.ProtocolCount += 1
             filename = os.path.join(self.Dir, self.Name+'_Protocol_'+str(self.ProtocolCount).zfill(2))
@@ -110,8 +108,14 @@ class ZionSession():
                 f.write(str(event)+'\n')
         return filename+'.txt'
 
-    def LoadProtocolFile(self, filename):
+    def LoadProtocolFromFile(self, filename):
         self.EventList = ZionProtocol(filename)
+        return self.EventList
+        
+    def LoadProtocolFromGUI(self, N, events):
+        self.EventList = ZionProtocol()
+        self.EventList.N = N
+        self.EventList.Events = events
         return self.EventList
 
     def CreateProgram(self, blue_timing, orange_timing, uv_timing, capture_times, repeatN=0):

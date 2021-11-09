@@ -123,6 +123,10 @@ class Handlers:
         self.load_eventList(self.parent.parent.EventList)
         
     def on_script_save_button_clicked(self, button):
+        N, eventList = self.save_eventList()
+        #TODO: bring button back?
+        
+    def save_eventList(self):
         eventList = []
         for eventEntry in self.parent.EventEntries:
             eventType = eventEntry.TypeComboBox.get_active()
@@ -163,13 +167,15 @@ class Handlers:
             # ~ f.write('N='+str(N)+'\n')
             # ~ for e in eventList:
                 # ~ f.write(str(e)+'\n')
+        return N, eventList
+        
 
     def on_script_load_button_clicked(self, button):
         response = self.parent.paramFileChooser.run()
         if response == Gtk.ResponseType.OK:
             filename = self.parent.paramFileChooser.get_filename()
             self.parent.paramFileChooser.hide()
-            eventList = self.parent.parent.LoadProtocolFile(filename)
+            eventList = self.parent.parent.LoadProtocolFromFile(filename)
             self.load_eventList(eventList)
         elif response == Gtk.ResponseType.CANCEL:
             self.parent.paramFileChooser.hide()
@@ -470,6 +476,8 @@ class Handlers:
             self.parent.expModeComboBox.set_active(0)
             comment = self.parent.commentBox.get_text()
             self.parent.parent.SaveParameterFile(comment, True)
+            N,events = self.save_eventList()
+            self.parent.parent.LoadProtocolFromGUI(N,events)
             self.parent.parent.SaveProtocolFile()
             self.stop_run_thread = False
             # ~ button.set_sensitive(False)
