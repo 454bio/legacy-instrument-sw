@@ -77,23 +77,24 @@ class ZionSession():
                 linesplit = line.split(':')
                 parameter_key = linesplit[0]
                 parameter_value = linesplit[1][1:].strip()
-                if parameter_value[0]=='-':
-                    if parameter_value[1:].isdecimal():
-                        params[parameter_key] = int(parameter_value)
+                if not parameter_key=='comment': 
+                    if parameter_value[0]=='-':
+                        if parameter_value[1:].isdecimal():
+                            params[parameter_key] = int(parameter_value)
+                        else:
+                            try:
+                                params[parameter_key] = float(parameter_value)
+                            except ValueError:
+                                params[parameter_key] = parameter_value
                     else:
-                        try:
-                            params[parameter_key] = float(parameter_value)
-                        except ValueError:
-                            params[parameter_key] = parameter_value
-                else:
-                    if parameter_value.isdecimal():
-                        params[parameter_key] = int(parameter_value)
-                    else:
-                        try:
-                            params[parameter_key] = float(parameter_value)
-                        except ValueError:
-                        #therefore it must be a string:
-                            params[parameter_key] = parameter_value
+                        if parameter_value.isdecimal():
+                            params[parameter_key] = int(parameter_value)
+                        else:
+                            try:
+                                params[parameter_key] = float(parameter_value)
+                            except ValueError:
+                            #therefore it must be a string:
+                                params[parameter_key] = parameter_value
         self.Camera.load_params(params)
         return params
         
