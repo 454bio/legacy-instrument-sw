@@ -60,7 +60,7 @@ class EventEntry(Gtk.HBox):
         if not self.Safe:
             idx = self.parent.EventEntries.index(self)
             self.destroy()
-            print('idx to remove = '+str(idx))
+            # ~ print('idx to remove = '+str(idx))
             del(self.parent.EventEntries[idx])
 
     def load_parameter_widgets(self):
@@ -176,6 +176,9 @@ class Handlers:
             
     def load_eventList(self, eventList):
             self.parent.RepeatNEntry.set_value(eventList.N)
+            for entry in self.parent.EventEntries[1:]:
+                entry.destroy()
+                del(entry)
             self.parent.EventEntries[0].TimeEntry.set_text(str(eventList.Events[0][0]))
             if eventList.Events[0][1]=='LED':
                 self.parent.EventEntries[0].TypeComboBox.set_active(1)
