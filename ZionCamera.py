@@ -41,6 +41,8 @@ class ZionCamera(PiCamera):
 		self.exposure_time = initial_values['exposure_time']
 		self.iso = 0
 		time.sleep(2)
+		# ~ self.analog_gain = 10.0
+		# ~ self.digital_gain = 1.0
 		
 		# TODO: check for zero for Jose
 		
@@ -101,11 +103,11 @@ class ZionCamera(PiCamera):
 				self.awb_mode = params[key]
 			elif key=='red_gain':
 				self.set_red_gain(params[key])
-				sleep(0.1)
+				sleep(0.25)
 				# ~ self.awb_gains =  (params[key], self.awb_gains[1])
 			elif key=='blue_gain':
 				self.set_blue_gain(params[key])
-				sleep(0.1)
+				sleep(0.25)
 				# ~ self.awb_gains = (self.awb_gains[0], params[key])
 			elif key=='exposure_mode':
 				self.exposure_mode = params[key]
