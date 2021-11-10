@@ -1,5 +1,6 @@
-from picamera import PiCamera, PiRenderer
+from picamera import PiCamera, PiRenderer, mmal, mmalobj, exc
 from picamera.array import PiRGBArray
+from picamera.mmalobj import to_rational
 import pigpio
 import keyboard
 import numpy as np
@@ -8,6 +9,9 @@ from PIL import Image
 from time import sleep
 import time
 import os
+
+MMAL_PARAMETER_ANALOG_GAIN = mmal.MMAL_PARAMETER_GROUP_CAMERA + 0x59
+MMAL_PARAMETER_DIGITAL_GAIN = mmal.MMAL_PARAMETER_GROUP_CAMERA + 0x5A
 
 class ZionCamera(PiCamera):
 
@@ -41,9 +45,8 @@ class ZionCamera(PiCamera):
 		self.exposure_time = initial_values['exposure_time']
 		self.iso = 0
 		time.sleep(2)
-		# ~ self.analog_gain = 10.0
-		# ~ self.digital_gain = 1.0
-		
+		self.set_analog_gain(10.0)
+		self.set_digital_gain(1.0)
 		# TODO: check for zero for Jose
 		
 		# TODO: when getting bayer data, need to account for vflip we introduced
@@ -211,7 +214,23 @@ class ZionCamera(PiCamera):
 		awb_gains = self.awb_gains
 		self.awb_gains = (awb_gains[0], val)
 		print('\nSetting AWB blue gain to '+str(val))
-		
+
+	def set_gain(self, gain, val):
+		if gain not in [MMAL_PARAMETER_ANALOG_GAIN, MMAL_PARAMETER_DIGITAL_GAIN]:
+			raise ValueError("The gain parameter was not valid")
+		ret = mmal.mmal_port_parameter_set_rational(self._camera.control._port, gain, to_rational(val))
+		if ret == 4:
+			raise exc.PiCameraMMALError(ret, "Are you running the latest version of the userland libraries? Gain setting was introduced in late 2017.")
+		elif ret != 0:
+			raise exc.PiCameraMMALError(ret)
+
+	def set_analog_gain(self, val):
+		self.set_gain(MMAL_PARAMETER_ANALOG_GAIN, val)
+	
+	def set_digital_gain(self, val):
+		self.set_gain(MMAL_PARAMETER_DIGITAL_GAIN, val)
+	
+
 	def start_preview(self, fullscreen=False, window=(560,75,640,480)):
 		super(ZionCamera,self).start_preview(fullscreen=False, window=window)
 
