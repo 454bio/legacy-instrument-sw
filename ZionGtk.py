@@ -167,7 +167,7 @@ class Handlers:
             # ~ f.write('N='+str(N)+'\n')
             # ~ for e in eventList:
                 # ~ f.write(str(e)+'\n')
-        return N, eventList
+        return (N, eventList)
         
 
     def on_script_load_button_clicked(self, button):
@@ -182,9 +182,9 @@ class Handlers:
             
     def load_eventList(self, eventList):
             self.parent.RepeatNEntry.set_value(eventList.N)
-            for entry in self.parent.EventEntries[1:]:
-                entry.destroy()
-                del(entry)
+            for entry_idx in range(1, len(self.parent.EventEntries)):
+                self.parent.EventEntries[entry_idx].destroy()
+            del(self.parent.EventEntries[1:])
             self.parent.EventEntries[0].TimeEntry.set_text(str(eventList.Events[0][0]))
             if eventList.Events[0][1]=='LED':
                 self.parent.EventEntries[0].TypeComboBox.set_active(1)
@@ -476,7 +476,7 @@ class Handlers:
             self.parent.expModeComboBox.set_active(0)
             comment = self.parent.commentBox.get_text()
             self.parent.parent.SaveParameterFile(comment, True)
-            N,events = self.save_eventList()
+            (N, events) = self.save_eventList()
             self.parent.parent.LoadProtocolFromGUI(N,events)
             self.parent.parent.SaveProtocolFile()
             self.stop_run_thread = False
