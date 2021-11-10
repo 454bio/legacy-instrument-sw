@@ -246,12 +246,14 @@ class Handlers:
         return True
                         
     def reset_button_click(self, *args):
-        self.parent.printToLog('Setting Video Params to Defaults')
-        self.parent.BrightnessScale.set_value(self.parent.Default_Brightness)
-        self.parent.ContrastScale.set_value(self.parent.Default_Contrast)
-        self.parent.SaturationScale.set_value(self.parent.Default_Saturation)
-        self.parent.SharpnessScale.set_value(self.parent.Default_Sharpness)
-
+        # ~ self.parent.printToLog('Setting Video Params to Defaults')
+        # ~ self.parent.BrightnessScale.set_value(self.parent.Default_Brightness)
+        # ~ self.parent.ContrastScale.set_value(self.parent.Default_Contrast)
+        # ~ self.parent.SaturationScale.set_value(self.parent.Default_Saturation)
+        # ~ self.parent.SharpnessScale.set_value(self.parent.Default_Sharpness)
+        gains = self.parent.parent.Camera.awb_gains
+        self.parent.printToLog('red_gain = '+str(float(gains[0])))
+        self.parent.printToLog('blue_gain = '+str(float(gains[1])))
         
     def on_image_denoise_button(self, button):
         if button.get_active():
@@ -384,8 +386,8 @@ class Handlers:
         self.parent.parent.Camera.set_exp_comp(newval)
         self.parent.printToLog('Exposure compensation set to '+str(newval))
         
-    def on_set_exposure_time_button(self, button):
-        newval = self.parent.expTimeBox.get_text()
+    def on_exposure_time_entry_activate(self, entry):
+        newval = entry.get_text()
         try:
             newval = float(newval)
         except ValueError: 
@@ -399,6 +401,26 @@ class Handlers:
             self.parent.parent.Camera.shutter_speed = round(1000*newval)
             self.parent.parent.Camera.set_shutter_speed(round(1000*newval))
             self.parent.printToLog('Exposure time set to '+str(newval)+' ms')
+            
+    def on_analog_gain_entry_activate(self, entry):
+        newval = entry.get_text()
+        try:
+            newval = float(newval)
+        except ValueError: 
+            self.parent.printToLog('Requested analog gain must be a number!')
+            return
+        self.parent.parent.Camera.set_analog_gain(newval)
+        self.parent.printToLog('Analog gain set to '+str(newval))
+
+    def on_digital_gain_entry_activate(self, entry):
+        newval = entry.get_text()
+        try:
+            newval = float(newval)
+        except ValueError: 
+            self.parent.printToLog('Requested digital gain must be a number!')
+            return
+        self.parent.parent.Camera.set_digital_gain(newval)
+        self.parent.printToLog('Digital gain set to '+str(newval))
         
     def on_exp_mode_changed(self, combo):
         active_idx = combo.get_active()
