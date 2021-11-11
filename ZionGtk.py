@@ -267,21 +267,71 @@ class Handlers:
         newval = int(scale.get_value())
         self.parent.parent.Camera.set_brightness(newval)
         self.parent.printToLog('Brightness set to '+str(newval))
+    
+    def on_brightness_entry_activate(self, entry):
+        newval = entry.get_text()
+        try:
+            newval = int(entry.get_text())
+        except ValueError:
+            self.parent.printToLog('Brightness must be an integer!')
+            return
+        if newval >= 0 and newval <= 100:
+            self.parent.BrightnessScale.set_value(newval)
+        else:
+            self.parent.printToLog('Brightness must be between 0 and 100!')
+
         
     def on_contrast_scale_value_changed(self, scale):
         newval = int(scale.get_value())
         self.parent.parent.Camera.set_contrast(newval)
         self.parent.printToLog('Contrast set to '+str(newval))
     
+    def on_contrast_entry_activate(self, entry):
+        newval = entry.get_text()
+        try:
+            newval = int(entry.get_text())
+        except ValueError:
+            self.parent.printToLog('Contrast must be an integer!')
+            return
+        if newval >= -100 and newval <= 100:
+            self.parent.ContrastScale.set_value(newval)
+        else:
+            self.parent.printToLog('Brightness must be between -100 and +100!')
+
     def on_saturation_scale_value_changed(self, scale):
         newval = int(scale.get_value())
         self.parent.parent.Camera.set_saturation(newval)
         self.parent.printToLog('Saturation set to '+str(newval))
             
+    def on_saturation_entry_activate(self, entry):
+        newval = entry.get_text()
+        try:
+            newval = int(entry.get_text())
+        except ValueError:
+            self.parent.printToLog('Saturation must be an integer!')
+            return
+        if newval >= -100 and newval <= 100:
+            self.parent.SaturationScale.set_value(newval)
+        else:
+            self.parent.printToLog('Saturation must be between -100 and +100!')
+
     def on_sharpness_scale_value_changed(self, scale):
         newval = int(scale.get_value())
         self.parent.parent.Camera.set_sharpness(newval)
         self.parent.printToLog('Sharpness set to '+str(newval))
+
+    def on_sharpness_entry_activate(self, entry):
+        newval = entry.get_text()
+        try:
+            newval = int(entry.get_text())
+        except ValueError:
+            self.parent.printToLog('Sharpness must be an integer!')
+            return
+        if newval >= -100 and newval <= 100:
+            self.parent.SharpnessScale.set_value(newval)
+        else:
+            self.parent.printToLog('Sharpness must be between -100 and +100!')
+
 
     # LED Control Section
     def on_blue_led_button_toggled(self, switch):
@@ -457,6 +507,8 @@ class Handlers:
             on_now = self.parent.parent.Camera.toggle_awb()
             if on_now[0]:
                 self.parent.printToLog('Auto WB enabled')
+                self.parent.redGainEntry.set_sensitive(False)
+                self.parent.blueGainEntry.set_sensitive(False)
                 self.parent.redGainScale.set_sensitive(False)
                 self.parent.blueGainScale.set_sensitive(False)
         else:
@@ -465,12 +517,14 @@ class Handlers:
                 self.parent.printToLog('Auto WB disabled')
                 
                 self.parent.redGainScale.set_sensitive(True)
+                self.parent.redGainEntry.set_sensitive(True)
                 handle_id_red = get_handler_id(self.parent.redGainScale, "value-changed")
                 self.parent.redGainScale.handler_block(handle_id_red)
                 self.parent.redGainScale.set_value(on_now[1])
                 self.parent.redGainScale.handler_unblock(handle_id_red)
                 
                 self.parent.blueGainScale.set_sensitive(True)
+                self.parent.blueGainEntry.set_sensitive(True)
                 handle_id_blue = get_handler_id(self.parent.blueGainScale, "value-changed")
                 self.parent.blueGainScale.handler_block(handle_id_blue)
                 self.parent.blueGainScale.set_value(on_now[2])
@@ -749,10 +803,13 @@ class ZionGUI():
         self.SharpnessScale.set_value(initial_values['sharpness'])
 
         self.AutoAwbButton = self.builder.get_object("auto_wb_switch")
+        self.redGainEntry = self.builder.get_object("red_gain_entry")
         self.redGainScale = self.builder.get_object("red_gain_scale")
         self.redGainScale.set_value(initial_values['red_gain'])
+        self.blueGainEntry = self.builder.get_object("blue_gain_entry")
         self.blueGainScale = self.builder.get_object("blue_gain_scale")
         self.blueGainScale.set_value(initial_values['blue_gain'])
+        
         if initial_values['awb']=='off':
             self.AutoAwbButton.set_active(False)
             self.redGainScale.set_sensitive(True)

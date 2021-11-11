@@ -125,6 +125,8 @@ class ZionSession():
     def RunProgram(self, stop):
         self.TimeOfLife = time.time()
         for n in range(self.EventList.N+1):
+            if stop():
+                break
             time.sleep(self.EventList.Events[0][0]/1000.)
             for e in range(len(self.EventList.Events)-1):
                 if stop():
