@@ -246,14 +246,14 @@ class Handlers:
         return True
                         
     def reset_button_click(self, *args):
-        # ~ self.parent.printToLog('Setting Video Params to Defaults')
-        # ~ self.parent.BrightnessScale.set_value(self.parent.Default_Brightness)
-        # ~ self.parent.ContrastScale.set_value(self.parent.Default_Contrast)
-        # ~ self.parent.SaturationScale.set_value(self.parent.Default_Saturation)
-        # ~ self.parent.SharpnessScale.set_value(self.parent.Default_Sharpness)
-        gains = self.parent.parent.Camera.awb_gains
-        self.parent.printToLog('red_gain = '+str(float(gains[0])))
-        self.parent.printToLog('blue_gain = '+str(float(gains[1])))
+        self.parent.printToLog('Setting Video Params to Defaults')
+        self.parent.BrightnessScale.set_value(self.parent.Default_Brightness)
+        self.parent.ContrastScale.set_value(self.parent.Default_Contrast)
+        self.parent.SaturationScale.set_value(self.parent.Default_Saturation)
+        self.parent.SharpnessScale.set_value(self.parent.Default_Sharpness)
+        # ~ gains = self.parent.parent.Camera.awb_gains
+        # ~ self.parent.printToLog('red_gain = '+str(float(gains[0])))
+        # ~ self.parent.printToLog('blue_gain = '+str(float(gains[1])))
         
     def on_image_denoise_button(self, button):
         if button.get_active():
@@ -480,11 +480,37 @@ class Handlers:
         newval = scale.get_value()
         self.parent.parent.Camera.set_red_gain(newval)
         self.parent.printToLog('WB Red Gain set to '+str(newval))
+        
+    def on_red_gain_entry_activate(self, entry):
+        newval = entry.get_text()
+        try:
+            newval = float(newval)
+        except ValueError:
+            self.parent.printToLog('Red Gain must be a number!')
+            return
+        if newval<=8.0 and newval>=0:
+            self.parent.redGainScale.set_value(newval)
+        else:
+            self.parent.printToLog('Red Gain must be between 0 and 8.0!')
+            return
 
     def on_blue_gain_scale_value_changed(self, scale):
         newval = scale.get_value()
         self.parent.parent.Camera.set_blue_gain(newval)
         self.parent.printToLog('WB Blue Gain set to '+str(newval))
+
+    def on_blue_gain_entry_activate(self, entry):
+        newval = entry.get_text()
+        try:
+            newval = float(newval)
+        except ValueError:
+            self.parent.printToLog('Blue Gain must be a number!')
+            return
+        if newval<=8.0 and newval>=0:
+            self.parent.blueGainScale.set_value(newval)
+        else:
+            self.parent.printToLog('Blue Gain must be between 0 and 8.0!')
+            return
 
     def on_capture_button_clicked(self, button):
         #TODO: get cropping from some self object here

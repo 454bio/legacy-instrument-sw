@@ -1181,16 +1181,41 @@
                                                     <property name="can_focus">False</property>
                                                     <property name="left_padding">12</property>
                                                     <child>
-                                                      <object class="GtkScale" id="red_gain_scale">
+                                                      <object class="GtkBox">
                                                         <property name="visible">True</property>
-                                                        <property name="can_focus">True</property>
-                                                        <property name="adjustment">red_gain_adjust</property>
-                                                        <property name="restrict_to_fill_level">False</property>
-                                                        <property name="fill_level">8</property>
-                                                        <property name="round_digits">2</property>
-                                                        <property name="digits">2</property>
-                                                        <property name="value_pos">left</property>
-                                                        <signal name="value-changed" handler="on_red_gain_scale_value_changed" swapped="no"/>
+                                                        <property name="can_focus">False</property>
+                                                        <child>
+                                                          <object class="GtkEntry" id="red_gain_entry">
+                                                            <property name="visible">True</property>
+                                                            <property name="can_focus">True</property>
+                                                            <property name="margin_right">3</property>
+                                                            <property name="width_chars">3</property>
+                                                            <signal name="activate" handler="on_red_gain_entry_activate" swapped="no"/>
+                                                          </object>
+                                                          <packing>
+                                                            <property name="expand">False</property>
+                                                            <property name="fill">True</property>
+                                                            <property name="position">0</property>
+                                                          </packing>
+                                                        </child>
+                                                        <child>
+                                                          <object class="GtkScale" id="red_gain_scale">
+                                                            <property name="visible">True</property>
+                                                            <property name="can_focus">True</property>
+                                                            <property name="adjustment">red_gain_adjust</property>
+                                                            <property name="restrict_to_fill_level">False</property>
+                                                            <property name="fill_level">8</property>
+                                                            <property name="round_digits">2</property>
+                                                            <property name="digits">2</property>
+                                                            <property name="value_pos">left</property>
+                                                            <signal name="value-changed" handler="on_red_gain_scale_value_changed" swapped="no"/>
+                                                          </object>
+                                                          <packing>
+                                                            <property name="expand">True</property>
+                                                            <property name="fill">True</property>
+                                                            <property name="position">1</property>
+                                                          </packing>
+                                                        </child>
                                                       </object>
                                                     </child>
                                                   </object>
@@ -1221,16 +1246,41 @@
                                                     <property name="can_focus">False</property>
                                                     <property name="left_padding">12</property>
                                                     <child>
-                                                      <object class="GtkScale" id="blue_gain_scale">
+                                                      <object class="GtkBox">
                                                         <property name="visible">True</property>
-                                                        <property name="can_focus">True</property>
-                                                        <property name="adjustment">blue_gain_adjust</property>
-                                                        <property name="restrict_to_fill_level">False</property>
-                                                        <property name="fill_level">8</property>
-                                                        <property name="round_digits">2</property>
-                                                        <property name="digits">2</property>
-                                                        <property name="value_pos">left</property>
-                                                        <signal name="value-changed" handler="on_blue_gain_scale_value_changed" swapped="no"/>
+                                                        <property name="can_focus">False</property>
+                                                        <child>
+                                                          <object class="GtkEntry" id="blue_gain_entry">
+                                                            <property name="visible">True</property>
+                                                            <property name="can_focus">True</property>
+                                                            <property name="margin_right">3</property>
+                                                            <property name="width_chars">3</property>
+                                                            <signal name="activate" handler="on_blue_gain_entry_activate" swapped="no"/>
+                                                          </object>
+                                                          <packing>
+                                                            <property name="expand">False</property>
+                                                            <property name="fill">True</property>
+                                                            <property name="position">0</property>
+                                                          </packing>
+                                                        </child>
+                                                        <child>
+                                                          <object class="GtkScale" id="blue_gain_scale">
+                                                            <property name="visible">True</property>
+                                                            <property name="can_focus">True</property>
+                                                            <property name="adjustment">blue_gain_adjust</property>
+                                                            <property name="restrict_to_fill_level">False</property>
+                                                            <property name="fill_level">8</property>
+                                                            <property name="round_digits">2</property>
+                                                            <property name="digits">2</property>
+                                                            <property name="value_pos">left</property>
+                                                            <signal name="value-changed" handler="on_blue_gain_scale_value_changed" swapped="no"/>
+                                                          </object>
+                                                          <packing>
+                                                            <property name="expand">True</property>
+                                                            <property name="fill">True</property>
+                                                            <property name="position">1</property>
+                                                          </packing>
+                                                        </child>
                                                       </object>
                                                     </child>
                                                   </object>
