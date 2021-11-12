@@ -29,8 +29,8 @@ Initial_Values = {
     'blue_gain':     1.52,     # 0.0 to 8.0
     'exposure_mode': 'off', # 'auto', 'night', 'verylong', etc. (***'off')
     'exposure_time': 500,       # 0 is auto
-    'a_gain':        5.4,    # 10 (really 9.945) is maximum
-    'd_gain':        2.0
+    'a_gain':        10.0,    # 10 (really 9.945) is maximum
+    'd_gain':        1.0
     }
 
 
