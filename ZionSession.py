@@ -9,7 +9,7 @@ from ZionCamera import ZionCamera
 from ZionGPIO import ZionGPIO
 from ZionEvents import check_led_timings, ZionProtocol
 from ZionGtk import ZionGUI
-from picamera.exc import PiCameraValueError
+from picamera.exc import PiCameraValueError, PiCameraAlreadyRecording
 
 import threading
 
@@ -30,6 +30,7 @@ class ZionSession():
         self.Camera = ZionCamera(Frame_Rate, Binning, Initial_Values, parent=self)
         self.CaptureCount = 0
         self.ProtocolCount = 0
+        self.SplitterCount = 0
 
         self.LoadProtocolFromFile('ZionDefaultProtocol.txt')
         self.gui = ZionGUI(Initial_Values, self)
@@ -44,15 +45,16 @@ class ZionSession():
         if verbose:
             self.gui.printToLog('Writing image to file '+filename+'.jpg')
         try:
-            self.Camera.capture(filename, cropping=cropping)
+            self.Camera.capture(filename, cropping=cropping, splitter=self.SplitterCount%4)
             ret = 0
             if group=='P':
                 self.SaveParameterFile(comment, False)
-        except PiCameraValueError:
+        except PiCameraValueError or PiCameraAlreadyRecording:
             print('Camera Busy! '+filename+' not written!')
             if verbose:
                 self.gui.printToLog('Camera Busy! '+filename+' not written!')
             ret = 1
+        self.SplitterCount += 1
         return ret
         
     def SaveParameterFile(self, comment, bSession):

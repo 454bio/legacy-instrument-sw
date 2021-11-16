@@ -232,9 +232,11 @@ class Handlers:
         a_gain = float(self.parent.parent.Camera.analog_gain)
         d_gain = float(self.parent.parent.Camera.digital_gain)
         e_time = float(self.parent.parent.Camera.exposure_speed/1000.)
+        fr = float(self.parent.parent.Camera.framerate)
         self.parent.analogGainBuffer.set_text("{:04.3f}".format(a_gain))
         self.parent.digitalGainBuffer.set_text("{:04.3f}".format(d_gain))
         self.parent.expTimeBuffer.set_text("{:07.1f}".format(e_time))
+        self.parent.frBuffer.set_text("{:03.2f}".format(fr))
         return True
         
     def updateTemp(self):
@@ -452,6 +454,22 @@ class Handlers:
             self.parent.parent.Camera.set_shutter_speed(round(1000*newval))
             self.parent.printToLog('Exposure time set to '+str(newval)+' ms')
             
+    def on_framerate_entry_activate(self, entry):
+        newval = entry.get_text()
+        try:
+            newval = float(newval)
+        except ValueError: 
+            self.parent.printToLog('Requested exposure time must be a number!')
+            return
+        if newval==0:
+            self.parent.parent.Camera.framerate_range=(0.05, 10)
+        else:
+        # ~ if newval<0.05 or newval>42:
+            # ~ self.parent.printToLog('Requested Framerate out of range!')
+        # ~ else:
+            self.parent.parent.Camera.set_framerate(newval)
+
+        
     def on_analog_gain_entry_activate(self, entry):
         newval = entry.get_text()
         try:
@@ -827,6 +845,8 @@ class ZionGUI():
         self.expTimeBox = self.builder.get_object("exposure_time_entry")
         self.analogGainBuffer = self.builder.get_object("analog_gain_buffer")
         self.digitalGainBuffer = self.builder.get_object("digital_gain_buffer")
+        self.frBuffer = self.builder.get_object("framerate_buffer")
+        self.frEntry = self.builder.get_object("framerate_entry")
         
         # ~ self.pulseTextInput = self.builder.get_object("uv_led_entry")
         # ~ self.secretUVSwitchButton = self.builder.get_object("uv_led_switch")
