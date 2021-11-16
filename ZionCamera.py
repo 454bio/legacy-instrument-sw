@@ -22,15 +22,17 @@ class ZionCamera(PiCamera):
 		if binning:
 			resolution = (2028, 1520)
 			sensor_mode = 2
-			framerate_range = (0.1, 42)
+			# ~ framerate_range = (0.1, 42)
 		else:
 			resolution = (4056, 3040)
 			sensor_mode = 3
-			framerate_range = (0.05, 10)
+			# ~ framerate_range = (0.05, 10)
+		framerate_range = (0.05, 10)
 		
 		super(ZionCamera,self).__init__(resolution=resolution, framerate=framerate, sensor_mode=sensor_mode)
 		self.parent = parent
 		self.framerate_range = framerate_range
+		# ~ self.framerate = framerate
 		
 		self.vflip = True
 		
@@ -42,7 +44,7 @@ class ZionCamera(PiCamera):
 		self.awb_mode = initial_values['awb']
 		self.awb_gains = (initial_values['red_gain'], initial_values['blue_gain'])
 		self.exposure_mode = initial_values['exposure_mode']
-		self.exposure_time = initial_values['exposure_time']
+		self.shutter_speed = initial_values['exposure_time']*1000
 		self.iso = 0
 		time.sleep(2)
 		self.set_analog_gain(10.0)
@@ -125,14 +127,18 @@ class ZionCamera(PiCamera):
 			else:
 				pass
 
-	def capture(self, filename, cropping=(0,0,1,1), use_video_port=False):
+	def capture(self, filename, cropping=(0,0,1,1), bayer=False, splitter=0):
 		self.zoom = cropping
 		fileToWrite = filename+'.jpg'
 		# ~ fileToWrite = filename+'.raw'
-		print('\nWriting image to file '+fileToWrite)
 		if self.parent:
 			self.parent.GPIO.camera_trigger(True)
-		ret = super(ZionCamera,self).capture(fileToWrite, use_video_port=use_video_port, bayer=True)
+		if bayer:
+			print('\nWriting image to file '+fileToWrite)
+			ret = super(ZionCamera,self).capture(fileToWrite, use_video_port=False, bayer=True)
+		else:
+			print('\nWriting image to file '+fileToWrite+', using splitter port '+str(splitter))
+			ret = super(ZionCamera,self).capture(fileToWrite, use_video_port=True, splitter_port=splitter)
 		if self.parent:
 			self.parent.GPIO.camera_trigger(False)
 		self.zoom=(0,0,1,1)
@@ -229,7 +235,9 @@ class ZionCamera(PiCamera):
 	
 	def set_digital_gain(self, val):
 		self.set_gain(MMAL_PARAMETER_DIGITAL_GAIN, val)
-	
+		
+	def set_framerate(self, val):
+		self.framerate = val
 
 	def start_preview(self, fullscreen=False, window=(560,75,640,480)):
 		super(ZionCamera,self).start_preview(fullscreen=False, window=window)

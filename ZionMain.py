@@ -16,7 +16,8 @@ Session_Name = 'Test_Session'
 Binning = False
     # w/  binning: 0.1 < framerate < 42
     # w/o binning: 0.05 < framerate < 10 fps
-# Frame Rate now given in range 0.1-10
+# Frame Rate
+FrameRate = 10
 
 #Default Values:
 Initial_Values = {
@@ -27,7 +28,7 @@ Initial_Values = {
     'awb':           'off',   # 'off' or 'auto'
     'red_gain':      1.9,     # 0.0 to 8.0
     'blue_gain':     1.52,     # 0.0 to 8.0
-    'exposure_mode': 'night', # 'auto', 'night', 'verylong', etc. (***'off')
+    'exposure_mode': 'off', # 'auto', 'night', 'verylong', etc. (***'off')
     'exposure_time': 500,       # 0 is auto
     }
 
@@ -56,7 +57,7 @@ Repeat_N = 0
 ########################################################################
 
 # Initialization Block:
-mySession = ZionSession(Session_Name, 10, Binning, Initial_Values, PWM_Frequency, Blue_Timing, Orange_Timing, UV_Timing, Camera_Captures, Repeat_N)
+mySession = ZionSession(Session_Name, FrameRate, Binning, Initial_Values, PWM_Frequency, Blue_Timing, Orange_Timing, UV_Timing, Camera_Captures, Repeat_N)
 
 #Next line perform events defined above:
 # ~ mySession.RunProgram()
