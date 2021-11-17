@@ -32,7 +32,7 @@ class LEDColorComboBox(Gtk.ComboBoxText):
 class EventTypeComboBox(Gtk.ComboBoxText):
     def __init__(self, *args):
         super(EventTypeComboBox,self).__init__(*args)
-        self.append(None, 'None')
+        self.append(None, 'Waiting')
         self.append(None, 'LED')
         self.append(None, 'Capture')
         self.set_active(0)
@@ -74,7 +74,7 @@ class EventEntry(Gtk.HBox):
             self.Parameter2.destroy()
             self.Parameter1 = LEDColorComboBox()
             self.Parameter2 = Gtk.Entry()
-            self.Parameter2.set_width_chars(14)
+            self.Parameter2.set_width_chars(7)
             self.load_parameter_widgets()
             self.show_all()
         elif active_idx==2: #Capture:
@@ -84,10 +84,11 @@ class EventEntry(Gtk.HBox):
             self.Parameter1.set_width_chars(4)
             self.Parameter1.set_margin_right(1)
             self.Parameter2 = Gtk.Entry()
-            self.Parameter2.set_width_chars(14)
+            self.Parameter2.set_width_chars(7)
             self.load_parameter_widgets()
             self.show_all()
         else:
+            self.TimeEntry.set_text('')
             self.Parameter1.destroy()
             self.Parameter2.destroy()
 
@@ -168,7 +169,6 @@ class Handlers:
             # ~ for e in eventList:
                 # ~ f.write(str(e)+'\n')
         return (N, eventList)
-        
 
     def on_script_load_button_clicked(self, button):
         response = self.parent.paramFileChooser.run()

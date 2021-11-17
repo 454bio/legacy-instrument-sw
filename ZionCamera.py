@@ -48,6 +48,9 @@ class ZionCamera(PiCamera):
 		self.set_analog_gain(initial_values['a_gain'])
 		self.set_digital_gain(initial_values['d_gain'])
 		self.shutter_speed = initial_values['exposure_time']*1000
+		
+		self.framerate=2
+		
 		time.sleep(2)
 		# TODO: check for zero for Jose
 		
