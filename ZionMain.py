@@ -17,7 +17,7 @@ Binning = False
     # w/o binning: 0.05 < framerate < 10 fps
 
 # LED Properties
-PWM_Frequency = 800 #{8000, 4000, 2000, 1600k, 1000, 800, 500, 400, 320, 250, 200, 160, 100, 80, 50, 40, 20, 10}
+PWM_Frequency = 10 #{8000, 4000, 2000, 1600k, 1000, 800, 500, 400, 320, 250, 200, 160, 100, 80, 50, 40, 20, 10}
 
 #Default Values:
 Initial_Values = {
@@ -26,13 +26,13 @@ Initial_Values = {
     'saturation':    60,       # between -100 and 100
     'sharpness':     0,       # between -100 and 100
     'awb':           'off',   # 'off' or 'auto'
-    'red_gain':      1.9,     # 0.0 to 8.0
-    'blue_gain':     1.52,     # 0.0 to 8.0
+    'red_gain':      2.52,     # 0.0 to 8.0
+    'blue_gain':     2.18,     # 0.0 to 8.0
     'exposure_mode': 'off', # 'auto', 'night', 'verylong', etc. (***'off')
-    'exposure_time': 500,       # 0 is auto
-    'a_gain':        10,        # max is 10
+    'exposure_time': 100,       # 0 is auto
+    'a_gain':        1,        # max is 10
     'd_gain':        1,         #unity gain for avoiding quantization error
-    'framerate':     10,         # min 0.1 max 42 if binning, else min 0.05 max 10
+    'framerate':     2,         # min 0.1 max 42 if binning, else min 0.05 max 10
     }
 
 
