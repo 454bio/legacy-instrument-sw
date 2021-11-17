@@ -14,7 +14,7 @@ import threading
 
 class ZionSession():
 
-    def __init__(self, session_name, Frame_Rate, Binning, Initial_Values, PWM_freq, overwrite=False):
+    def __init__(self, session_name, Binning, Initial_Values, PWM_freq, overwrite=False):
 
         self.Name=session_name
         currSuffix = 1
@@ -26,13 +26,13 @@ class ZionSession():
         
         self.GPIO = ZionGPIO(PWM_freq, parent=self)
         
-        self.Camera = ZionCamera(Frame_Rate, Binning, Initial_Values, parent=self)
+        self.Camera = ZionCamera(Binning, Initial_Values, parent=self)
         self.CaptureCount = 0
         self.SplitterCount = 0
         self.ProtocolCount = 0
         self.SplitterCount = 0
 
-        self.LoadProtocolFromFile('ZionDefaultProtocol.txt')
+        # ~ self.LoadProtocolFromFile('ZionDefaultProtocol.txt')
         self.gui = ZionGUI(Initial_Values, self)
                 
         self.TimeOfLife = time.time()

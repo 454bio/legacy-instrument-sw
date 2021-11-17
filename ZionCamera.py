@@ -15,7 +15,7 @@ MMAL_PARAMETER_DIGITAL_GAIN = mmal.MMAL_PARAMETER_GROUP_CAMERA + 0x5A
 
 class ZionCamera(PiCamera):
 
-	def __init__(self, framerate, binning, initial_values, parent=None):
+	def __init__(self, binning, initial_values, parent=None):
 
 		print('\nCamera Initializing...')
 		
@@ -29,10 +29,9 @@ class ZionCamera(PiCamera):
 			# ~ framerate_range = (0.05, 10)
 		framerate_range = (0.05, 10)
 		
-		super(ZionCamera,self).__init__(resolution=resolution, framerate=framerate, sensor_mode=sensor_mode)
+		super(ZionCamera,self).__init__(resolution=resolution, framerate = initial_values['framerate'], sensor_mode=sensor_mode)
 		self.parent = parent
-		self.framerate_range = framerate_range
-		self.framerate = framerate
+		# ~ self.framerate_range = framerate_range
 		
 		self.vflip = True
 		
@@ -91,7 +90,9 @@ class ZionCamera(PiCamera):
 			'denoise':		 self.image_denoise,
 			
 			'a_gain':   	 float(self.analog_gain),
-			'd_gain':    	 float(self.digital_gain),    
+			'd_gain':    	 float(self.digital_gain),
+			
+			'framerate':     float(self.framerate)
 		}
 		return params_list
 		
@@ -129,6 +130,8 @@ class ZionCamera(PiCamera):
 				self.set_analog_gain(params[key])
 			elif key=='d_gain':
 				self.set_digital_gain(params[key])
+			elif key=='framerate':
+				self.set_framerate(params[key])
 			else:
 				pass
 
@@ -244,7 +247,22 @@ class ZionCamera(PiCamera):
 		self.set_gain(MMAL_PARAMETER_DIGITAL_GAIN, val)
 		
 	def set_framerate(self, val):
-		self.framerate = val
+		if val>0:
+			if self.sensor_mode==2:
+				if val<=42 and val>=0.1:
+					self.framerate = val
+				else:
+					print('\nWith binning on, framerate must be between 0.1 and 42!')
+			elif self.sensor_mode==3:
+				if val<=10 and val>=0.05:
+					self.framerate = val
+				else:
+					print('\nWith binning off, framerate must be between 0.05 and 10!')
+		else:
+			if self.sensor_mode==2:
+				self.framerate_range = (0.1, 42)
+			elif self.sensor_mode==3:
+				self.framerate_range = (0.05, 10)
 
 	def start_preview(self, fullscreen=False, window=(560,75,640,480)):
 		super(ZionCamera,self).start_preview(fullscreen=False, window=window)

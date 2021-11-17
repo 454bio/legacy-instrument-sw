@@ -55,8 +55,8 @@ TEMP_INPUT_1W = 5 #pin 29
 #TODO
 
 #2 GPIOs for testing camera sync signals:
-FSTROBE = 23
-XVS = 24
+FSTROBE = 23 #pin 16
+XVS = 24 #pin 18
 
 class ZionGPIO(pigpio.pi):
 	
@@ -88,7 +88,6 @@ class ZionGPIO(pigpio.pi):
 		for g in [FSTROBE, XVS]:
 			if GpioPins[g][1]:
 				super(ZionGPIO,self).set_mode(g, pigpio.INPUT)
-		
 		
 		self.gpioList = [UV_gpios, Blue_gpios, Orange_gpios] #Order is important
 		self.pS = [0.0]*3 #UV, Blue, Orange
