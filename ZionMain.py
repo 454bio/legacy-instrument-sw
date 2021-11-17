@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 
 from ZionSession import ZionSession
-from ZionEvents import ZionProtocol
 
 ########################################################################
 ######################### User-Level Settings ##########################
@@ -28,28 +27,28 @@ Initial_Values = {
     'red_gain':      1.9,     # 0.0 to 8.0
     'blue_gain':     1.52,     # 0.0 to 8.0
     'exposure_mode': 'night', # 'auto', 'night', 'verylong', etc. (***'off')
-    'exposure_time': 500,       # 0 is auto
+    'exposure_time': 750       # 0 is auto
     }
 
 
 # LED Timing:
-PWM_Frequency = 8000 #{8k, 4k, 2k, 1.6k, 1k, 800, 500, 400, 320, 250, 200, 160, 100, 80, 50, 40, 20, 10}
-Blue_Timing = [ (2000, 3000) ]
-Orange_Timing = [ (4000, 5000), (8000,9000) ]
-UV_Timing = [ (6000, 7000) ]
+PWM_Frequency = 800 #{8k, 4k, 2k, 1.6k, 1k, 800, 500, 400, 320, 250, 200, 160, 100, 80, 50, 40, 20, 10}
+Blue_Timing = [ (1000, 1900) ]
+Orange_Timing = [(1950,1951) ]
+UV_Timing = [ (2000,3000)]
 
 # Camera Capture Timing:
 Camera_Captures = [
-(2500, None, 'Z'),
-(4500, None, 'Z'),
-(6000, None, 'W'),
-(7500, None, 2),
-(8500, None, 3)
+(1800, None, 'Blue'),
+#(1100, None, 'Both'),
+#(3100, None, 'Orange'),
+#(7500, None, 2),
+#(8500, None, 3)
 ]
 #all 3 > blue > blue + orange > orange
 
 # Repeat whole process N number of (additional) times
-Repeat_N = 0
+Repeat_N = 4
 
 ########################################################################
 ############################# Main Script ##############################

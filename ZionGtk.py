@@ -247,14 +247,14 @@ class Handlers:
         return True
                         
     def reset_button_click(self, *args):
-        # ~ self.parent.printToLog('Setting Video Params to Defaults')
-        # ~ self.parent.BrightnessScale.set_value(self.parent.Default_Brightness)
-        # ~ self.parent.ContrastScale.set_value(self.parent.Default_Contrast)
-        # ~ self.parent.SaturationScale.set_value(self.parent.Default_Saturation)
-        # ~ self.parent.SharpnessScale.set_value(self.parent.Default_Sharpness)
-        gains = self.parent.parent.Camera.awb_gains
-        self.parent.printToLog('red_gain = '+str(float(gains[0])))
-        self.parent.printToLog('blue_gain = '+str(float(gains[1])))
+        self.parent.printToLog('Setting Video Params to Defaults')
+        self.parent.BrightnessScale.set_value(self.parent.Default_Brightness)
+        self.parent.ContrastScale.set_value(self.parent.Default_Contrast)
+        self.parent.SaturationScale.set_value(self.parent.Default_Saturation)
+        self.parent.SharpnessScale.set_value(self.parent.Default_Sharpness)
+        # ~ gains = self.parent.parent.Camera.awb_gains
+        # ~ self.parent.printToLog('red_gain = '+str(float(gains[0])))
+        # ~ self.parent.printToLog('blue_gain = '+str(float(gains[1])))
         
     def on_image_denoise_button(self, button):
         if button.get_active():
@@ -268,21 +268,71 @@ class Handlers:
         newval = int(scale.get_value())
         self.parent.parent.Camera.set_brightness(newval)
         self.parent.printToLog('Brightness set to '+str(newval))
+    
+    def on_brightness_entry_activate(self, entry):
+        newval = entry.get_text()
+        try:
+            newval = int(entry.get_text())
+        except ValueError:
+            self.parent.printToLog('Brightness must be an integer!')
+            return
+        if newval >= 0 and newval <= 100:
+            self.parent.BrightnessScale.set_value(newval)
+        else:
+            self.parent.printToLog('Brightness must be between 0 and 100!')
+
         
     def on_contrast_scale_value_changed(self, scale):
         newval = int(scale.get_value())
         self.parent.parent.Camera.set_contrast(newval)
         self.parent.printToLog('Contrast set to '+str(newval))
     
+    def on_contrast_entry_activate(self, entry):
+        newval = entry.get_text()
+        try:
+            newval = int(entry.get_text())
+        except ValueError:
+            self.parent.printToLog('Contrast must be an integer!')
+            return
+        if newval >= -100 and newval <= 100:
+            self.parent.ContrastScale.set_value(newval)
+        else:
+            self.parent.printToLog('Brightness must be between -100 and +100!')
+
     def on_saturation_scale_value_changed(self, scale):
         newval = int(scale.get_value())
         self.parent.parent.Camera.set_saturation(newval)
         self.parent.printToLog('Saturation set to '+str(newval))
             
+    def on_saturation_entry_activate(self, entry):
+        newval = entry.get_text()
+        try:
+            newval = int(entry.get_text())
+        except ValueError:
+            self.parent.printToLog('Saturation must be an integer!')
+            return
+        if newval >= -100 and newval <= 100:
+            self.parent.SaturationScale.set_value(newval)
+        else:
+            self.parent.printToLog('Saturation must be between -100 and +100!')
+
     def on_sharpness_scale_value_changed(self, scale):
         newval = int(scale.get_value())
         self.parent.parent.Camera.set_sharpness(newval)
         self.parent.printToLog('Sharpness set to '+str(newval))
+
+    def on_sharpness_entry_activate(self, entry):
+        newval = entry.get_text()
+        try:
+            newval = int(entry.get_text())
+        except ValueError:
+            self.parent.printToLog('Sharpness must be an integer!')
+            return
+        if newval >= -100 and newval <= 100:
+            self.parent.SharpnessScale.set_value(newval)
+        else:
+            self.parent.printToLog('Sharpness must be between -100 and +100!')
+
 
     # LED Control Section
     def on_blue_led_button_toggled(self, switch):
@@ -458,6 +508,8 @@ class Handlers:
             on_now = self.parent.parent.Camera.toggle_awb()
             if on_now[0]:
                 self.parent.printToLog('Auto WB enabled')
+                self.parent.redGainEntry.set_sensitive(False)
+                self.parent.blueGainEntry.set_sensitive(False)
                 self.parent.redGainScale.set_sensitive(False)
                 self.parent.blueGainScale.set_sensitive(False)
         else:
@@ -466,12 +518,14 @@ class Handlers:
                 self.parent.printToLog('Auto WB disabled')
                 
                 self.parent.redGainScale.set_sensitive(True)
+                self.parent.redGainEntry.set_sensitive(True)
                 handle_id_red = get_handler_id(self.parent.redGainScale, "value-changed")
                 self.parent.redGainScale.handler_block(handle_id_red)
                 self.parent.redGainScale.set_value(on_now[1])
                 self.parent.redGainScale.handler_unblock(handle_id_red)
                 
                 self.parent.blueGainScale.set_sensitive(True)
+                self.parent.blueGainEntry.set_sensitive(True)
                 handle_id_blue = get_handler_id(self.parent.blueGainScale, "value-changed")
                 self.parent.blueGainScale.handler_block(handle_id_blue)
                 self.parent.blueGainScale.set_value(on_now[2])
@@ -481,11 +535,37 @@ class Handlers:
         newval = scale.get_value()
         self.parent.parent.Camera.set_red_gain(newval)
         self.parent.printToLog('WB Red Gain set to '+str(newval))
+        
+    def on_red_gain_entry_activate(self, entry):
+        newval = entry.get_text()
+        try:
+            newval = float(newval)
+        except ValueError:
+            self.parent.printToLog('Red Gain must be a number!')
+            return
+        if newval<=8.0 and newval>=0:
+            self.parent.redGainScale.set_value(newval)
+        else:
+            self.parent.printToLog('Red Gain must be between 0 and 8.0!')
+            return
 
     def on_blue_gain_scale_value_changed(self, scale):
         newval = scale.get_value()
         self.parent.parent.Camera.set_blue_gain(newval)
         self.parent.printToLog('WB Blue Gain set to '+str(newval))
+
+    def on_blue_gain_entry_activate(self, entry):
+        newval = entry.get_text()
+        try:
+            newval = float(newval)
+        except ValueError:
+            self.parent.printToLog('Blue Gain must be a number!')
+            return
+        if newval<=8.0 and newval>=0:
+            self.parent.blueGainScale.set_value(newval)
+        else:
+            self.parent.printToLog('Blue Gain must be between 0 and 8.0!')
+            return
 
     def on_capture_button_clicked(self, button):
         #TODO: get cropping from some self object here
@@ -545,7 +625,18 @@ class Handlers:
             filename = self.parent.paramFileChooser.get_filename()
             self.parent.paramFileChooser.hide()
             params = self.parent.parent.LoadParameterFile(filename)
-                
+            self.parent.BrightnessEntry.set_text('')
+            self.parent.ContrastEntry.set_text('')
+            self.parent.SaturationEntry.set_text('')
+            self.parent.SharpnessEntry.set_text('')
+            self.parent.redGainEntry.set_text('')
+            self.parent.blueGainEntry.set_text('')
+            self.parent.analogGainEntry.set_text('')
+            self.parent.digitalGainEntry.set_text('')
+            self.parent.expTimeBox.set_text('')
+            
+            
+            
             handler_id = get_handler_id(self.parent.BrightnessScale, "value-changed")
             self.parent.BrightnessScale.handler_block(handler_id)
             self.parent.BrightnessScale.set_value(params['brightness'])
@@ -715,19 +806,26 @@ class ZionGUI():
         self.Default_Sharpness = initial_values['sharpness']
 
         self.BrightnessScale = self.builder.get_object("brightness_scale")
+        self.BrightnessEntry = self.builder.get_object("brightness_entry")
         self.BrightnessScale.set_value(initial_values['brightness'])
         self.ContrastScale = self.builder.get_object("contrast_scale")
+        self.ContrastEntry = self.builder.get_object("contrast_entry")
         self.ContrastScale.set_value(initial_values['contrast'])
         self.SaturationScale = self.builder.get_object("saturation_scale")
+        self.SaturationEntry = self.builder.get_object("saturation_entry")
         self.SaturationScale.set_value(initial_values['saturation'])
         self.SharpnessScale = self.builder.get_object("sharpness_scale")
+        self.SharpnessEntry = self.builder.get_object("sharpness_entry")
         self.SharpnessScale.set_value(initial_values['sharpness'])
 
         self.AutoAwbButton = self.builder.get_object("auto_wb_switch")
+        self.redGainEntry = self.builder.get_object("red_gain_entry")
         self.redGainScale = self.builder.get_object("red_gain_scale")
         self.redGainScale.set_value(initial_values['red_gain'])
+        self.blueGainEntry = self.builder.get_object("blue_gain_entry")
         self.blueGainScale = self.builder.get_object("blue_gain_scale")
         self.blueGainScale.set_value(initial_values['blue_gain'])
+        
         if initial_values['awb']=='off':
             self.AutoAwbButton.set_active(False)
             self.redGainScale.set_sensitive(True)
@@ -745,6 +843,8 @@ class ZionGUI():
         self.expTimeBox = self.builder.get_object("exposure_time_entry")
         self.analogGainBuffer = self.builder.get_object("analog_gain_buffer")
         self.digitalGainBuffer = self.builder.get_object("digital_gain_buffer")
+        self.analogGainEntry = self.builder.get_object("analog_gain_entry")
+        self.digitalGainEntry = self.builder.get_object("digital_gain_entry")
         
         # ~ self.pulseTextInput = self.builder.get_object("uv_led_entry")
         # ~ self.secretUVSwitchButton = self.builder.get_object("uv_led_switch")

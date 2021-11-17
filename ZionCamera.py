@@ -122,6 +122,10 @@ class ZionCamera(PiCamera):
 				self.exposure_compensation = params[key]
 			elif key=='denoise':
 				self.image_denoise = params[key]
+			elif key=='a_gain':
+				self.set_analog_gain(params[key])
+			elif key=='d_gain':
+				self.set_digital_gain(params[key])
 			else:
 				pass
 
