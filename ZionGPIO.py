@@ -129,6 +129,9 @@ class ZionGPIO(pigpio.pi):
 			self.enable_led(color, 0)
 		self.camera_trigger(False)
 		
+		#testing:
+		self.test_toggle = True
+		
 	def camera_trigger(self, bEnable):
 		super(ZionGPIO, self).write(self.Camera_Trigger, bEnable)
 
@@ -250,11 +253,15 @@ class ZionGPIO(pigpio.pi):
 			if verbose:
 				self.parent.gui.printToLog('Orange set to '+str(amt))
 		self.update_pwm_settings()
+		
 	# ~ def send_uv_pulse(self, pulsetime):
-		
-		
-		# ~ self.turn_on_led('UV')
-		# ~ #TODO: use different timer (from gtk?)
-		# ~ time.sleep(float(pulsetime/1000.))
-		# ~ self.turn_off_led('UV')
 
+	def enable_vsync_callback(self):
+		self.cb1 = super(ZionGPIO,self).callback(XVS, pigpio.RISING_EDGE, self.vsync_callback)
+
+	def disable_callback(self):
+		self.cb1.cancel()
+
+	def vsync_callback(self, gpio, level, tick):
+		self.cb1.cancel()
+		self.parent.CaptureImage()

@@ -30,27 +30,6 @@ class ZionProtocol:
 			self.N = 0
 			self.Events = []
 			self.capture_threads = []
-			
-
-# ~ class EventList:
-	# ~ def __init__(self, LED_Blu_Timing, LED_Or_Timing, LED_UV_Timing, Camera_Capture_Times, N=0):
-
-		# ~ self.capture_threads = []
-		# ~ self.N = N
-
-		# ~ #First we create all events (we'll sort later):
-		# ~ eventList = []
-		# ~ eventList += [(time_pair[0], 'led_on', 'Blue') for time_pair in LED_Blu_Timing]
-		# ~ eventList += [(time_pair[1], 'led_off', 'Blue', time_pair[1]) for time_pair in LED_Blu_Timing]
-		# ~ eventList += [(time_pair[0], 'led_on', 'Orange', time_pair[0]) for time_pair in LED_Or_Timing]
-		# ~ eventList += [(time_pair[1], 'led_off', 'Orange', time_pair[1]) for time_pair in LED_Or_Timing]
-		# ~ eventList += [(time_pair[0], 'led_on', 'UV', time_pair[0]) for time_pair in LED_UV_Timing]
-		# ~ eventList += [(time_pair[1], 'led_off', 'UV', time_pair[1]) for time_pair in LED_UV_Timing]
-		# ~ for capture_event in Camera_Capture_Times:
-			# ~ eventList += [(capture_event[0], 'take_snapshot', capture_event[1], capture_event[2])]
-		# ~ #Now sort by time:
-		# ~ eventList.sort(key=itemgetter(0))
-		# ~ self.Events = eventList
 
 	def performEvent(self, event, camera, gpio_ctrl, repeat_idx=0):
 		event_type=event[1]

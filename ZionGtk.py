@@ -119,44 +119,41 @@ class Handlers:
         eventList = []
         for eventEntry in self.parent.EventEntries:
             eventType = eventEntry.TypeComboBox.get_active()
-            eventTime = eventEntry.TimeEntry.get_text()
-            # ~ self.parent.printToLog('event time: '+eventTime+' ms')
-            if not eventTime.isdecimal():
-                self.parent.printToLog('Event Time '+eventTime+' must be an integer in milliseconds!')
-                return
-            eventTime = int(eventTime)
-            if eventType == 1: #LED Event
-                if eventEntry.Parameter2.get_text().isdecimal():
-                    dc = int(eventEntry.Parameter2.get_text())
-                else:
-                    self.parent.printToLog('Duty Cycle must be an integer percent!')
+            if eventType==0:
+                eventList.append((0, 'Wait', None, None))
+            else:
+                eventTime = eventEntry.TimeEntry.get_text()
+                # ~ self.parent.printToLog('event time: '+eventTime+' ms')
+                if not eventTime.isdecimal():
+                    self.parent.printToLog('Event Time '+eventTime+' must be an integer in milliseconds!')
                     return
-                event = (eventTime, 'LED')
-                if eventEntry.Parameter1.get_active_text() == 'UV':
-                    event += ('UV',)
-                elif eventEntry.Parameter1.get_active_text() == 'Bl':
-                    event += ('Blue',)
-                elif eventEntry.Parameter1.get_active_text() == 'Or':
-                    event += ('Orange',)
-                event += (dc,)
-                eventList.append(event)
-            elif eventType == 2: #Capture event
-                event = (eventTime, 'Capture', eventEntry.Parameter1.get_text())
-                #TODO: check cropping is a valid tuple!
-                cropping = eventEntry.Parameter2.get_text().strip(' ')
-                cropping = None #if cropping=='' else cropping
-                event += (cropping,)
-                eventList.append(event)
-            else: #TODO: should we add None "wait" events?
-                pass
-                # ~ print('this is an unknown event')
-        # ~ print_eventList(eventList)
+                eventTime = int(eventTime)
+                if eventType == 1: #LED Event
+                    if eventEntry.Parameter2.get_text().isdecimal():
+                        dc = int(eventEntry.Parameter2.get_text())
+                    else:
+                        self.parent.printToLog('Duty Cycle must be an integer percent!')
+                        return
+                    event = (eventTime, 'LED')
+                    if eventEntry.Parameter1.get_active_text() == 'UV':
+                        event += ('UV',)
+                    elif eventEntry.Parameter1.get_active_text() == 'Bl':
+                        event += ('Blue',)
+                    elif eventEntry.Parameter1.get_active_text() == 'Or':
+                        event += ('Orange',)
+                    event += (dc,)
+                    eventList.append(event)
+                elif eventType == 2: #Capture event
+                    event = (eventTime, 'Capture', eventEntry.Parameter1.get_text())
+                    #TODO: check cropping is a valid tuple!
+                    cropping = eventEntry.Parameter2.get_text().strip(' ')
+                    cropping = None #if cropping=='' else cropping
+                    event += (cropping,)
+                    eventList.append(event)
+        print_eventList(eventList)
         N = self.parent.RepeatNEntry.get_value_as_int()
-        # ~ with open('ZionDefaultProtocol.txt','w') as f:
-            # ~ f.write('N='+str(N)+'\n')
-            # ~ for e in eventList:
-                # ~ f.write(str(e)+'\n')
-        eventList.sort(key=itemgetter(0))
+        # TODO: sort within each leaf, not all events!
+        # ~ eventList.sort(key=itemgetter(0))
         return (N, eventList)
 
     def on_script_load_button_clicked(self, button):
@@ -242,9 +239,7 @@ class Handlers:
         self.parent.ContrastScale.set_value(self.parent.Default_Contrast)
         self.parent.SaturationScale.set_value(self.parent.Default_Saturation)
         self.parent.SharpnessScale.set_value(self.parent.Default_Sharpness)
-        # ~ gains = self.parent.parent.Camera.awb_gains
-        # ~ self.parent.printToLog('red_gain = '+str(float(gains[0])))
-        # ~ self.parent.printToLog('blue_gain = '+str(float(gains[1])))
+        
         
     def on_image_denoise_button(self, button):
         if button.get_active():
@@ -364,14 +359,17 @@ class Handlers:
             self.parent.printToLog('UV LED off')
             self.parent.parent.GPIO.enable_led('UV',0)
             
-    def on_uv_switch_safety_button(self, button):
-        if button.get_active():
-            self.parent.secretUVSwitchButton.set_visible(True)
+    # ~ def on_uv_switch_safety_button(self, button):
+        # ~ if button.get_active():
+            # ~ self.parent.secretUVSwitchButton.set_visible(True)
             # ~ self.parent.secretUVSwitchButton.set_sensitive(True)
-        else:
-            self.parent.secretUVSwitchButton.set_visible(False)
+        # ~ else:
+            # ~ self.parent.secretUVSwitchButton.set_visible(False)
             # ~ self.parent.secretUVSwitchButton.set_sensitive(False)
             
+    def on_led_test_button_activate(self, button):
+        self.parent.parent.GPIO.enable_vsync_callback()    
+    
     def on_uv_led_pulse_button(self, button):
         newVal = self.parent.pulseTextInput.get_text()
         if newVal.isdecimal():
@@ -854,7 +852,7 @@ class ZionGUI():
         self.frBuffer = self.builder.get_object("framerate_buffer")
         self.frEntry = self.builder.get_object("framerate_entry")
         
-        # ~ self.pulseTextInput = self.builder.get_object("uv_led_entry")
+        self.pulseTextInput = self.builder.get_object("uv_led_entry")
         # ~ self.secretUVSwitchButton = self.builder.get_object("uv_led_switch")
         self.blueDCEntry = self.builder.get_object("blue_led_dc_entry")
         self.orangeDCEntry = self.builder.get_object("orange_led_dc_entry")
