@@ -642,7 +642,18 @@ class Handlers:
             filename = self.parent.paramFileChooser.get_filename()
             self.parent.paramFileChooser.hide()
             params = self.parent.parent.LoadParameterFile(filename)
-                
+            self.parent.BrightnessEntry.set_text('')
+            self.parent.ContrastEntry.set_text('')
+            self.parent.SaturationEntry.set_text('')
+            self.parent.SharpnessEntry.set_text('')
+            self.parent.redGainEntry.set_text('')
+            self.parent.blueGainEntry.set_text('')
+            self.parent.analogGainEntry.set_text('')
+            self.parent.digitalGainEntry.set_text('')
+            self.parent.expTimeBox.set_text('')
+            
+            
+            
             handler_id = get_handler_id(self.parent.BrightnessScale, "value-changed")
             self.parent.BrightnessScale.handler_block(handler_id)
             self.parent.BrightnessScale.set_value(params['brightness'])
@@ -812,12 +823,16 @@ class ZionGUI():
         self.Default_Sharpness = initial_values['sharpness']
 
         self.BrightnessScale = self.builder.get_object("brightness_scale")
+        self.BrightnessEntry = self.builder.get_object("brightness_entry")
         self.BrightnessScale.set_value(initial_values['brightness'])
         self.ContrastScale = self.builder.get_object("contrast_scale")
+        self.ContrastEntry = self.builder.get_object("contrast_entry")
         self.ContrastScale.set_value(initial_values['contrast'])
         self.SaturationScale = self.builder.get_object("saturation_scale")
+        self.SaturationEntry = self.builder.get_object("saturation_entry")
         self.SaturationScale.set_value(initial_values['saturation'])
         self.SharpnessScale = self.builder.get_object("sharpness_scale")
+        self.SharpnessEntry = self.builder.get_object("sharpness_entry")
         self.SharpnessScale.set_value(initial_values['sharpness'])
 
         self.AutoAwbButton = self.builder.get_object("auto_wb_switch")
@@ -845,6 +860,8 @@ class ZionGUI():
         self.expTimeBox = self.builder.get_object("exposure_time_entry")
         self.analogGainBuffer = self.builder.get_object("analog_gain_buffer")
         self.digitalGainBuffer = self.builder.get_object("digital_gain_buffer")
+        self.analogGainEntry = self.builder.get_object("analog_gain_entry")
+        self.digitalGainEntry = self.builder.get_object("digital_gain_entry")
         self.frBuffer = self.builder.get_object("framerate_buffer")
         self.frEntry = self.builder.get_object("framerate_entry")
         
