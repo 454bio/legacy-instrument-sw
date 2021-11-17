@@ -15,8 +15,6 @@ Session_Name = 'Test_Session'
 Binning = False
     # w/  binning: 0.1 < framerate < 42
     # w/o binning: 0.05 < framerate < 10 fps
-# Frame Rate
-FrameRate = 2
 
 # LED Properties
 PWM_Frequency = 800 #{8000, 4000, 2000, 1600k, 1000, 800, 500, 400, 320, 250, 200, 160, 100, 80, 50, 40, 20, 10}
@@ -31,7 +29,10 @@ Initial_Values = {
     'red_gain':      1.9,     # 0.0 to 8.0
     'blue_gain':     1.52,     # 0.0 to 8.0
     'exposure_mode': 'off', # 'auto', 'night', 'verylong', etc. (***'off')
-    'exposure_time': 750       # 0 is auto
+    'exposure_time': 500,       # 0 is auto
+    'a_gain':        10,        # max is 10
+    'd_gain':        1,         #unity gain for avoiding quantization error
+    'framerate':     10,         # min 0.1 max 42 if binning, else min 0.05 max 10
     }
 
 
@@ -40,7 +41,7 @@ Initial_Values = {
 ########################################################################
 
 # Initialization Block:
-mySession = ZionSession(Session_Name, FrameRate, Binning, Initial_Values, PWM_Frequency)
+mySession = ZionSession(Session_Name, Binning, Initial_Values, PWM_Frequency)
 
 #Next line perform events defined above:
 # ~ mySession.RunProgram()

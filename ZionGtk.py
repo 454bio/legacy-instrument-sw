@@ -45,6 +45,7 @@ class EventEntry(Gtk.HBox):
         self.Safe = safe
         self.TimeEntry = Gtk.Entry()
         self.TimeEntry.set_width_chars(14)
+        self.TimeEntry.set_sensitive(False)
         self.TypeComboBox = EventTypeComboBox()
         self.Parameter1 = Placeholder()
         self.Parameter2 = Placeholder()
@@ -71,6 +72,7 @@ class EventEntry(Gtk.HBox):
     def on_event_type_changed(self, combo):
         active_idx = combo.get_active()
         if active_idx==1: #LED:
+            self.TimeEntry.set_sensitive(True)
             self.Parameter1.destroy()
             self.Parameter2.destroy()
             self.Parameter1 = LEDColorComboBox()
@@ -79,6 +81,7 @@ class EventEntry(Gtk.HBox):
             self.load_parameter_widgets()
             self.show_all()
         elif active_idx==2: #Capture:
+            self.TimeEntry.set_sensitive(True)
             self.Parameter1.destroy()
             self.Parameter2.destroy()
             self.Parameter1 = Gtk.Entry()
@@ -88,27 +91,11 @@ class EventEntry(Gtk.HBox):
             self.Parameter2.set_width_chars(7)
             self.load_parameter_widgets()
             self.show_all()
-        else:
+        else: #Wait Event:
             self.TimeEntry.set_text('')
+            self.TimeEntry.set_sensitive(False)
             self.Parameter1.destroy()
             self.Parameter2.destroy()
-
-# ~ class LED_EventEntry(EventEntry):
-    # ~ def __init__(self, parent, safe, *args):
-        # ~ super(LED_EventEntry, self).__init__(parent, safe, *args)
-        # ~ self.Parameter1 = Gtk.ComboBoxText()
-        # ~ self.Parameter1.append(None, 'Blue')
-        # ~ self.Parameter1.append(None, 'Orange')
-        # ~ self.Parameter1.append(None, 'UV')
-        # ~ self.Parameter2 = Gtk.Entry() #This is numerical (duty cycle)
-        # ~ super(LED_EventEntry,self).load_parameter_widgets()
-
-# ~ class Capture_EventEntry(EventEntry):
-    # ~ def __init__(self, parent, safe, *args):
-        # ~ super(Capture_EventEntry, self).__init__(parent, safe, *args)
-        # ~ self.Parameter1 = Gtk.Entry() # This is group (ie filename prefix), a string
-        # ~ self.Parameter2 = Gtk.Entry() # This is a tuple representing cropping, or None
-        # ~ super(Capture_EventEntry,self).load_parameter_widgets()
 
 class Handlers:
 
@@ -122,7 +109,7 @@ class Handlers:
         self.lastShutterTime = self.parent.parent.Camera.exposure_speed
         self.run_thread = None
         self.stop_run_thread = False
-        self.load_eventList(self.parent.parent.EventList)
+        # ~ self.load_eventList(self.parent.parent.EventList)
         
     def on_script_save_button_clicked(self, button):
         N, eventList = self.save_eventList()
