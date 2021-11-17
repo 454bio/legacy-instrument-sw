@@ -20,7 +20,6 @@ Binning = False
 # LED Properties
 PWM_Frequency = 800 #{8000, 4000, 2000, 1600k, 1000, 800, 500, 400, 320, 250, 200, 160, 100, 80, 50, 40, 20, 10}
 
-
 #Default Values:
 Initial_Values = {
     'brightness':    61,      # between 0 and 100
@@ -40,7 +39,7 @@ Initial_Values = {
 ########################################################################
 
 # Initialization Block:
-mySession = ZionSession(Session_Name, 10, Binning, Initial_Values, PWM_Frequency, Blue_Timing, Orange_Timing, UV_Timing, Camera_Captures, Repeat_N)
+mySession = ZionSession(Session_Name, 10, Binning, Initial_Values, PWM_Frequency)
 
 #Next line perform events defined above:
 # ~ mySession.RunProgram()

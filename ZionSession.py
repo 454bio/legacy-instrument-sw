@@ -15,7 +15,7 @@ import threading
 
 class ZionSession():
 
-    def __init__(self, session_name, Frame_Rate, Binning, Initial_Values, PWM_freq, Blue_Timing, Orange_Timing, UV_Timing, Camera_Captures, RepeatN=0, overwrite=False):
+    def __init__(self, session_name, Frame_Rate, Binning, Initial_Values, PWM_freq, overwrite=False):
 
         self.Name=session_name
         currSuffix = 1
