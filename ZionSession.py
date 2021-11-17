@@ -9,7 +9,7 @@ from ZionCamera import ZionCamera
 from ZionGPIO import ZionGPIO
 from ZionEvents import check_led_timings, ZionProtocol
 from ZionGtk import ZionGUI
-from picamera.exc import PiCameraValueError
+from picamera.exc import PiCameraValueError, PiCameraAlreadyRecording, PiCameraMMALError
 
 import threading
 
@@ -29,6 +29,7 @@ class ZionSession():
         
         self.Camera = ZionCamera(Frame_Rate, Binning, Initial_Values, parent=self)
         self.CaptureCount = 0
+        self.SplitterCount = 0
         self.ProtocolCount = 0
 
         self.LoadProtocolFromFile('ZionDefaultProtocol.txt')
@@ -36,15 +37,19 @@ class ZionSession():
                 
         self.TimeOfLife = time.time()
 
-    def CaptureImage(self, cropping=(0,0,1,1), group=None, verbose=False, comment=''):
+    def CaptureImage(self, cropping=(0,0,1,1), group=None, verbose=False, comment='', protocol=True):
         group = '' if group is None else group
-        filename = os.path.join(self.Dir, str(group)+'_'+self.Name)
+        if not protocol:
+            filename = os.path.join(self.Dir, str(group)+'_'+self.Name)
+        else:
+            filename = os.path.join(self.Dir, str(self.ProtocolCount).zfill(2)+'_'+str(group)+'_'+self.Name)
         self.CaptureCount += 1
         filename += '_'+str(self.CaptureCount).zfill(3)+'_'+str(round(1000*(time.time()-self.TimeOfLife)))
         if verbose:
             self.gui.printToLog('Writing image to file '+filename+'.jpg')
         try:
-            self.Camera.capture(filename, cropping=cropping)
+            # ~ self.SplitterCount += 1
+            self.Camera.capture(filename, cropping=cropping, splitter=self.SplitterCount % 4)
             ret = 0
             if group=='P':
                 self.SaveParameterFile(comment, False)
@@ -53,6 +58,17 @@ class ZionSession():
             if verbose:
                 self.gui.printToLog('Camera Busy! '+filename+' not written!')
             ret = 1
+        except PiCameraAlreadyRecording:
+            print('Camera Busy! '+filename+' not written!')
+            if verbose:
+                self.gui.printToLog('Camera Busy! '+filename+' not written!')
+            ret = 1
+        # ~ except PiCameraMMALError:
+            # ~ print('Camera Busy! '+filename+' not written!')
+            # ~ if verbose:
+                # ~ self.gui.printToLog('Camera Busy! '+filename+' not written!')
+            # ~ ret = 1
+        # ~ self.SplitterCount += 1
         return ret
         
     def SaveParameterFile(self, comment, bSession):

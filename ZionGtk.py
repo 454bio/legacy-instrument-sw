@@ -5,6 +5,7 @@ gi.require_version('Gtk', '3.0')
 gi.require_version('Gst', '1.0')
 from gi.repository import Gtk, GObject, Gst
 import threading
+from operator import itemgetter
 from ZionEvents import print_eventList
 
 def get_handler_id(obj, signal_name):
@@ -167,7 +168,7 @@ class Handlers:
             # ~ f.write('N='+str(N)+'\n')
             # ~ for e in eventList:
                 # ~ f.write(str(e)+'\n')
-        return (N, eventList)
+        return (N, eventList.sort(key=itemgetter(0)))
         
 
     def on_script_load_button_clicked(self, button):
@@ -489,7 +490,7 @@ class Handlers:
     def on_capture_button_clicked(self, button):
         #TODO: get cropping from some self object here
         comment = self.parent.commentBox.get_text()
-        capture_thread = threading.Thread(target=self.parent.parent.CaptureImage, kwargs={'group': 'P', 'comment': comment,'verbose': True})
+        capture_thread = threading.Thread(target=self.parent.parent.CaptureImage, kwargs={'group': 'P', 'comment': comment,'verbose': True, 'protocol': False})
         capture_thread.daemon = True
         capture_thread.start()
 
@@ -804,8 +805,8 @@ class ZionGUI():
         
     def printToLog(self, text):
         self.logBuffer.insert_at_cursor(text+'\n')
-        mark = self.logBuffer.create_mark(None, self.logBuffer.get_end_iter(), False)
-        self.logView.scroll_to_mark(mark, 0, False, 0,0)
+        # ~ mark = self.logBuffer.create_mark(None, self.logBuffer.get_end_iter(), False)
+        # ~ self.logView.scroll_to_mark(mark, 0, False, 0,0)
 
 # ~ da    = builder.get_object("drawingarea1")
 
