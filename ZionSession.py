@@ -149,7 +149,7 @@ class ZionSession():
                 event = self.EventList.Events[e]
                 self.EventList.performEvent(event, self.Camera, self.GPIO)
                 time.sleep((self.EventList.Events[e+1][0]-event[0])/1000.)
-            if not stop():
+            if not stop() and len(self.EventList.Events)>1:
                 self.EventList.performEvent(self.EventList.Events[-1], self.Camera, self.GPIO)
         # ~ self.gui.runProgramButton.set_active(False)
         # ~ self.gui.runProgramButton.set_sensitive(True)

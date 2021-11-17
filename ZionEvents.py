@@ -56,7 +56,7 @@ class ZionProtocol:
 			capture_thread.start()
 		elif event_type == 'LED':
 			gpio_ctrl.enable_led(event[2], event[3], verbose=True)
-		elif event == 'wait':
+		elif event == 'Wait':
 			pass
 		else:
 			#This is impossible to happen, but putting it here just in case
