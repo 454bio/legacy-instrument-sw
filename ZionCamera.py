@@ -32,7 +32,7 @@ class ZionCamera(PiCamera):
 		super(ZionCamera,self).__init__(resolution=resolution, framerate=framerate, sensor_mode=sensor_mode)
 		self.parent = parent
 		self.framerate_range = framerate_range
-		# ~ self.framerate = framerate
+		self.framerate = framerate
 		
 		self.vflip = True
 		
@@ -44,13 +44,11 @@ class ZionCamera(PiCamera):
 		self.awb_mode = initial_values['awb']
 		self.awb_gains = (initial_values['red_gain'], initial_values['blue_gain'])
 		self.exposure_mode = initial_values['exposure_mode']
+		self.shutter_speed = initial_values['exposure_time']*1000
 		self.iso = 0
 		self.set_analog_gain(initial_values['a_gain'])
 		self.set_digital_gain(initial_values['d_gain'])
 		self.shutter_speed = initial_values['exposure_time']*1000
-		
-		self.framerate=2
-		
 		time.sleep(2)
 		# TODO: check for zero for Jose
 		
@@ -144,8 +142,10 @@ class ZionCamera(PiCamera):
 			print('\nWriting image to file '+fileToWrite)
 			ret = super(ZionCamera,self).capture(fileToWrite, use_video_port=False, bayer=True)
 		else:
-			print('\nWriting image to file '+fileToWrite+', using splitter port '+str(splitter))
-			ret = super(ZionCamera,self).capture(fileToWrite, use_video_port=True, splitter_port=splitter)
+			# ~ print('\nWriting image to file '+fileToWrite+', using splitter port '+str(splitter))
+			print('\nWriting image to file '+fileToWrite)
+			# ~ ret = super(ZionCamera,self).capture(fileToWrite, use_video_port=True, splitter_port=splitter)
+			ret = super(ZionCamera,self).capture(fileToWrite, use_video_port=False, bayer=False)
 		if self.parent:
 			self.parent.GPIO.camera_trigger(False)
 		self.zoom=(0,0,1,1)
