@@ -168,7 +168,8 @@ class Handlers:
             # ~ f.write('N='+str(N)+'\n')
             # ~ for e in eventList:
                 # ~ f.write(str(e)+'\n')
-        return (N, eventList.sort(key=itemgetter(0)))
+        eventList.sort(key=itemgetter(0))
+        return (N, eventList)
         
 
     def on_script_load_button_clicked(self, button):
