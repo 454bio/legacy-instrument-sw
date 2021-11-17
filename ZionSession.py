@@ -9,12 +9,7 @@ from ZionCamera import ZionCamera
 from ZionGPIO import ZionGPIO
 from ZionEvents import check_led_timings, ZionProtocol
 from ZionGtk import ZionGUI
-<<<<<<< HEAD
-from picamera.exc import PiCameraValueError, PiCameraAlreadyRecording
-=======
 from picamera.exc import PiCameraValueError, PiCameraAlreadyRecording, PiCameraMMALError
->>>>>>> main
-
 import threading
 
 class ZionSession():
