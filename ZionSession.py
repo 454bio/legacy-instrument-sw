@@ -7,7 +7,7 @@ from gi.repository import Gtk
 import keyboard
 from ZionCamera import ZionCamera
 from ZionGPIO import ZionGPIO
-from ZionEvents import check_led_timings, ZionProtocol
+from ZionEvents import check_led_timings, ZionProtocol, print_eventList
 from ZionGtk import ZionGUI
 from picamera.exc import PiCameraValueError, PiCameraAlreadyRecording, PiCameraMMALError
 import threading
@@ -131,6 +131,7 @@ class ZionSession():
         self.EventList = ZionProtocol()
         self.EventList.N = N
         self.EventList.Events = events
+        # ~ print_eventList(events)
         return self.EventList
 
     def CreateProgram(self, blue_timing, orange_timing, uv_timing, capture_times, repeatN=0):
@@ -149,7 +150,7 @@ class ZionSession():
                 event = self.EventList.Events[e]
                 self.EventList.performEvent(event, self.Camera, self.GPIO)
                 time.sleep((self.EventList.Events[e+1][0]-event[0])/1000.)
-            if not stop() and len(self.EventList.Events)>1:
+            if not stop():
                 self.EventList.performEvent(self.EventList.Events[-1], self.Camera, self.GPIO)
         # ~ self.gui.runProgramButton.set_active(False)
         # ~ self.gui.runProgramButton.set_sensitive(True)

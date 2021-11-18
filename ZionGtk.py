@@ -150,7 +150,6 @@ class Handlers:
                     cropping = None #if cropping=='' else cropping
                     event += (cropping,)
                     eventList.append(event)
-        print_eventList(eventList)
         N = self.parent.RepeatNEntry.get_value_as_int()
         # TODO: sort within each leaf, not all events!
         # ~ eventList.sort(key=itemgetter(0))
@@ -372,13 +371,21 @@ class Handlers:
     
     def on_uv_led_pulse_button(self, button):
         newVal = self.parent.pulseTextInput.get_text()
-        if newVal.isdecimal():
-            self.parent.printToLog('Doing UV pulse of '+newVal+' milliseconds')
-            newVal = int(newVal)
-            #TODO: use different timer (from gtk?)
-            self.parent.parent.GPIO.send_uv_pulse(newVal)
-        else:
-            self.parent.printToLog('Pulse time should be an integer number of milliseconds!')
+        try:
+            newVal = float(newVal)
+        except ValueError:
+            self.parent.printToLog('Pulse time should be an floating point number of milliseconds!')
+            return
+        try:
+            dc = int(self.parent.uvDCEntry.get_text())
+        except ValueError:
+            self.parent.printToLog('Duty Cycle must be an integer from 0-100!')
+            return
+        self.parent.printToLog('Doing UV pulse of '+str(newVal)+' milliseconds at '+str(dc)+' % duty cycle')
+        # ~ self.parent.parent.GPIO.send_uv_pulse(newVal, float(dc/100))
+        pulse_thread = threading.Thread(target=self.parent.parent.GPIO.send_uv_pulse, args=(newVal,float(dc/100)))
+        pulse_thread.daemon = True
+        pulse_thread.start()
             
     def on_led__off_button_clicked(self, button):
         self.parent.parent.GPIO.cancel_PWM()
