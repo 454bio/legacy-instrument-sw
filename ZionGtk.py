@@ -367,8 +367,8 @@ class Handlers:
             # ~ self.parent.secretUVSwitchButton.set_sensitive(False)
             
     def on_led_test_button_activate(self, button):
-        self.parent.parent.GPIO.enable_vsync_callback()    
-    
+        self.parent.parent.GPIO.enable_vsync_callback()
+
     def on_uv_led_pulse_button(self, button):
         newVal = self.parent.pulseTextInput.get_text()
         try:

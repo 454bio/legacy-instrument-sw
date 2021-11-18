@@ -128,10 +128,7 @@ class ZionGPIO(pigpio.pi):
 		for color in range(3):
 			self.enable_led(color, 0)
 		self.camera_trigger(False)
-		
-		#testing:
-		self.test_toggle = True
-		
+
 	def camera_trigger(self, bEnable):
 		super(ZionGPIO, self).write(self.Camera_Trigger, bEnable)
 
