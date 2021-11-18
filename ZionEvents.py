@@ -33,7 +33,11 @@ class ZionProtocol:
 
 	def performEvent(self, event, camera, gpio_ctrl, repeat_idx=0):
 		event_type=event[1]
-		if event_type == 'Capture':
+		if event_type == 'Wait':
+			#We are going to wait for v-sync:
+			print('enabling callback')
+			gpio_ctrl.enable_vsync_callback()
+		elif event_type == 'Capture':
 			if event[3]:
 				if event[2]:
 					kwargs = {'cropping':event[3], 'group':event[2], 'verbose':True}
@@ -56,8 +60,6 @@ class ZionProtocol:
 			capture_thread.start()
 		elif event_type == 'LED':
 			gpio_ctrl.enable_led(event[2], event[3], verbose=True)
-		elif event == 'Wait':
-			pass
 		else:
 			#This is impossible to happen, but putting it here just in case
 			raise ValueError('Unknown Event Type!')
@@ -72,6 +74,7 @@ class ZionProtocol:
 			#TODO: cover case of simultaneous events
 			for e in range(len(eventList)-1):
 				event = eventList[e]
+				print('performing event' + str(e))
 				self.performEvent(event, camera, gpio_ctrl, baseFilename, baseTime=baseTime, repeat_idx=n*numGrps)
 				sleep((eventList[e+1][0]-event[0])/1000.)
 			#after for loop, now perform last event:

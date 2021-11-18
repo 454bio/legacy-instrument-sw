@@ -254,7 +254,10 @@ class ZionGPIO(pigpio.pi):
 				self.parent.gui.printToLog('Orange set to '+str(amt))
 		self.update_pwm_settings()
 		
-	# ~ def send_uv_pulse(self, pulsetime):
+	def send_uv_pulse(self, pulsetime, dc):
+		self.enable_led('UV', dc)
+		time.sleep(pulsetime/1000.)
+		self.enable_led('UV', 0)
 
 	def enable_vsync_callback(self):
 		self.cb1 = super(ZionGPIO,self).callback(XVS, pigpio.RISING_EDGE, self.vsync_callback)
