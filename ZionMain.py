@@ -18,7 +18,7 @@ Binning = False
 # Frame Rate now given in range 0.1-10
 
 # LED Properties
-PWM_Frequency = 800 #{8000, 4000, 2000, 1600k, 1000, 800, 500, 400, 320, 250, 200, 160, 100, 80, 50, 40, 20, 10}
+PWM_Frequency = 4000 #{8000, 4000, 2000, 1600k, 1000, 800, 500, 400, 320, 250, 200, 160, 100, 80, 50, 40, 20, 10}
 
 #Default Values:
 Initial_Values = {
