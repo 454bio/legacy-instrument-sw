@@ -383,15 +383,27 @@ class Handlers:
             self.parent.secretUVSwitchButton.set_visible(False)
             # ~ self.parent.secretUVSwitchButton.set_sensitive(False)
             
+    def on_led_test_button_activate(self, button):
+        # ~ self.parent.parent.GPIO.enable_vsync_callback()
+        return 
+            
     def on_uv_led_pulse_button(self, button):
         newVal = self.parent.pulseTextInput.get_text()
-        if newVal.isdecimal():
-            self.parent.printToLog('Doing UV pulse of '+newVal+' milliseconds')
-            newVal = int(newVal)
-            #TODO: use different timer (from gtk?)
-            self.parent.parent.GPIO.send_uv_pulse(newVal)
-        else:
-            self.parent.printToLog('Pulse time should be an integer number of milliseconds!')
+        try:
+            newVal = float(newVal)
+        except ValueError:
+            self.parent.printToLog('Pulse time should be an floating point number of milliseconds!')
+            return
+        try:
+            dc = int(self.parent.uvDCEntry.get_text())
+        except ValueError:
+            self.parent.printToLog('Duty Cycle must be an integer from 0-100!')
+            return
+        self.parent.printToLog('Doing UV pulse of '+str(newVal)+' milliseconds at '+str(dc)+' % duty cycle')
+        # ~ self.parent.parent.GPIO.send_uv_pulse(newVal, float(dc/100))
+        pulse_thread = threading.Thread(target=self.parent.parent.GPIO.send_uv_pulse, args=(newVal,float(dc/100)))
+        pulse_thread.daemon = True
+        pulse_thread.start()
             
     def on_led__off_button_clicked(self, button):
         self.parent.parent.GPIO.cancel_PWM()
@@ -847,7 +859,7 @@ class ZionGUI():
         self.analogGainEntry = self.builder.get_object("analog_gain_entry")
         self.digitalGainEntry = self.builder.get_object("digital_gain_entry")
         
-        # ~ self.pulseTextInput = self.builder.get_object("uv_led_entry")
+        self.pulseTextInput = self.builder.get_object("uv_led_entry")
         # ~ self.secretUVSwitchButton = self.builder.get_object("uv_led_switch")
         self.blueDCEntry = self.builder.get_object("blue_led_dc_entry")
         self.orangeDCEntry = self.builder.get_object("orange_led_dc_entry")
