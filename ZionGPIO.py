@@ -54,6 +54,10 @@ TEMP_INPUT_1W = 5 #pin 29
 #1 GPIO for UV safety switch:
 #TODO
 
+#2 GPIOs for testing camera sync signals:
+FSTROBE = 23 #pin 16
+XVS = 24 #pin 18
+
 class ZionGPIO(pigpio.pi):
 	
 	UV_idx = 0
@@ -79,6 +83,12 @@ class ZionGPIO(pigpio.pi):
 					super(ZionGPIO,self).set_PWM_range(g, 100)
 			else:
 				raise ValueError('Chosen GPIO is not enabled!')
+		
+		# Now make camera sync signals inputs:
+		for g in [FSTROBE, XVS]:
+			if GpioPins[g][1]:
+				super(ZionGPIO,self).set_mode(g, pigpio.INPUT)
+		
 		self.gpioList = [UV_gpios, Blue_gpios, Orange_gpios] #Order is important
 		self.pS = [0.0]*3 #UV, Blue, Orange
 		self.dc = [0.0]*3
@@ -118,7 +128,7 @@ class ZionGPIO(pigpio.pi):
 		for color in range(3):
 			self.enable_led(color, 0)
 		self.camera_trigger(False)
-		
+
 	def camera_trigger(self, bEnable):
 		super(ZionGPIO, self).write(self.Camera_Trigger, bEnable)
 
@@ -240,11 +250,8 @@ class ZionGPIO(pigpio.pi):
 			if verbose:
 				self.parent.gui.printToLog('Orange set to '+str(amt))
 		self.update_pwm_settings()
-	# ~ def send_uv_pulse(self, pulsetime):
 		
-		
-		# ~ self.turn_on_led('UV')
-		# ~ #TODO: use different timer (from gtk?)
-		# ~ time.sleep(float(pulsetime/1000.))
-		# ~ self.turn_off_led('UV')
-
+	def send_uv_pulse(self, pulsetime, dc):
+		self.enable_led('UV', dc)
+		time.sleep(pulsetime/1000.)
+		self.enable_led('UV', 0)
