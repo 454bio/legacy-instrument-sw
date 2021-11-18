@@ -141,8 +141,8 @@ class ZionCamera(PiCamera):
 		else:
 			# ~ print('\nWriting image to file '+fileToWrite+', using splitter port '+str(splitter))
 			print('\nWriting image to file '+fileToWrite)
-			# ~ ret = super(ZionCamera,self).capture(fileToWrite, use_video_port=True, splitter_port=splitter)
-			ret = super(ZionCamera,self).capture(fileToWrite, use_video_port=False, bayer=False)
+			ret = super(ZionCamera,self).capture(fileToWrite, use_video_port=True)#, splitter_port=splitter)
+			# ~ ret = super(ZionCamera,self).capture(fileToWrite, use_video_port=False, bayer=False)
 		if self.parent:
 			self.parent.GPIO.camera_trigger(False)
 		self.zoom=(0,0,1,1)
