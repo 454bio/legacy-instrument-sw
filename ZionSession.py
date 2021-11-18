@@ -48,7 +48,7 @@ class ZionSession():
         if verbose:
             self.gui.printToLog('Writing image to file '+filename+'.jpg')
         try:
-            # ~ self.SplitterCount += 1
+            self.SplitterCount += 1
             self.Camera.capture(filename, cropping=cropping, splitter=self.SplitterCount % 4)
             ret = 0
             if group=='P':
