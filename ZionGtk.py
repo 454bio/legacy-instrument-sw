@@ -7,7 +7,7 @@ from gi.repository import Gtk, GObject, Gst
 import threading
 from operator import itemgetter
 from ZionEvents import print_eventList
-from ZionPulseGUI import EventEntry
+from ZionPulseGUI import EventEntry, colors
 
 def get_handler_id(obj, signal_name):
     signal_id, detail = GObject.signal_parse_name(signal_name, obj, True)
@@ -40,41 +40,8 @@ class Handlers:
     def save_eventList(self):
         eventList = []
         for eventEntry in self.parent.EventEntries:
-            eventType = eventEntry.TypeComboBox.get_active()
-            if eventType==0:
-                eventList.append((0, 'Wait', None, None))
-            else:
-                eventTime = eventEntry.TimeEntry.get_text()
-                # ~ self.parent.printToLog('event time: '+eventTime+' ms')
-                if not eventTime.isdecimal():
-                    self.parent.printToLog('Event Time '+eventTime+' must be an integer in milliseconds!')
-                    return
-                eventTime = int(eventTime)
-                if eventType == 1: #LED Event
-                    if eventEntry.Parameter2.get_text().isdecimal():
-                        dc = int(eventEntry.Parameter2.get_text())
-                    else:
-                        self.parent.printToLog('Duty Cycle must be an integer percent!')
-                        return
-                    event = (eventTime, 'LED')
-                    if eventEntry.Parameter1.get_active_text() == 'UV':
-                        event += ('UV',)
-                    elif eventEntry.Parameter1.get_active_text() == 'Bl':
-                        event += ('Blue',)
-                    elif eventEntry.Parameter1.get_active_text() == 'Or':
-                        event += ('Orange',)
-                    event += (dc,)
-                    eventList.append(event)
-                elif eventType == 2: #Capture event
-                    event = (eventTime, 'Capture', eventEntry.Parameter1.get_text())
-                    #TODO: check cropping is a valid tuple!
-                    cropping = eventEntry.Parameter2.get_text().strip(' ')
-                    cropping = None #if cropping=='' else cropping
-                    event += (cropping,)
-                    eventList.append(event)
+            eventList.append(eventEntry.exportEvent())
         N = self.parent.RepeatNEntry.get_value_as_int()
-        # TODO: sort within each leaf, not all events!
-        # ~ eventList.sort(key=itemgetter(0))
         return (N, eventList)
 
     def on_script_load_button_clicked(self, button):
@@ -89,42 +56,26 @@ class Handlers:
             
     def load_eventList(self, eventList):
             self.parent.RepeatNEntry.set_value(eventList.N)
-            for entry_idx in range(1, len(self.parent.EventEntries)):
+            #clear out current gui list:
+            for entry_idx in range(len(self.parent.EventEntries)):
                 self.parent.EventEntries[entry_idx].destroy()
-            del(self.parent.EventEntries[1:])
-            self.parent.EventEntries[0].TimeEntry.set_text(str(eventList.Events[0][0]))
-            if eventList.Events[0][1]=='LED':
-                self.parent.EventEntries[0].TypeComboBox.set_active(1)
-                if eventList.Events[0][2]=='Blue':
-                    self.parent.EventEntries[0].Parameter1.set_active(0)
-                elif eventList.Events[0][2]=='Orange':
-                    self.parent.EventEntries[0].Parameter1.set_active(1)
-                elif eventList.Events[0][2]=='UV':
-                    self.parent.EventEntries[0].Parameter1.set_active(2)
-                self.parent.EventEntries[0].Parameter2.set_text(str(eventList.Events[0][3]))
-            elif eventList.Events[0][1]=='Capture':
-                self.parent.EventEntries[0].TypeComboBox.set_active(2)
-                self.parent.EventEntries[1].Parameter1.set_text(eventList.Events[0][2])
-            else:
-                self.parent.EventEntries[0].TypeComboBox.set_active(0)
-                
-            for event in eventList.Events[1:]:
+            del(self.parent.EventEntries[:])
+            #now fill it up:
+            for event in eventList.Events:
                 eventEntry = EventEntry(self.parent)
-                eventEntry.TimeEntry.set_text(str(event[0]))
-                if event[1]=='LED':
-                    eventEntry.TypeComboBox.set_active(1)
-                    if event[2]=='Blue':
-                        eventEntry.Parameter1.set_active(0)
-                    elif event[2]=='Orange':
-                        eventEntry.Parameter1.set_active(1)
-                    elif event[2]=='UV':
-                        eventEntry.Parameter1.set_active(2)
-                    eventEntry.Parameter2.set_text(str(event[3]))
-                elif event[1]=='Capture':
-                    eventEntry.TypeComboBox.set_active(2)
-                    eventEntry.Parameter1.set_text(event[2])
+                #event[0] is color
+                #event[1] is time
+                #event[2] is dc
+                #event[3] is bCapture
+                eventEntry.TimeEntry.set_text(str(event[1]))
+                if event[0]==None:
+                    eventEntry.ColorComboBox.set_active(0)
                 else:
-                    eventEntry.TypeComboBox.set_active(0)
+                    eventEntry.ColorComboBox.set_active(colors.index(event[0]))
+                    eventEntry.DutyCycleEntry.set_sensitive(True)
+                    eventEntry.DutyCycleEntry.set_text(str(event[2]))
+                    eventEntry.CaptureToggleButton.set_sensitive(True)
+                    eventEntry.CaptureToggleButton.set_active(event[3])
                 self.parent.EventEntries.append( eventEntry )
                 self.parent.EventList.pack_start( self.parent.EventEntries[-1], False, False, 0 )
             self.parent.EventList.show_all()
