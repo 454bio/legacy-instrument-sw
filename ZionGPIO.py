@@ -267,7 +267,7 @@ class ZionGPIO(pigpio.pi):
 	def enable_vsync_callback(self, color, pw, dc, capture):
 		self.callback_for_uv_pulse = super(ZionGPIO,self).callback(XVS, pigpio.RISING_EDGE, lambda gpio,level,ticks: self.uv_pulse_on_trigger(color, pw, dc, capture, gpio, level, ticks))
 
-	def uv_pulse_on_trigger_real(self, color, pw, dc, capture, gpio, level, ticks):
+	def uv_pulse_on_trigger(self, color, pw, dc, capture, gpio, level, ticks):
 		self.callback_for_uv_pulse.cancel() #to make this a one-shot
 		#entering this function ~1ms after vsync trigger
 		# request capture right away to not lose this frame:
@@ -275,23 +275,6 @@ class ZionGPIO(pigpio.pi):
 			capture_thread = threading.Thread(target=self.parent.CaptureImage)
 			capture_thread.daemon = True
 			capture_thread.start()
-		# ~ time.sleep(0.086) # wait for ~87 ms
-		# ~ time.sleep(0.398) #500 (1/fr) - 100 (exptime)
-		#TODO: make the following dynamic
-		self.enable_led(color, dc/100.)
-		# ~ time.sleep(0.5-0.088) #this should be 3ms less than actual pulse time!
-		time.sleep((pw-3)/1000)
-		# ~ time.sleep(0.097) #this should be 3ms less than actual pulse time!
-		self.enable_led(color, 0)
-
-	def uv_pulse_on_trigger(self, color, pw, dc, capture, gpio, level, ticks):
-		# ~ self.callback_for_uv_pulse.cancel() #to make this a one-shot
-		#entering this function ~1ms after vsync trigger
-		# request capture right away to not lose this frame:
-		# ~ if capture:
-			# ~ capture_thread = threading.Thread(target=self.parent.CaptureImage)
-			# ~ capture_thread.daemon = True
-			# ~ capture_thread.start()
 		# ~ time.sleep(0.086) # wait for ~87 ms
 		# ~ time.sleep(0.398) #500 (1/fr) - 100 (exptime)
 		#TODO: make the following dynamic
