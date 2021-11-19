@@ -17,7 +17,7 @@ Binning = False
     # w/o binning: 0.05 < framerate < 10 fps
 
 # LED Properties
-PWM_Frequency = 4000 #{8000, 4000, 2000, 1600k, 1000, 800, 500, 400, 320, 250, 200, 160, 100, 80, 50, 40, 20, 10}
+PWM_Frequency = 8000 #{8000, 4000, 2000, 1600, 1000, 800, 500, 400, 320, 250, 200, 160, 100, 80, 50, 40, 20, 10}
 
 #Default Values:
 Initial_Values = {
@@ -32,7 +32,7 @@ Initial_Values = {
     'exposure_time': 100,       # 0 is auto
     'a_gain':        1,        # max is 10
     'd_gain':        1,         #unity gain for avoiding quantization error
-    'framerate':     10,         # min 0.1 max 42 if binning, else min 0.05 max 10
+    'framerate':     2,         # min 0.1 max 42 if binning, else min 0.05 max 10
     }
 
 

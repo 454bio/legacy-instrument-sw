@@ -7,95 +7,11 @@ from gi.repository import Gtk, GObject, Gst
 import threading
 from operator import itemgetter
 from ZionEvents import print_eventList
+from ZionPulseGUI import EventEntry
 
 def get_handler_id(obj, signal_name):
     signal_id, detail = GObject.signal_parse_name(signal_name, obj, True)
     return GObject.signal_handler_find(obj, GObject.SignalMatchType.ID, signal_id, detail, None, None, None)
-
-class Placeholder(Gtk.Entry):
-    def __init__(self, *args):
-        super(Placeholder,self).__init__(*args)
-        self.set_sensitive(False)
-        
-class TrashButton(Gtk.Button):
-    def __init__(self, *args):
-        super(TrashButton,self).__init__(*args)
-        img = Gtk.Image.new_from_icon_name("edit-delete-symbolic", 4)
-        self.add(img)
-        
-class LEDColorComboBox(Gtk.ComboBoxText):
-    def __init__(self, *args):
-        super(LEDColorComboBox,self).__init__(*args)
-        self.append(None, 'Bl')
-        self.append(None, 'Or')
-        self.append(None, 'UV')
-
-class EventTypeComboBox(Gtk.ComboBoxText):
-    def __init__(self, *args):
-        super(EventTypeComboBox,self).__init__(*args)
-        self.append(None, 'Waiting')
-        self.append(None, 'LED')
-        self.append(None, 'Capture')
-        self.set_active(0)
-
-class EventEntry(Gtk.HBox): 
-    def __init__(self, parent, safe, *args):
-        super(EventEntry,self).__init__(*args)
-        self.parent = parent
-        self.Safe = safe
-        self.TimeEntry = Gtk.Entry()
-        self.TimeEntry.set_width_chars(14)
-        self.TimeEntry.set_sensitive(False)
-        self.TypeComboBox = EventTypeComboBox()
-        self.Parameter1 = Placeholder()
-        self.Parameter2 = Placeholder()
-        self.DeleteButton = TrashButton()
-        if self.Safe:
-            self.DeleteButton.set_sensitive(False)
-        self.pack_start( self.DeleteButton, False, False, 0)
-        self.pack_start( self.TimeEntry, False, False, 0)
-        self.pack_start( self.TypeComboBox, False, False, 0)
-        self.TypeComboBox.connect("changed", self.on_event_type_changed)
-        self.DeleteButton.connect("clicked", self.on_event_delete_button)
-
-    def on_event_delete_button(self, button):
-        if not self.Safe:
-            idx = self.parent.EventEntries.index(self)
-            self.destroy()
-            # ~ print('idx to remove = '+str(idx))
-            del(self.parent.EventEntries[idx])
-
-    def load_parameter_widgets(self):
-        self.pack_start( self.Parameter1, False, False, 0 )
-        self.pack_start( self.Parameter2, False, False, 0 )
-
-    def on_event_type_changed(self, combo):
-        active_idx = combo.get_active()
-        if active_idx==1: #LED:
-            self.TimeEntry.set_sensitive(True)
-            self.Parameter1.destroy()
-            self.Parameter2.destroy()
-            self.Parameter1 = LEDColorComboBox()
-            self.Parameter2 = Gtk.Entry()
-            self.Parameter2.set_width_chars(7)
-            self.load_parameter_widgets()
-            self.show_all()
-        elif active_idx==2: #Capture:
-            self.TimeEntry.set_sensitive(True)
-            self.Parameter1.destroy()
-            self.Parameter2.destroy()
-            self.Parameter1 = Gtk.Entry()
-            self.Parameter1.set_width_chars(4)
-            self.Parameter1.set_margin_right(1)
-            self.Parameter2 = Gtk.Entry()
-            self.Parameter2.set_width_chars(7)
-            self.load_parameter_widgets()
-            self.show_all()
-        else: #Wait Event:
-            self.TimeEntry.set_text('')
-            self.TimeEntry.set_sensitive(False)
-            self.Parameter1.destroy()
-            self.Parameter2.destroy()
 
 class Handlers:
 
@@ -110,6 +26,12 @@ class Handlers:
         self.run_thread = None
         self.stop_run_thread = False
         # ~ self.load_eventList(self.parent.parent.EventList)
+        
+    def on_window1_delete_event(self, *args):
+        self.parent.parent.GPIO.cancel_PWM()
+        GObject.source_remove(self.source_id)
+        # ~ GObject.source_remove(self.source_id2)
+        Gtk.main_quit(*args)
         
     def on_script_save_button_clicked(self, button):
         N, eventList = self.save_eventList()
@@ -187,7 +109,7 @@ class Handlers:
                 self.parent.EventEntries[0].TypeComboBox.set_active(0)
                 
             for event in eventList.Events[1:]:
-                eventEntry = EventEntry(self.parent, False)
+                eventEntry = EventEntry(self.parent)
                 eventEntry.TimeEntry.set_text(str(event[0]))
                 if event[1]=='LED':
                     eventEntry.TypeComboBox.set_active(1)
@@ -207,12 +129,6 @@ class Handlers:
                 self.parent.EventList.pack_start( self.parent.EventEntries[-1], False, False, 0 )
             self.parent.EventList.show_all()
 
-    def on_window1_delete_event(self, *args):
-        self.parent.parent.GPIO.cancel_PWM()
-        GObject.source_remove(self.source_id)
-        # ~ GObject.source_remove(self.source_id2)
-        Gtk.main_quit(*args)
-
     def updateExpParams(self):
         a_gain = float(self.parent.parent.Camera.analog_gain)
         d_gain = float(self.parent.parent.Camera.digital_gain)
@@ -220,7 +136,7 @@ class Handlers:
         fr = float(self.parent.parent.Camera.framerate)
         self.parent.analogGainBuffer.set_text("{:04.3f}".format(a_gain))
         self.parent.digitalGainBuffer.set_text("{:04.3f}".format(d_gain))
-        self.parent.expTimeBuffer.set_text("{:07.1f}".format(e_time))
+        self.parent.expTimeBuffer.set_text("{:07.3f}".format(e_time))
         self.parent.frBuffer.set_text("{:03.2f}".format(fr))
         return True
         
@@ -238,7 +154,6 @@ class Handlers:
         self.parent.ContrastScale.set_value(self.parent.Default_Contrast)
         self.parent.SaturationScale.set_value(self.parent.Default_Saturation)
         self.parent.SharpnessScale.set_value(self.parent.Default_Sharpness)
-        
         
     def on_image_denoise_button(self, button):
         if button.get_active():
@@ -265,7 +180,6 @@ class Handlers:
         else:
             self.parent.printToLog('Brightness must be between 0 and 100!')
 
-        
     def on_contrast_scale_value_changed(self, scale):
         newval = int(scale.get_value())
         self.parent.parent.Camera.set_contrast(newval)
@@ -382,7 +296,6 @@ class Handlers:
             self.parent.printToLog('Duty Cycle must be an integer from 0-100!')
             return
         self.parent.printToLog('Doing UV pulse of '+str(newVal)+' milliseconds at '+str(dc)+' % duty cycle')
-        # ~ self.parent.parent.GPIO.send_uv_pulse(newVal, float(dc/100))
         pulse_thread = threading.Thread(target=self.parent.parent.GPIO.send_uv_pulse, args=(newVal,float(dc/100)))
         pulse_thread.daemon = True
         pulse_thread.start()
@@ -514,6 +427,7 @@ class Handlers:
         self.parent.expCompScale.set_sensitive(isOn)
         return
 
+    #Auto White Balance/Color Stuff
     def on_awb_enable_button(self, switch, gparam):
         if switch.get_active():
             on_now = self.parent.parent.Camera.toggle_awb()
@@ -577,7 +491,9 @@ class Handlers:
         else:
             self.parent.printToLog('Blue Gain must be between 0 and 8.0!')
             return
-
+            
+            
+    #Capturing, Running, Etc.
     def on_capture_button_clicked(self, button):
         #TODO: get cropping from some self object here
         comment = self.parent.commentBox.get_text()
@@ -612,8 +528,10 @@ class Handlers:
             self.parent.runProgramButton.set_active(False)
             self.parent.runProgramButton.set_sensitive(True)
         
+        
+    #Event List stuff
     def on_new_event_button_clicked(self, button):
-        self.parent.EventEntries.append( EventEntry(self.parent, False) )
+        self.parent.EventEntries.append( EventEntry(self.parent) )
         self.parent.EventList.pack_start( self.parent.EventEntries[-1], False, False, 0 )
         self.parent.EventList.show_all()
         
@@ -627,6 +545,7 @@ class Handlers:
         # ~ mark = self.logBuffer.create_mark(None, self.logBuffer.get_end_iter(), False)
         # ~ self.logView.scroll_to_mark(mark, 0, False, 0,0)
         
+    #File chooser:
     def on_param_file_chooser_dialog_realize(self, widget):
         Gtk.Window.maximize(self.parent.paramFileChooser)
         
@@ -822,8 +741,6 @@ class Handlers:
             print('delay needs to be float')
             return
         self.parent.parent.GPIO.test_delay = val
-        
-    
 
 class ZionGUI():
     def __init__(self, initial_values, parent, glade_file='zion_layout.glade'):
@@ -926,7 +843,7 @@ class ZionGUI():
         self.paramFileChooser = self.builder.get_object('param_file_chooser_dialog')
         
         self.EventList = self.builder.get_object("event_list")
-        self.EventEntries = [EventEntry(self, True)]
+        self.EventEntries = [EventEntry(self)]
         self.EventList.pack_start(self.EventEntries[0], False, True, 0)
         self.EventList.show_all()
         self.EventListScroll = self.builder.get_object("eventlist_scroll")
