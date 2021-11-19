@@ -464,14 +464,14 @@ class Handlers:
             try:
                 interleaf_time = float(interleaf_time)
             except ValueError:
-                self.parent.printToLog('Invalud interleaf time!')
+                self.parent.printToLog('Invalid interleaf time!')
                 return
             
             intraleaf_time = self.parent.IntraleafTimeEntry.get_text()
             try:
                 intraleaf_time = float(intraleaf_time)
             except ValueError:
-                self.parent.printToLog('Invalud intraleaf time!')
+                self.parent.printToLog('Invalid intraleaf time!')
                 return
             
             self.stop_run_thread = False
