@@ -34,51 +34,11 @@ class ZionProtocol:
 			self.capture_threads = []
 
 	def performEvent(self, event, camera, gpio_ctrl, repeat_idx=0):
-		event_type=event[1]
-		if event_type == 'Wait':
-			pass
-		elif event_type == 'Capture':
-			if event[3]:
-				if event[2]:
-					kwargs = {'cropping':event[3], 'group':event[2], 'verbose':True}
-					# ~ camera.parent.CaptureImage(cropping=event[2], group=event[3], verbose=True)
-				else:
-					kwargs = {'cropping':event[3], 'verbose':True}
-					# ~ camera.parent.CaptureImage(cropping=event[2], verbose=True)
-			else:
-				if event[2]:
-					kwargs = {'group':event[2], 'verbose':True}
-					# ~ camera.parent.CaptureImage(group=event[3], verbose=True)
-				else:
-					kwargs = {'verbose':True}
-					# ~ camera.parent.CaptureImage(verbose=True)
-			# ~ self.capture_threads.append( threading.Thread(target=camera.parent.CaptureImage, kwargs=kwargs) )
-			# ~ self.capture_threads[-1].daemon = True
-			# ~ self.capture_threads[-1].start()
-			capture_thread = threading.Thread(target=camera.parent.CaptureImage, kwargs=kwargs)
-			capture_thread.daemon = True
-			capture_thread.start()
-		elif event_type == 'LED':
-			gpio_ctrl.enable_led(event[2], event[3], verbose=True)
-		else:
-			#This is impossible to happen, but putting it here just in case
-			raise ValueError('Unknown Event Type!')
-
-	def performEventList(self, camera, gpio_ctrl, Repeat_N=0, baseFilename='capture_file_', baseTime=0, numGrps=0):
-		eventList = self.Events
-		saved_capture_idx = camera.file_idx
-		for n in range(Repeat_N+1):
-			#initial sleep (ie before first listed event
-			sleep(eventList[0][0]/1000.)
-			#now perform each event (except last, that'll be done later), and if it's a capture, increment saved_capture_idx
-			#TODO: cover case of simultaneous events
-			for e in range(len(eventList)-1):
-				event = eventList[e]
-				print('performing event' + str(e))
-				self.performEvent(event, camera, gpio_ctrl, baseFilename, baseTime=baseTime, repeat_idx=n*numGrps)
-				sleep((eventList[e+1][0]-event[0])/1000.)
-			#after for loop, now perform last event:
-			self.performEvent(eventList[-1], camera, gpio_ctrl, baseFilename, baseTime=baseTime, repeat_idx=n*numGrps)
+		event_color = event[0]
+		if event_color is None:
+			time.sleep(event[1])
+		else: 
+			gpio_ctrl.enable_vsync_callback(event[0], event[1], event[2], event[3])
 
 #Check for well-formed timing arrays:
 def check_led_timings(LED_Blu_Timing, LED_Or_Timing, LED_UV_Timing, UV_duty_cycle=3.0):
