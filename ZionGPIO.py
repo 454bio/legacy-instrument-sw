@@ -3,6 +3,7 @@ import os
 import itertools
 import glob
 import time
+import threading
 
 # Gpio Pin Lookup Table. Index is GPIO #, format is (pin #, enabled, alternate function)
 # (can remove/trim if memory is an issue)
@@ -77,7 +78,7 @@ class ZionGPIO(pigpio.pi):
 		#TODO: may need adjustment for temperature output (eg if it takes more than one pin)
 		for g in UV_gpios+Blue_gpios+Orange_gpios+[temp_out_gpio, camera_trigger_gpio]:
 			if GpioPins[g][1]:
-				super(ZionGPIO,self).set_mode(g, pigpio.OUTPUT)
+				super(ZionGPIO,self).set_mode(g, pigpio.PUD_DOWN)
 				if g in UV_gpios+Blue_gpios+Orange_gpios:
 					# ~ super(ZionGPIO,self).set_pull_up_down(g, pigpio.PUD_DOWN)
 					super(ZionGPIO,self).set_PWM_range(g, 100)
@@ -128,6 +129,9 @@ class ZionGPIO(pigpio.pi):
 		for color in range(3):
 			self.enable_led(color, 0)
 		self.camera_trigger(False)
+		
+		self.test_delay = 0
+		self.test_pulse_width = 1
 
 	def camera_trigger(self, bEnable):
 		super(ZionGPIO, self).write(self.Camera_Trigger, bEnable)
@@ -258,10 +262,21 @@ class ZionGPIO(pigpio.pi):
 
 	def enable_vsync_callback(self):
 		self.cb1 = super(ZionGPIO,self).callback(XVS, pigpio.RISING_EDGE, self.vsync_callback)
+		# ~ self.cb1 = super(ZionGPIO,self).callback(XVS, pigpio.RISING_EDGE, lambda gpio, level, ticks: self.vsync_callback)
 
 	def disable_callback(self):
 		self.cb1.cancel()
 
 	def vsync_callback(self, gpio, level, tick):
 		self.cb1.cancel()
-		self.parent.CaptureImage()
+		#entering this function ~1ms after vsync trigger
+		capture_thread = threading.Thread(target=self.parent.CaptureImage, kwargs={'group': 'Test'})
+		capture_thread.daemon = True
+		capture_thread.start()
+		# ~ time.sleep(0.086) # wait for ~87 ms
+		time.sleep(0.398) #500 (1/fr) - 100 (exptime)
+		#TODO: make the following dynamic
+		self.enable_led('Orange', 100)
+		# ~ time.sleep(0.5-0.088) #this should be 3ms less than actual pulse time!
+		time.sleep(0.097) #this should be 3ms less than actual pulse time!
+		self.enable_led('Orange', 0)
