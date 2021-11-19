@@ -14,16 +14,18 @@ class ZionProtocol:
 					else:
 						event = tuple()
 						event_params = line[1:-2].split(', ')
-						event_type = event_params[1].strip('\'')
-						event += (int(event_params[0]), event_type, event_params[2].strip('\''))
-						if event_type=='LED':
-							event += (int(event_params[3]),)
-						elif event_type=='Capture':
-							#TODO: read back capture tuples
-							event += (None,)
+						event_time = float(event_params[1])
+						event_color = event_params[0].strip('\'')
+						if event_color=='None':
+							event += (None, event_time, None, None)
+						else:
+							event += (event_color, event_time, int(event_params[2]))
+							if event_params[3]=='True':
+								event += (True,)
+							else:
+								event += (False,)
 						eventList.append(event)
 			self.N = N
-			eventList.sort(key=itemgetter(0))
 			self.Events = eventList
 			self.capture_threads = []
 		else:
