@@ -47,22 +47,22 @@ class ZionSession():
         filename += '_'+str(self.CaptureCount).zfill(3)+'_'+str(round(1000*(time.time()-self.TimeOfLife)))
         if verbose:
             self.gui.printToLog('Writing image to file '+filename+'.jpg')
-        try:
-            self.SplitterCount += 1
-            self.Camera.capture(filename, cropping=cropping, splitter=self.SplitterCount % 4)
-            ret = 0
-            if group=='P':
-                self.SaveParameterFile(comment, False)
-        except PiCameraValueError or PiCameraAlreadyRecording:
-            print('Camera Busy! '+filename+' not written!')
-            if verbose:
-                self.gui.printToLog('Camera Busy! '+filename+' not written!')
-            ret = 1
-        except PiCameraAlreadyRecording:
-            print('Camera Busy! '+filename+' not written!')
-            if verbose:
-                self.gui.printToLog('Camera Busy! '+filename+' not written!')
-            ret = 1
+        # ~ try:
+        self.SplitterCount += 1
+        self.Camera.capture(filename, cropping=cropping, splitter=self.SplitterCount % 4)
+        ret = 0
+            # ~ if group=='P':
+                # ~ self.SaveParameterFile(comment, False)
+        # ~ except PiCameraValueError or PiCameraAlreadyRecording:
+            # ~ print('Camera Busy! '+filename+' not written!')
+            # ~ if verbose:
+                # ~ self.gui.printToLog('Camera Busy! '+filename+' not written!')
+            # ~ ret = 1
+        # ~ except PiCameraAlreadyRecording:
+            # ~ print('Camera Busy! '+filename+' not written!')
+            # ~ if verbose:
+                # ~ self.gui.printToLog('Camera Busy! '+filename+' not written!')
+            # ~ ret = 1
         # ~ except PiCameraMMALError:
             # ~ print('Camera Busy! '+filename+' not written!')
             # ~ if verbose:

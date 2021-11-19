@@ -801,6 +801,29 @@ class Handlers:
     # ~ def on_onButton_clicked(self, widget):
         # ~ self.LightOn = True
         # ~ widget.queue_draw()
+        
+    def on_test_pulse_width_entry_activate(self, entry):
+        val = entry.get_text()
+        try:
+            val = float(val)
+        except ValueError:
+            print('width needs to be float')
+            return
+        if val <= 0:
+            print('width needs to be positive')
+        else:
+            self.parent.parent.GPIO.test_pulse_width = val
+    
+    def on_test_delay_entry_activate(self, entry):
+        val = entry.get_text()
+        try:
+            val = float(val)
+        except ValueError:
+            print('delay needs to be float')
+            return
+        self.parent.parent.GPIO.test_delay = val
+        
+    
 
 class ZionGUI():
     def __init__(self, initial_values, parent, glade_file='zion_layout.glade'):
@@ -912,9 +935,17 @@ class ZionGUI():
         
         self.RepeatNEntry = self.builder.get_object("repeat_n_spin_button")
         
+        self.test_led_pulse_width_entry = self.builder.get_object("test_pulse_width_entry")
+        self.test_led_delay_entry = self.builder.get_object("test_delay_entry")
+        
+        
+        
+        
+        
         self.builder.connect_signals(Handlers(self))
         
         # ~ self.printToLog('Center Pixel Value = '+str(self.parent.Camera.center_pixel_value))
+        
         
     def printToLog(self, text):
         self.logBuffer.insert_at_cursor(text+'\n')
