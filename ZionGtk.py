@@ -460,9 +460,23 @@ class Handlers:
             (N, events) = self.save_eventList()
             self.parent.parent.LoadProtocolFromGUI(N,events)
             self.parent.parent.SaveProtocolFile()
+            interleaf_time = self.parent.InterleafTimeEntry.get_text()
+            try:
+                interleaf_time = float(interleaf_time)
+            except ValueError:
+                self.parent.printToLog('Invalud interleaf time!')
+                return
+            
+            intraleaf_time = self.parent.IntraleafTimeEntry.get_text()
+            try:
+                intraleaf_time = float(intraleaf_time)
+            except ValueError:
+                self.parent.printToLog('Invalud intraleaf time!')
+                return
+            
             self.stop_run_thread = False
             # ~ button.set_sensitive(False)
-            self.run_thread = threading.Thread(target=self.parent.parent.RunProgram, args=(lambda:self.stop_run_thread,) )
+            self.run_thread = threading.Thread(target=self.parent.parent.RunProgram, args=(lambda:self.stop_run_thread, interleaf_time, intraleaf_time) )
             self.run_thread.daemon=True
             self.run_thread.start()
         
@@ -802,6 +816,8 @@ class ZionGUI():
         self.runProgramButton = self.builder.get_object("run_program_button")
         
         self.RepeatNEntry = self.builder.get_object("repeat_n_spin_button")
+        self.InterleafTimeEntry = self.builder.get_object("interleaf_time_entry")
+        self.IntraleafTimeEntry = self.builder.get_object("intraleaf_time_entry")
         
         self.test_led_pulse_width_entry = self.builder.get_object("test_pulse_width_entry")
         self.test_led_delay_entry = self.builder.get_object("test_delay_entry")

@@ -1575,11 +1575,12 @@ Time (sec): </property>
                       </packing>
                     </child>
                     <child>
-                      <object class="GtkEntry">
+                      <object class="GtkEntry" id="interleaf_time_entry">
                         <property name="visible">True</property>
                         <property name="can_focus">True</property>
                         <property name="valign">center</property>
                         <property name="width_chars">2</property>
+                        <property name="text" translatable="yes">30</property>
                       </object>
                       <packing>
                         <property name="expand">False</property>
@@ -1605,7 +1606,7 @@ Time (sec): </property>
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
                         <property name="label" translatable="yes">Intra-Leaf
-Time (ms):  </property>
+Time (sec):  </property>
                         <property name="justify">center</property>
                       </object>
                       <packing>
@@ -1615,11 +1616,12 @@ Time (ms):  </property>
                       </packing>
                     </child>
                     <child>
-                      <object class="GtkEntry">
+                      <object class="GtkEntry" id="intraleaf_time_entry">
                         <property name="visible">True</property>
                         <property name="can_focus">True</property>
                         <property name="valign">center</property>
                         <property name="width_chars">2</property>
+                        <property name="text" translatable="yes">2</property>
                       </object>
                       <packing>
                         <property name="expand">False</property>

@@ -61,13 +61,11 @@ class EventEntry(Gtk.HBox):
         color_idx = self.ColorComboBox.get_active()
         time = self.TimeEntry.get_text()
         dc = self.DutyCycleEntry.get_text()
-        bCapture = self.CaptureToggleButton.get_actve()
+        bCapture = self.CaptureToggleButton.get_active()
         try:
             time = float(time)
         except ValueError:
-            self.parent.printToLog('Invalid Time Entry!')
-            print('Invalid Time Entry!')
-            return
+            raise ValueError('Invalid Time Entry!')
         if not color_idx:
             return (None, time, None, None)
         else:
@@ -75,7 +73,5 @@ class EventEntry(Gtk.HBox):
             try:
                 dc = int(dc)
             except ValueError:
-                self.parent.printToLog('Duty Cycle must be integer percent!')
-                print('Duty Cycle must be integer percent!')
-                return
+                raise ValueError('Duty Cycle must be integer percent!')
             return (color, time, dc, bCapture)
