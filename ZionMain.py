@@ -32,7 +32,7 @@ Initial_Values = {
     'exposure_time': 100,       # 0 is auto
     'a_gain':        1,        # max is 10
     'd_gain':        1,         #unity gain for avoiding quantization error
-    'framerate':     2,         # min 0.1 max 42 if binning, else min 0.05 max 10
+    'framerate':     10,         # min 0.1 max 42 if binning, else min 0.05 max 10
     }
 
 

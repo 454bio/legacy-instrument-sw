@@ -36,7 +36,7 @@ class ZionProtocol:
 		if event_type == 'Wait':
 			#We are going to wait for v-sync:
 			print('enabling callback')
-			gpio_ctrl.enable_vsync_callback()
+			gpio_ctrl.enable_vsync_callback(35)
 		elif event_type == 'Capture':
 			if event[3]:
 				if event[2]:
