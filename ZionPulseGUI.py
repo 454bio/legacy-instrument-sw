@@ -36,7 +36,9 @@ class EventEntry(Gtk.HBox):
         self.pack_start( self.CaptureToggleButton, False, False, 0)
         self.DeleteButton.connect("clicked", self.on_event_delete_button)
         self.ColorComboBox.connect("changed", self.on_color_changed)
-        self.CaptureToggleButton.set_active(True)
+        self.CaptureToggleButton.set_active(False)
+        self.CaptureToggleButton.set_sensitive(False)
+        self.DutyCycleEntry.set_sensitive(False)
 
     def on_event_delete_button(self, button):
         idx = self.parent.EventEntries.index(self)
