@@ -4,6 +4,7 @@ import itertools
 import glob
 import time
 import threading
+from functools import partial
 
 # Gpio Pin Lookup Table. Index is GPIO #, format is (pin #, enabled, alternate function)
 # (can remove/trim if memory is an issue)
@@ -260,23 +261,24 @@ class ZionGPIO(pigpio.pi):
 		time.sleep(pulsetime/1000.)
 		self.enable_led('UV', 0)
 
-	def enable_vsync_callback(self):
-		self.cb1 = super(ZionGPIO,self).callback(XVS, pigpio.RISING_EDGE, self.vsync_callback)
+	def enable_vsync_callback(self, pw, dc, capture, fr_period, exp_time):
+		# ~ self.cb1 = super(ZionGPIO,self).callback(XVS, pigpio.RISING_EDGE, self.vsync_callback)
 		# ~ self.cb1 = super(ZionGPIO,self).callback(XVS, pigpio.RISING_EDGE, lambda gpio, level, ticks: self.vsync_callback)
+		self.callback_for_uv_pulse = super(ZionGPIO,self).callback(XVS, pigpio.RISING_EDGE, lambda gpio,level,ticks: self.uv_pulse_on_trigger(pw, dc, capture, fr_period, exp_time, gpio, level, ticks))
 
-	def disable_callback(self):
-		self.cb1.cancel()
-
-	def vsync_callback(self, gpio, level, tick):
-		self.cb1.cancel()
+	def uv_pulse_on_trigger(self, pw, dc, capture, fr_period, exp_time, gpio, level, ticks):
+		self.callback_for_uv_pulse.cancel() #to make this a one-shot
 		#entering this function ~1ms after vsync trigger
-		capture_thread = threading.Thread(target=self.parent.CaptureImage, kwargs={'group': 'Test'})
-		capture_thread.daemon = True
-		capture_thread.start()
+		# request capture right away to not lose this frame:
+		if capture:
+			capture_thread = threading.Thread(target=self.parent.CaptureImage)
+			capture_thread.daemon = True
+			capture_thread.start()
 		# ~ time.sleep(0.086) # wait for ~87 ms
-		time.sleep(0.398) #500 (1/fr) - 100 (exptime)
+		# ~ time.sleep(0.398) #500 (1/fr) - 100 (exptime)
 		#TODO: make the following dynamic
-		self.enable_led('Orange', 100)
-		# ~ time.sleep(0.5-0.088) #this should be 3ms less than actual pulse time!
-		time.sleep(0.097) #this should be 3ms less than actual pulse time!
+		self.enable_led('Orange', dc/100.)
+		time.sleep(0.5-0.088) #this should be 3ms less than actual pulse time!
+		time.sleep((pw-3)/1000)
+		# ~ time.sleep(0.097) #this should be 3ms less than actual pulse time!
 		self.enable_led('Orange', 0)
