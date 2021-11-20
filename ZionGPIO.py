@@ -216,8 +216,18 @@ class ZionGPIO(pigpio.pi):
 		# ~ self.wave_tx_stop()
 		# ~ if self.old_wid is not None:
 			# ~ self.wave_delete(self.old_wid)
+			
+	def enable_leds(self, dcDict, verbose=False):
+		for color in dcDict.keys():
+			self.enable_led(color, dcDict[color]/100, verbose=verbose, update=False)
+		self.update_pwm_settings()
+		
+	def disable_leds(self, dcDict, verbose=False):
+		for color in dcDict.keys():
+			self.enable_led(color, 0, verbose=verbose, update=False)
+		self.update_pwm_settings()
 
-	def enable_led(self, color, amt, verbose=False):
+	def enable_led(self, color, amt, verbose=False, update=True):
 		# ~ amt = amt
 		# ~ if amt<0 or amt>1:
 			# ~ raise ValueError("Duty Cycle must be between 0 and 1!")
@@ -236,7 +246,8 @@ class ZionGPIO(pigpio.pi):
 			print('\nSetting Orange to '+str(amt))
 			if verbose:
 				self.parent.gui.printToLog('Orange set to '+str(amt))
-		self.update_pwm_settings()
+		if update:
+			self.update_pwm_settings()
 
 	def turn_on_led(self, color, verbose=False):
 		if color=='UV':
@@ -264,10 +275,10 @@ class ZionGPIO(pigpio.pi):
 		time.sleep(pulsetime/1000.)
 		self.enable_led('UV', 0)
 
-	def enable_vsync_callback(self, color, pw, dc, capture):
-		self.callback_for_uv_pulse = super(ZionGPIO,self).callback(XVS, pigpio.RISING_EDGE, lambda gpio,level,ticks: self.uv_pulse_on_trigger(color, pw, dc, capture, gpio, level, ticks))
+	def enable_vsync_callback(self, colors, pw, capture):
+		self.callback_for_uv_pulse = super(ZionGPIO,self).callback(XVS, pigpio.RISING_EDGE, lambda gpio,level,ticks: self.uv_pulse_on_trigger(colors, pw, capture, gpio, level, ticks))
 
-	def uv_pulse_on_trigger(self, color, pw, dc, capture, gpio, level, ticks):
+	def uv_pulse_on_trigger(self, colors, pw, capture, gpio, level, ticks):
 		self.callback_for_uv_pulse.cancel() #to make this a one-shot
 		#entering this function ~1ms after vsync trigger
 		# request capture right away to not lose this frame:
@@ -275,11 +286,9 @@ class ZionGPIO(pigpio.pi):
 			capture_thread = threading.Thread(target=self.parent.CaptureImage)
 			capture_thread.daemon = True
 			capture_thread.start()
-		# ~ time.sleep(0.086) # wait for ~87 ms
-		# ~ time.sleep(0.398) #500 (1/fr) - 100 (exptime)
-		#TODO: make the following dynamic
-		self.enable_led(color, dc/100.)
-		# ~ time.sleep(0.5-0.088) #this should be 3ms less than actual pulse time!
+		time.sleep(0.086) # wait for ~87 ms
+		self.enable_leds(colors)
+		self.enable_led('Orange', 100)
 		time.sleep((pw-3)/1000)
-		# ~ time.sleep(0.097) #this should be 3ms less than actual pulse time!
-		self.enable_led(color, 0)
+		self.disable_leds(colors)
+		self.enable_led('Orange', 0)

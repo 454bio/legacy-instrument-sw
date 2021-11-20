@@ -1,4 +1,4 @@
-from time import sleep
+import time
 from operator import itemgetter
 import keyboard
 import threading
@@ -33,12 +33,10 @@ class ZionProtocol:
 			self.Events = []
 			self.capture_threads = []
 
-	def performEvent(self, event, camera, gpio_ctrl, repeat_idx=0):
-		event_color = event[0]
-		if event_color is None:
-			time.sleep(event[1])
-		else: 
-			gpio_ctrl.enable_vsync_callback(event[0], event[1], event[2], event[3])
+	def performEvent(self, event, gpio_ctrl):
+		if not event[0] is None:
+			gpio_ctrl.enable_vsync_callback(event[0], event[1], event[2])
+		time.sleep(event[3]/1000.)
 
 #Check for well-formed timing arrays:
 def check_led_timings(LED_Blu_Timing, LED_Or_Timing, LED_UV_Timing, UV_duty_cycle=3.0):
