@@ -1751,9 +1751,9 @@ Time (sec):  </property>
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
                         <property name="halign">center</property>
-                        <property name="label" translatable="yes">Color:</property>
+                        <property name="label" translatable="yes">Color (DC):</property>
                         <property name="justify">center</property>
-                        <property name="width_chars">9</property>
+                        <property name="width_chars">10</property>
                       </object>
                       <packing>
                         <property name="expand">False</property>
@@ -1777,21 +1777,6 @@ Time (sec):  </property>
                       </packing>
                     </child>
                     <child>
-                      <object class="GtkLabel" id="eventlist_dc_label">
-                        <property name="visible">True</property>
-                        <property name="can_focus">False</property>
-                        <property name="halign">center</property>
-                        <property name="label" translatable="yes">DC (%)</property>
-                        <property name="justify">center</property>
-                        <property name="width_chars">6</property>
-                      </object>
-                      <packing>
-                        <property name="expand">True</property>
-                        <property name="fill">False</property>
-                        <property name="position">5</property>
-                      </packing>
-                    </child>
-                    <child>
                       <object class="GtkLabel" id="eventlist_capture_label">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
@@ -1799,6 +1784,21 @@ Time (sec):  </property>
                         <property name="label" translatable="yes">Capture?</property>
                         <property name="justify">center</property>
                         <property name="width_chars">8</property>
+                      </object>
+                      <packing>
+                        <property name="expand">True</property>
+                        <property name="fill">False</property>
+                        <property name="position">3</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <object class="GtkLabel" id="eventlist_dc_label">
+                        <property name="visible">True</property>
+                        <property name="can_focus">False</property>
+                        <property name="halign">center</property>
+                        <property name="label" translatable="yes">Post-Delay</property>
+                        <property name="justify">center</property>
+                        <property name="width_chars">6</property>
                       </object>
                       <packing>
                         <property name="expand">True</property>
@@ -2237,17 +2237,6 @@ Time (sec):  </property>
               </packing>
             </child>
             <child>
-              <object class="GtkSeparator">
-                <property name="visible">True</property>
-                <property name="can_focus">False</property>
-              </object>
-              <packing>
-                <property name="expand">False</property>
-                <property name="fill">True</property>
-                <property name="position">2</property>
-              </packing>
-            </child>
-            <child>
               <object class="GtkBox">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
@@ -2603,6 +2592,17 @@ Time (sec):  </property>
                     <property name="position">5</property>
                   </packing>
                 </child>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+                <property name="fill">True</property>
+                <property name="position">2</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkSeparator">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
               </object>
               <packing>
                 <property name="expand">False</property>

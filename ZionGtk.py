@@ -42,6 +42,7 @@ class Handlers:
         for eventEntry in self.parent.EventEntries:
             eventList.append(eventEntry.exportEvent())
         N = self.parent.RepeatNEntry.get_value_as_int()
+        print_eventList(eventList)
         return (N, eventList)
 
     def on_script_load_button_clicked(self, button):
@@ -476,7 +477,7 @@ class Handlers:
             
             self.stop_run_thread = False
             # ~ button.set_sensitive(False)
-            self.run_thread = threading.Thread(target=self.parent.parent.RunProgram, args=(lambda:self.stop_run_thread, interleaf_time, intraleaf_time) )
+            self.run_thread = threading.Thread(target=self.parent.parent.RunProgram, args=(lambda:self.stop_run_thread, interleaf_time) )
             self.run_thread.daemon=True
             self.run_thread.start()
         
