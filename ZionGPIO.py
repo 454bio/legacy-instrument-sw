@@ -276,19 +276,9 @@ class ZionGPIO(pigpio.pi):
 		self.enable_led('UV', 0)
 
 	def enable_vsync_callback(self, colors, pw, capture):
-		self.callback_for_uv_pulse = super(ZionGPIO,self).callback(XVS, pigpio.RISING_EDGE, lambda gpio,level,ticks: self.uv_pulse_on_trigger(colors, pw, capture, gpio, level, ticks))
+		self.callback_for_uv_pulse = super(ZionGPIO,self).callback(XVS, pigpio.RISING_EDGE, lambda gpio,level,ticks: self.parent.pulse_on_trigger(colors, pw, capture, gpio, level, ticks))
+	
+	# ~ def enable_vsync_callback(self):
+		# ~ self.callback_for_uv_pulse = super(ZionGPIO,self).callback(XVS, pigpio.RISING_EDGE, lambda gpio,level,ticks: self.uv_pulse_on_trigger(gpio, level, ticks))
 
-	def uv_pulse_on_trigger(self, colors, pw, capture, gpio, level, ticks):
-		self.callback_for_uv_pulse.cancel() #to make this a one-shot
-		#entering this function ~1ms after vsync trigger
-		# request capture right away to not lose this frame:
-		if capture:
-			capture_thread = threading.Thread(target=self.parent.CaptureImage)
-			capture_thread.daemon = True
-			capture_thread.start()
-		time.sleep(0.086) # wait for ~87 ms
-		self.enable_leds(colors)
-		# ~ self.enable_led('Orange', 100)
-		time.sleep((pw-3)/1000)
-		self.disable_leds(colors)
-		# ~ self.enable_led('Orange', 0)
+
