@@ -288,7 +288,7 @@ class ZionGPIO(pigpio.pi):
 			capture_thread.start()
 		time.sleep(0.086) # wait for ~87 ms
 		self.enable_leds(colors)
-		self.enable_led('Orange', 100)
+		# ~ self.enable_led('Orange', 100)
 		time.sleep((pw-3)/1000)
 		self.disable_leds(colors)
-		self.enable_led('Orange', 0)
+		# ~ self.enable_led('Orange', 0)
