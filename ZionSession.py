@@ -139,6 +139,9 @@ class ZionSession():
         self.EventList = None #EventList(blue_timing, orange_timing, uv_timing, capture_times, N=repeatN)
 
     def RunProgram(self, stop, intertime):
+        self.frame_period = 1000./self.Camera.framerate
+        self.exposure_time = self.Camera.shutter_speed/1000. if self.Camera.shutter_speed else self.frame_period
+        time.sleep(0.5)
         self.TimeOfLife = time.time()
         for n in range(self.EventList.N+1):
             if stop():
@@ -148,6 +151,7 @@ class ZionSession():
                     break
                 event = self.EventList.Events[e]
                 self.EventList.performEvent(event, self.GPIO)
+                time.sleep(self.frame_period/250)
             if not stop():
                 time.sleep(intertime)
         # ~ self.gui.runProgramButton.set_active(False)
@@ -161,3 +165,23 @@ class ZionSession():
     def QuitSession(self):
         # ~ self.GPIO.cancel_PWM()
         self.Camera.quit()
+
+    def pulse_on_trigger(self, colors, pw, capture, gpio, level, ticks):
+        self.GPIO.callback_for_uv_pulse.cancel() #to make this a one-shot
+        #entering this function ~1ms after vsync trigger
+        time.sleep((self.frame_period-3)/2000)
+        if capture:
+            capture_thread = threading.Thread(target=self.CaptureImage)
+            capture_thread.daemon = True
+            capture_thread.start()
+        time.sleep((self.frame_period-3)/2000)
+        # ~ time.sleep(0.087+(self.frame_period-self.exposure_time)/1000) #wait for ~87 ms
+        print(self.frame_period)
+        print(self.exposure_time/2)
+        print(pw/2)
+        time.sleep((self.frame_period-(self.exposure_time+pw)/2)/1000) #wait for ~87 ms
+        self.GPIO.enable_leds(colors)
+        # ~ self.enable_led('Orange', 100)
+        time.sleep((pw-3)/1000)
+        self.GPIO.disable_leds(colors)
+        # ~ self.enable_led('Orange', 0)
