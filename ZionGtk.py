@@ -468,12 +468,12 @@ class Handlers:
                 self.parent.printToLog('Invalid interleaf time!')
                 return
             
-            intraleaf_time = self.parent.IntraleafTimeEntry.get_text()
-            try:
-                intraleaf_time = float(intraleaf_time)
-            except ValueError:
-                self.parent.printToLog('Invalid intraleaf time!')
-                return
+            # ~ intraleaf_time = self.parent.IntraleafTimeEntry.get_text()
+            # ~ try:
+                # ~ intraleaf_time = float(intraleaf_time)
+            # ~ except ValueError:
+                # ~ self.parent.printToLog('Invalid intraleaf time!')
+                # ~ return
             
             self.stop_run_thread = False
             # ~ button.set_sensitive(False)
