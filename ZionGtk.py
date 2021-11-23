@@ -42,7 +42,7 @@ class Handlers:
         for eventEntry in self.parent.EventEntries:
             eventList.append(eventEntry.exportEvent())
         N = self.parent.RepeatNEntry.get_value_as_int()
-        print_eventList(eventList)
+        # ~ print_eventList(eventList)
         return (N, eventList)
 
     def on_script_load_button_clicked(self, button):
