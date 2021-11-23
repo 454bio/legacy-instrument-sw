@@ -30,7 +30,7 @@ Initial_Values = {
     'blue_gain':     2.18,     # 0.0 to 8.0
     'exposure_mode': 'off', # 'auto', 'night', 'verylong', etc. (***'off')
     'exposure_time': 500,       # 0 is auto
-    'a_gain':        1,        # max is 10
+    'a_gain':        10,        # max is 10
     'd_gain':        1,         #unity gain for avoiding quantization error
     'framerate':     2,         # min 0.1 max 42 if binning, else min 0.05 max 10
     }

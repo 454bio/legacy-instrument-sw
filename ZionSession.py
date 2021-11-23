@@ -51,8 +51,8 @@ class ZionSession():
         self.SplitterCount += 1
         self.Camera.capture(filename, cropping=cropping, splitter=self.SplitterCount % 4)
         ret = 0
-            # ~ if group=='P':
-                # ~ self.SaveParameterFile(comment, False)
+        if group=='P':
+            self.SaveParameterFile(comment, False)
         # ~ except PiCameraValueError or PiCameraAlreadyRecording:
             # ~ print('Camera Busy! '+filename+' not written!')
             # ~ if verbose:
@@ -174,12 +174,15 @@ class ZionSession():
             capture_thread = threading.Thread(target=self.CaptureImage)
             capture_thread.daemon = True
             capture_thread.start()
-        time.sleep((self.frame_period-3)/2000)
+        time1 = (self.frame_period-6)/2000
+        time2 = (3*self.frame_period-(self.exposure_time+pw+6))/2000
+        # ~ time.sleep((2*self.frame_period-(self.exposure_time+pw+6)/2000)
         # ~ time.sleep(0.087+(self.frame_period-self.exposure_time)/1000) #wait for ~87 ms
-        print(self.frame_period)
-        print(self.exposure_time/2)
-        print(pw/2)
-        time.sleep((self.frame_period-(self.exposure_time+pw)/2)/1000) #wait for ~87 ms
+        # ~ print(self.frame_period)
+        # ~ print(self.exposure_time/2)
+        # ~ print(pw/2)
+        # ~ time.sleep((self.frame_period-(self.exposure_time+pw)/2)/1000) #wait for ~87 ms
+        time.sleep(max([time1, time2]))
         self.GPIO.enable_leds(colors)
         # ~ self.enable_led('Orange', 100)
         time.sleep((pw-3)/1000)
