@@ -101,11 +101,14 @@ class Handlers:
         return True
                         
     def reset_button_click(self, *args):
-        self.parent.printToLog('Setting Video Params to Defaults')
-        self.parent.BrightnessScale.set_value(self.parent.Default_Brightness)
-        self.parent.ContrastScale.set_value(self.parent.Default_Contrast)
-        self.parent.SaturationScale.set_value(self.parent.Default_Saturation)
-        self.parent.SharpnessScale.set_value(self.parent.Default_Sharpness)
+        # ~ self.parent.printToLog('Setting Video Params to Defaults')
+        # ~ self.parent.BrightnessScale.set_value(self.parent.Default_Brightness)
+        # ~ self.parent.ContrastScale.set_value(self.parent.Default_Contrast)
+        # ~ self.parent.SaturationScale.set_value(self.parent.Default_Saturation)
+        # ~ self.parent.SharpnessScale.set_value(self.parent.Default_Sharpness)
+        print('Brightness: '+str(self.parent.parent.Camera.brightness))
+        print('Contrast: '+str(self.parent.parent.Camera.contrast))
+        print('Saturation: '+str(self.parent.parent.Camera.saturation))
         
     def on_image_denoise_button(self, button):
         if button.get_active():
