@@ -41,12 +41,15 @@ class ZionCamera(PiCamera):
 		self.sharpness = initial_values['sharpness']
 		self.awb_mode = initial_values['awb']
 		self.awb_gains = (initial_values['red_gain'], initial_values['blue_gain'])
-		self.exposure_mode = initial_values['exposure_mode']
+		self.exposure_mode = 'auto'
 		self.shutter_speed = initial_values['exposure_time']*1000
 		self.iso = 0
 		self.set_analog_gain(10.0)
 		self.set_digital_gain(1.0)
 		time.sleep(2)
+		self.exposure_mode = initial_values['exposure_mode']
+		time.sleep(2)
+
 		# TODO: check for zero for Jose
 		
 		# TODO: when getting bayer data, need to account for vflip we introduced
