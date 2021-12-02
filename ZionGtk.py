@@ -503,16 +503,20 @@ class Handlers:
         self.parent.EventEntries.append( EventEntry(self.parent) )
         self.parent.EventList.pack_start( self.parent.EventEntries[-1], False, False, 0 )
         self.parent.EventList.show_all()
+        adjustment = self.parent.EventListScroll.get_vadjustment()
+        adjustment.set_value(adjustment.get_upper())
+        Gtk.Widget.show(self.parent.EventListScroll)
         
     def on_event_scroll_size_allocate(self, scroll, rectangle):
         #TODO scroll to bottom
         # ~ adjustment = scroll.get_vadjustment()
         # ~ adjustment.set_value(adjustment.get_upper())
-        adjustment = scroll.get_vadjustment()
-        adjustment.set_value(adjustment.get_upper())
+        # ~ adjustment = scroll.get_vadjustment()
+        # ~ adjustment.set_value(adjustment.get_upper())
         # ~ Gtk.Widget.show(self.parent.EventListScroll)
         # ~ mark = self.logBuffer.create_mark(None, self.logBuffer.get_end_iter(), False)
         # ~ self.logView.scroll_to_mark(mark, 0, False, 0,0)
+        return
         
     #File chooser:
     def on_param_file_chooser_dialog_realize(self, widget):
