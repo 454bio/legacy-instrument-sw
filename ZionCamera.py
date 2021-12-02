@@ -252,21 +252,34 @@ class ZionCamera(PiCamera):
 		
 	def set_framerate(self, val):
 		if val>0:
+			# ~ self.exposure_mode = 'auto'
 			if self.sensor_mode==2:
 				if val<=42 and val>=0.1:
+					self.exposure_mode='auto'
 					self.framerate = val
+					time.sleep(1)
+					self.exposure_mode = 'off'
 				else:
 					print('\nWith binning on, framerate must be between 0.1 and 42!')
 			elif self.sensor_mode==3:
 				if val<=10 and val>=0.05:
+					self.exposure_mode = 'auto'
 					self.framerate = val
+					time.sleep(1)
+					self.exposure_mode = 'off'
 				else:
 					print('\nWith binning off, framerate must be between 0.05 and 10!')
 		else:
 			if self.sensor_mode==2:
 				self.framerate_range = (0.1, 42)
+				# ~ self.exposure_mode = 'auto'
+				time.sleep(3)
+				self.exposure_mode = 'off'
 			elif self.sensor_mode==3:
 				self.framerate_range = (0.05, 10)
+				# ~ self.exposure_mode = 'auto'
+				time.sleep(3)
+				self.exposure_mode = 'off'
 
 	def start_preview(self, fullscreen=False, window=(560,75,640,480)):
 		super(ZionCamera,self).start_preview(fullscreen=False, window=window)
