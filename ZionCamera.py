@@ -49,7 +49,7 @@ class ZionCamera(PiCamera):
 		self.set_digital_gain(initial_values['d_gain'])
 		self.shutter_speed = initial_values['exposure_time']*1000
 		time.sleep(2)
-		self.exposure_mode = initial_values['exposure_mode']
+		self.exposure_mode = 'off'
 		time.sleep(2)
 
 		# TODO: check for zero for Jose
@@ -119,8 +119,8 @@ class ZionCamera(PiCamera):
 				self.set_blue_gain(params[key])
 				sleep(0.25)
 				# ~ self.awb_gains = (self.awb_gains[0], params[key])
-			elif key=='exposure_mode':
-				self.exposure_mode = params[key]
+			# ~ elif key=='exposure_mode':
+				# ~ self.exposure_mode = params[key]
 			elif key=='shutter_time':
 				self.shutter_speed = params[key]
 			elif key=='ISO':
