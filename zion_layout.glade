@@ -62,6 +62,7 @@
     <property name="type_hint">dialog</property>
     <property name="deletable">False</property>
     <property name="create_folders">False</property>
+    <property name="do_overwrite_confirmation">True</property>
     <signal name="delete-event" handler="on_param_file_chooser_close" swapped="no"/>
     <signal name="realize" handler="on_param_file_chooser_dialog_realize" swapped="no"/>
     <child>
@@ -1940,7 +1941,6 @@ Repeats (sec): </property>
             </child>
             <child>
               <object class="GtkBox">
-                <property name="visible">True</property>
                 <property name="can_focus">False</property>
                 <property name="orientation">vertical</property>
                 <child>
@@ -2062,7 +2062,6 @@ Repeats (sec): </property>
             </child>
             <child type="tab">
               <object class="GtkImage">
-                <property name="visible">True</property>
                 <property name="can_focus">False</property>
                 <property name="icon_name">help-faq</property>
               </object>
@@ -2232,17 +2231,6 @@ Repeats (sec): </property>
                 <property name="expand">False</property>
                 <property name="fill">False</property>
                 <property name="position">1</property>
-              </packing>
-            </child>
-            <child>
-              <object class="GtkSeparator">
-                <property name="visible">True</property>
-                <property name="can_focus">False</property>
-              </object>
-              <packing>
-                <property name="expand">False</property>
-                <property name="fill">True</property>
-                <property name="position">2</property>
               </packing>
             </child>
             <child>
@@ -2601,6 +2589,17 @@ Repeats (sec): </property>
                     <property name="position">5</property>
                   </packing>
                 </child>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+                <property name="fill">True</property>
+                <property name="position">2</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkSeparator">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
               </object>
               <packing>
                 <property name="expand">False</property>

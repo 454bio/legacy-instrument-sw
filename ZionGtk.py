@@ -34,8 +34,16 @@ class Handlers:
         Gtk.main_quit(*args)
         
     def on_script_save_button_clicked(self, button):
-        N, eventList = self.save_eventList()
-        #TODO: bring button back?
+        (N, events, interrepeat) = self.save_eventList()
+        self.parent.parent.LoadProtocolFromGUI(N,events,interrepeat)
+        self.parent.paramFileChooser.set_action(Gtk.FileChooserAction.SAVE)
+        response = self.parent.paramFileChooser.run()
+        if response == Gtk.ResponseType.OK:
+            filename = self.parent.paramFileChooser.get_filename()
+            self.parent.paramFileChooser.hide()
+            self.parent.parent.SaveProtocolFile(filename)
+        elif response == Gtk.ResponseType.CANCEL:
+            self.parent.paramFileChooser.hide()
         
     def save_eventList(self):
         eventList = []
@@ -43,9 +51,16 @@ class Handlers:
             eventList.append(eventEntry.exportEvent())
         N = self.parent.RepeatNEntry.get_value_as_int()
         # ~ print_eventList(eventList)
-        return (N, eventList)
+        interrepeat_delay = self.parent.InterleafTimeEntry.get_text()
+        try:
+            interrepeat_delay = float(interrepeat_delay)
+        except ValueError:
+            self.parent.printToLog('Invalid inter-repeat time!')
+            return
+        return (N, eventList, interrepeat_delay)
 
     def on_script_load_button_clicked(self, button):
+        self.parent.paramFileChooser.set_action(Gtk.FileChooserAction.OPEN)
         response = self.parent.paramFileChooser.run()
         if response == Gtk.ResponseType.OK:
             filename = self.parent.paramFileChooser.get_filename()
@@ -57,6 +72,7 @@ class Handlers:
             
     def load_eventList(self, eventList):
             self.parent.RepeatNEntry.set_value(eventList.N)
+            self.parent.InterleafTimeEntry.set_text(str(eventList.Interrepeat_Delay))
             #clear out current gui list:
             for entry_idx in range(len(self.parent.EventEntries)):
                 self.parent.EventEntries[entry_idx].destroy()
@@ -64,19 +80,26 @@ class Handlers:
             #now fill it up:
             for event in eventList.Events:
                 eventEntry = EventEntry(self.parent)
-                #event[0] is color
+                #event[0] is color dc dict
                 #event[1] is time
-                #event[2] is dc
-                #event[3] is bCapture
-                eventEntry.TimeEntry.set_text(str(event[1]))
-                if event[0]==None:
-                    eventEntry.ColorComboBox.set_active(0)
+                #event[2] is bCapture
+                #event[3] is postdelay
+                #event[4] is group
+                eventEntry.PulseTimeEntry.set_text(str(event[1]))
+
+                if event[0]==None: #should this be {}?
+                    eventEntry.ColorComboBox.set_active(None)
                 else:
-                    eventEntry.ColorComboBox.set_active(colors.index(event[0]))
-                    eventEntry.DutyCycleEntry.set_sensitive(True)
-                    eventEntry.DutyCycleEntry.set_text(str(event[2]))
-                    eventEntry.CaptureToggleButton.set_sensitive(True)
-                    eventEntry.CaptureToggleButton.set_active(event[3])
+                    eventEntry.ColorComboBox.set_active(event[0])
+                    if event[4]:
+                        eventEntry.CaptureGroupEntry.set_text(event[4])
+                    else:
+                        eventEntry.CaptureGroupEntry.set_text('')
+                    eventEntry.CaptureToggleButton.set_active(event[2])
+                    if event[3]:
+                        eventEntry.PostDelayEntry.set_text(str(event[3]))
+                    else:
+                        eventEntry.CaptureGroupEntry.set_text('')
                 self.parent.EventEntries.append( eventEntry )
                 self.parent.EventList.pack_start( self.parent.EventEntries[-1], False, False, 0 )
             self.parent.EventList.show_all()
@@ -461,15 +484,15 @@ class Handlers:
             self.parent.expModeComboBox.set_active(0)
             comment = self.parent.commentBox.get_text()
             self.parent.parent.SaveParameterFile(comment, True)
-            (N, events) = self.save_eventList()
-            self.parent.parent.LoadProtocolFromGUI(N,events)
+            (N, events, interrepeat) = self.save_eventList()
+            self.parent.parent.LoadProtocolFromGUI(N,events, interrepeat)
             self.parent.parent.SaveProtocolFile()
-            interleaf_time = self.parent.InterleafTimeEntry.get_text()
-            try:
-                interleaf_time = float(interleaf_time)
-            except ValueError:
-                self.parent.printToLog('Invalid interleaf time!')
-                return
+            # ~ interleaf_time = self.parent.InterleafTimeEntry.get_text()
+            # ~ try:
+                # ~ interleaf_time = float(interleaf_time)
+            # ~ except ValueError:
+                # ~ self.parent.printToLog('Invalid interleaf time!')
+                # ~ return
             
             # ~ intraleaf_time = self.parent.IntraleafTimeEntry.get_text()
             # ~ try:
@@ -480,7 +503,7 @@ class Handlers:
             
             self.stop_run_thread = False
             # ~ button.set_sensitive(False)
-            self.run_thread = threading.Thread(target=self.parent.parent.RunProgram, args=(lambda:self.stop_run_thread, interleaf_time) )
+            self.run_thread = threading.Thread(target=self.parent.parent.RunProgram, args=(lambda:self.stop_run_thread,) )
             self.run_thread.daemon=True
             self.run_thread.start()
         

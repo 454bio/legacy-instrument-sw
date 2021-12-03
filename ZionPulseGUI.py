@@ -73,6 +73,16 @@ class LEDColorComboBox(Gtk.Grid):
             return colors_selected
         else:
             return
+            
+    def set_active(self, dDutyCycles):
+        if dDutyCycles:
+            for key in dDutyCycles.keys():
+                if key=='UV':
+                    self.ColorEntries[0].DutyCycleEntry.set_text(str(dDutyCycles[key]))
+                elif key=='Blue':
+                    self.ColorEntries[1].DutyCycleEntry.set_text(str(dDutyCycles[key]))
+                if key=='Orange':
+                    self.ColorEntries[2].DutyCycleEntry.set_text(str(dDutyCycles[key]))
                 
 class EventEntry(Gtk.HBox): 
     def __init__(self, parent, *args):
@@ -86,16 +96,24 @@ class EventEntry(Gtk.HBox):
         self.CaptureToggleButton = Gtk.CheckButton()
         self.CaptureToggleButton.set_margin_left(40)
         self.CaptureToggleButton.set_margin_right(40)
+        self.CaptureGroupEntry = Gtk.Entry()
+        self.CaptureGroupEntry.set_width_chars(2)
+        self.CaptureBox = Gtk.VBox()
+        self.CaptureBox.pack_start(self.CaptureToggleButton, False, False, 8)
+        self.CaptureBox.pack_start(self.CaptureGroupEntry, False, False, 1)
+        self.CaptureBox.set_valign(1)
+        self.CaptureGroupEntry.set_sensitive(False)
         self.PostDelayEntry = Gtk.Entry()
         self.PostDelayEntry.set_width_chars(9)
         self.PostDelayEntry.set_valign(3)
         self.pack_start( self.DeleteButton, False, False, 0)
         self.pack_start( self.ColorComboBox, False, False, 0)
         self.pack_start( self.PulseTimeEntry, False, False, 0)
-        self.pack_start( self.CaptureToggleButton, False, False, 0)
+        self.pack_start( self.CaptureBox, False, False, 0)
         self.pack_start( self.PostDelayEntry, False, False, 0)
         
         self.DeleteButton.connect("clicked", self.on_event_delete_button)
+        self.CaptureToggleButton.connect("toggled", self.on_capture_toggle_toggled)
         # ~ self.ColorComboBox.connect("changed", self.on_color_changed)
         # ~ self.CaptureToggleButton.set_active(False)
         # ~ self.CaptureToggleButton.set_sensitive(False)
@@ -106,12 +124,16 @@ class EventEntry(Gtk.HBox):
         self.destroy()
         # ~ print('idx to remove = '+str(idx))
         del(self.parent.EventEntries[idx])
+        
+    def on_capture_toggle_toggled(self, switch):
+            self.CaptureGroupEntry.set_sensitive(switch.get_active())
 
     def exportEvent(self):
         colorList = self.ColorComboBox.get_active()
         pulsetime = self.PulseTimeEntry.get_text()
         postdelay = self.PostDelayEntry.get_text()
         bCapture = self.CaptureToggleButton.get_active()
+        
         if postdelay == '':
             postdelay = 0
         else:
@@ -129,4 +151,5 @@ class EventEntry(Gtk.HBox):
             except ValueError:
                 print('Invalid Time Entry!')
                 return
-        return (colorList, pulsetime, bCapture, postdelay)
+        capture_grp = self.CaptureGroupEntry.get_text() if bCapture else None
+        return (colorList, pulsetime, bCapture, postdelay, capture_grp)
