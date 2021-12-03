@@ -11,6 +11,8 @@ from ZionEvents import check_led_timings, ZionProtocol, print_eventList
 from ZionGtk import ZionGUI
 from picamera.exc import PiCameraValueError, PiCameraAlreadyRecording, PiCameraMMALError
 import threading
+import json
+from types import SimpleNamespace
 
 class ZionSession():
 
@@ -76,7 +78,7 @@ class ZionSession():
         if bSession:
             filename = os.path.join(self.Dir, self.Name)
         else:
-            filename = os.path.join(self.Dir, 'P_'+self.Name)		
+            filename = os.path.join(self.Dir, 'P_'+self.Name)
             filename += '_'+str(self.CaptureCount).zfill(3)+'_'+str(round(1000*(time.time()-self.TimeOfLife)))	
         with open(filename+'.txt', 'w') as f:
             for key in params.keys():
@@ -111,26 +113,42 @@ class ZionSession():
         self.Camera.load_params(params)
         return params
         
-    def SaveProtocolFile(self, default=False):
-        if default:
-            filename = 'Zion_Default_Protocol'
-        else:
+    # ~ def SaveProtocolFile(self, default=False):
+        # ~ if default:
+            # ~ filename = 'Zion_Default_Protocol'
+        # ~ else:
+            # ~ self.ProtocolCount += 1
+            # ~ filename = os.path.join(self.Dir, self.Name+'_Protocol_'+str(self.ProtocolCount).zfill(2))
+        # ~ with open(filename+'.txt', 'w') as f:
+            # ~ f.write('N='+str(self.EventList.N)+'\n')
+            # ~ for event in self.EventList.Events:
+                # ~ f.write(str(event)+'\n')
+        # ~ return filename+'.txt'
+        
+    def SaveProtocolFile(self, filename=None):
+        if not filename:
             self.ProtocolCount += 1
             filename = os.path.join(self.Dir, self.Name+'_Protocol_'+str(self.ProtocolCount).zfill(2))
+        json_str = json.dumps(self.EventList.__dict__)
+        # ~ print(json_str)
         with open(filename+'.txt', 'w') as f:
-            f.write('N='+str(self.EventList.N)+'\n')
-            for event in self.EventList.Events:
-                f.write(str(event)+'\n')
-        return filename+'.txt'
+            f.write(json_str)
 
     def LoadProtocolFromFile(self, filename):
-        self.EventList = ZionProtocol(filename)
+        with open(filename) as f:
+            lines = f.readlines()
+        json_str = lines[0]
+        self.EventList = SimpleNamespace(**json.loads(json_str))
+        self.EventList.Events = [ tuple(event) for event in self.EventList.Events]
+        # ~ print(self.EventList.N)
+        # ~ print(self.EventList.Interrepeat_Delay)
         return self.EventList
         
-    def LoadProtocolFromGUI(self, N, events):
+    def LoadProtocolFromGUI(self, N, events, interrepeat):
         self.EventList = ZionProtocol()
         self.EventList.N = N
         self.EventList.Events = events
+        self.EventList.Interrepeat_Delay = interrepeat
         # ~ print_eventList(events)
         return self.EventList
 
@@ -138,7 +156,7 @@ class ZionSession():
         check_led_timings(blue_timing, orange_timing, uv_timing)
         self.EventList = None #EventList(blue_timing, orange_timing, uv_timing, capture_times, N=repeatN)
 
-    def RunProgram(self, stop, intertime):
+    def RunProgram(self, stop):
         self.frame_period = 1000./self.Camera.framerate
         self.exposure_time = self.Camera.shutter_speed/1000. if self.Camera.shutter_speed else self.frame_period
         time.sleep(0.5)
@@ -153,7 +171,7 @@ class ZionSession():
                 self.EventList.performEvent(event, self.GPIO)
                 time.sleep(self.frame_period/250)
             if not stop():
-                time.sleep(intertime)
+                time.sleep(self.EventList.Interrepeat_Delay)
         # ~ self.gui.runProgramButton.set_active(False)
         # ~ self.gui.runProgramButton.set_sensitive(True)
 
@@ -166,12 +184,12 @@ class ZionSession():
         # ~ self.GPIO.cancel_PWM()
         self.Camera.quit()
 
-    def pulse_on_trigger(self, colors, pw, capture, gpio, level, ticks):
+    def pulse_on_trigger(self, colors, pw, capture, grp, gpio, level, ticks):
         self.GPIO.callback_for_uv_pulse.cancel() #to make this a one-shot
         #entering this function ~1ms after vsync trigger
         time.sleep((self.frame_period-3)/2000)
         if capture:
-            capture_thread = threading.Thread(target=self.CaptureImage)
+            capture_thread = threading.Thread(target=self.CaptureImage, kwargs={'group':grp})
             capture_thread.daemon = True
             capture_thread.start()
         time1 = (self.frame_period-6)/2000
