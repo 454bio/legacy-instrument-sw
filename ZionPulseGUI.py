@@ -4,8 +4,7 @@ gi.require_version('Gst', '1.0')
 from gi.repository import Gtk, GObject, Gst
 
 colors = ['None', 'UV', 'Blue', 'Orange']
-# ~ colors = ['None', 'UV', 'Blue', 'Orange', 'Red', 'Yellow', 'Green', 'Indigo', 'Violet']
-        
+
 class TrashButton(Gtk.Button):
     def __init__(self, *args):
         super(TrashButton,self).__init__(*args)
@@ -77,12 +76,7 @@ class LEDColorComboBox(Gtk.Grid):
     def set_active(self, dDutyCycles):
         if dDutyCycles:
             for key in dDutyCycles.keys():
-                if key=='UV':
-                    self.ColorEntries[0].DutyCycleEntry.set_text(str(dDutyCycles[key]))
-                elif key=='Blue':
-                    self.ColorEntries[1].DutyCycleEntry.set_text(str(dDutyCycles[key]))
-                if key=='Orange':
-                    self.ColorEntries[2].DutyCycleEntry.set_text(str(dDutyCycles[key]))
+                self.ColorEntries[colors.index(key)-1].set_text(str(dDutyCycles[key]))
                 
 class EventEntry(Gtk.HBox): 
     def __init__(self, parent, *args):
@@ -111,13 +105,9 @@ class EventEntry(Gtk.HBox):
         self.pack_start( self.PulseTimeEntry, False, False, 0)
         self.pack_start( self.CaptureBox, False, False, 0)
         self.pack_start( self.PostDelayEntry, False, False, 0)
-        
         self.DeleteButton.connect("clicked", self.on_event_delete_button)
         self.CaptureToggleButton.connect("toggled", self.on_capture_toggle_toggled)
-        # ~ self.ColorComboBox.connect("changed", self.on_color_changed)
-        # ~ self.CaptureToggleButton.set_active(False)
-        # ~ self.CaptureToggleButton.set_sensitive(False)
-        # ~ self.DutyCycleEntry.set_sensitive(False)
+
 
     def on_event_delete_button(self, button):
         idx = self.parent.EventEntries.index(self)
