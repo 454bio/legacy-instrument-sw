@@ -546,6 +546,7 @@ class Handlers:
         Gtk.Window.maximize(self.parent.paramFileChooser)
         
     def on_load_params_button(self,button):
+        self.parent.paramFileChooser.set_action(Gtk.FileChooserAction.OPEN)
         response = self.parent.paramFileChooser.run()
         if response == Gtk.ResponseType.OK:
             filename = self.parent.paramFileChooser.get_filename()
