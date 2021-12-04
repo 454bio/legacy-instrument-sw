@@ -34,7 +34,6 @@ class ZionSession():
         self.ProtocolCount = 0
         self.SplitterCount = 0
 
-        # ~ self.LoadProtocolFromFile('ZionDefaultProtocol.txt')
         self.gui = ZionGUI(Initial_Values, self)
                 
         self.TimeOfLife = time.time()
