@@ -7,7 +7,7 @@ from gi.repository import Gtk, GObject, Gst
 import threading
 from operator import itemgetter
 from ZionEvents import print_eventList
-from ZionPulseGUI import EventEntry, colors
+from ZionPulseGUI import EventEntry, colors, ParamEventEntry
 
 def get_handler_id(obj, signal_name):
     signal_id, detail = GObject.signal_parse_name(signal_name, obj, True)
@@ -522,13 +522,33 @@ class Handlers:
         
         
     #Event List stuff
+    # ~ def on_new_event_button_clicked(self, button):
+        # ~ self.parent.EventEntries.append( EventEntry(self.parent) )
+        # ~ self.parent.EventList.pack_start( self.parent.EventEntries[-1], False, False, 0 )
+        # ~ self.parent.EventList.show_all()
+        # ~ adjustment = self.parent.EventListScroll.get_vadjustment()
+        # ~ adjustment.set_value(adjustment.get_upper())
+        # ~ Gtk.Widget.show(self.parent.EventListScroll)
+        
     def on_new_event_button_clicked(self, button):
+        self.parent.EventTypeMenu.popup(None, None, None, None, 0, Gtk.get_current_event_time())
+        
+    def on_pulse_event_selected(self, menuitem):
         self.parent.EventEntries.append( EventEntry(self.parent) )
         self.parent.EventList.pack_start( self.parent.EventEntries[-1], False, False, 0 )
         self.parent.EventList.show_all()
         adjustment = self.parent.EventListScroll.get_vadjustment()
         adjustment.set_value(adjustment.get_upper())
         Gtk.Widget.show(self.parent.EventListScroll)
+        
+    def on_param_event_selected(self, menuitem):
+        self.parent.EventEntries.append( ParamEventEntry(self.parent) )
+        self.parent.EventList.pack_start( self.parent.EventEntries[-1], False, False, 0 )
+        self.parent.EventList.show_all()
+        adjustment = self.parent.EventListScroll.get_vadjustment()
+        adjustment.set_value(adjustment.get_upper())
+        Gtk.Widget.show(self.parent.EventListScroll)
+        
         
     def on_event_scroll_size_allocate(self, scroll, rectangle):
         #TODO scroll to bottom
@@ -685,7 +705,6 @@ class Handlers:
             self.parent.blueGainScale.handler_unblock(handler_id_3)
                 
         elif response == Gtk.ResponseType.CANCEL:
-            # ~ print('cancel')
             self.parent.paramFileChooser.hide()
             
     def on_param_file_chooser_close(self, *args):
@@ -853,6 +872,8 @@ class ZionGUI():
         
         self.test_led_pulse_width_entry = self.builder.get_object("test_pulse_width_entry")
         self.test_led_delay_entry = self.builder.get_object("test_delay_entry")
+        
+        self.EventTypeMenu = self.builder.get_object("event_type_menu")
         
         
         

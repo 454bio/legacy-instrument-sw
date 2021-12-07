@@ -10,6 +10,8 @@ class TrashButton(Gtk.Button):
         super(TrashButton,self).__init__(*args)
         img = Gtk.Image.new_from_icon_name("edit-delete-symbolic", 4)
         self.add(img)
+        
+
 
 class ColorEntry(Gtk.HBox):
     def __init__(self, label, *args):
@@ -82,6 +84,7 @@ class EventEntry(Gtk.HBox):
     def __init__(self, parent, *args):
         super(EventEntry,self).__init__(*args)
         self.parent = parent
+        self.set_margin_bottom(1)
         self.DeleteButton = TrashButton()
         self.ColorComboBox = LEDColorComboBox()
         self.PulseTimeEntry = Gtk.Entry()
@@ -143,3 +146,47 @@ class EventEntry(Gtk.HBox):
                 return
         capture_grp = self.CaptureGroupEntry.get_text() if bCapture else None
         return (colorList, pulsetime, bCapture, postdelay, capture_grp)
+
+class ParamEventEntry(Gtk.HBox): 
+    def __init__(self, parent, *args):
+        super(ParamEventEntry,self).__init__(*args)
+        self.parent = parent
+        self.set_margin_bottom(1)
+        self.DeleteButton = TrashButton()
+        self.ParamFileTextBuffer = Gtk.TextBuffer()
+        self.ParamFileTextBuffer.set_text('(None)')
+        self.ParamFileTextBox = Gtk.TextView.new_with_buffer(self.ParamFileTextBuffer)
+        self.ParamFileTextBox.set_editable(False)
+        self.ParamFileTextBox.set_cursor_visible(False)
+        self.ParamFileTextBox.set_justification(2)
+        self.ParamFileTextBox.set_wrap_mode(1)
+        self.FileLoadButton = Gtk.Button()
+        img = Gtk.Image.new_from_icon_name("document-open-symbolic", 4)
+        self.FileLoadButton.add(img)
+        self.FileLoadButton.set_margin_right(20)
+
+        self.pack_start( self.DeleteButton, False, False, 0)
+        self.pack_start( Gtk.Label('Param File: '), False, False, 5)
+        self.pack_start( self.ParamFileTextBox, True, True, 0)
+        self.pack_start( self.FileLoadButton, False, False, 0)
+
+        self.DeleteButton.connect("clicked", self.on_event_delete_button)
+        self.FileLoadButton.connect("clicked", self.on_load_params_button)
+        
+        self.ParamFilename = None
+        
+    def on_event_delete_button(self, button):
+        idx = self.parent.EventEntries.index(self)
+        self.destroy()
+        # ~ print('idx to remove = '+str(idx))
+        del(self.parent.EventEntries[idx])
+
+    def on_load_params_button(self, button):
+        self.parent.paramFileChooser.set_action(Gtk.FileChooserAction.OPEN)
+        response = self.parent.paramFileChooser.run()
+        if response == Gtk.ResponseType.OK:
+            self.ParamFilename = self.parent.paramFileChooser.get_filename()
+            self.ParamFileTextBuffer.set_text(self.ParamFilename)
+            self.parent.paramFileChooser.hide()
+        elif response == Gtk.ResponseType.CANCEL:
+            self.parent.paramFileChooser.hide()

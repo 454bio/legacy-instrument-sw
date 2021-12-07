@@ -33,6 +33,30 @@
     <property name="icon_name">zoom-fit-best-symbolic</property>
   </object>
   <object class="GtkTextBuffer" id="digital_gain_buffer"/>
+  <object class="GtkMenu" id="event_type_menu">
+    <property name="visible">True</property>
+    <property name="can_focus">False</property>
+    <property name="take_focus">False</property>
+    <property name="menu_type_hint">dropdown-menu</property>
+    <child>
+      <object class="GtkMenuItem">
+        <property name="visible">True</property>
+        <property name="can_focus">False</property>
+        <property name="label" translatable="yes">Pulse</property>
+        <property name="use_underline">True</property>
+        <signal name="activate" handler="on_pulse_event_selected" swapped="no"/>
+      </object>
+    </child>
+    <child>
+      <object class="GtkMenuItem">
+        <property name="visible">True</property>
+        <property name="can_focus">False</property>
+        <property name="label" translatable="yes">Param</property>
+        <property name="use_underline">True</property>
+        <signal name="activate" handler="on_param_event_selected" swapped="no"/>
+      </object>
+    </child>
+  </object>
   <object class="GtkAdjustment" id="exp_comp_adjust">
     <property name="lower">-25</property>
     <property name="upper">25</property>
@@ -60,6 +84,7 @@
     <property name="can_focus">False</property>
     <property name="window_position">center</property>
     <property name="type_hint">dialog</property>
+    <property name="skip_taskbar_hint">True</property>
     <property name="deletable">False</property>
     <property name="create_folders">False</property>
     <property name="do_overwrite_confirmation">True</property>
@@ -2234,6 +2259,17 @@ Repeats (sec): </property>
               </packing>
             </child>
             <child>
+              <object class="GtkSeparator">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+                <property name="fill">True</property>
+                <property name="position">2</property>
+              </packing>
+            </child>
+            <child>
               <object class="GtkBox">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
@@ -2589,17 +2625,6 @@ Repeats (sec): </property>
                     <property name="position">5</property>
                   </packing>
                 </child>
-              </object>
-              <packing>
-                <property name="expand">False</property>
-                <property name="fill">True</property>
-                <property name="position">2</property>
-              </packing>
-            </child>
-            <child>
-              <object class="GtkSeparator">
-                <property name="visible">True</property>
-                <property name="can_focus">False</property>
               </object>
               <packing>
                 <property name="expand">False</property>
