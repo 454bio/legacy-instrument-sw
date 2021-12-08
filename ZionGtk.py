@@ -48,15 +48,22 @@ class Handlers:
     def save_eventList(self):
         eventList = []
         for eventEntry in self.parent.EventEntries:
-            eventList.append(eventEntry.exportEvent())
+            new_event = eventEntry.exportEvent()
+            if new_event:
+                eventList.append(new_event)
+            else:
+                self.parent.printToLog('Invalid Event!')
+                return
         N = self.parent.RepeatNEntry.get_value_as_int()
         # ~ print_eventList(eventList)
         interrepeat_delay = self.parent.InterleafTimeEntry.get_text()
+        # ~ interevent_delay = 4 #todo change this to actual parameter, this is number of frame periods to wait
         try:
             interrepeat_delay = float(interrepeat_delay)
         except ValueError:
             self.parent.printToLog('Invalid inter-repeat time!')
             return
+        # ~ return (N, eventList, interrepeat_delay, interevent_delay)
         return (N, eventList, interrepeat_delay)
 
     def on_script_load_button_clicked(self, button):
@@ -484,9 +491,14 @@ class Handlers:
             self.parent.expModeComboBox.set_active(0)
             comment = self.parent.commentBox.get_text()
             self.parent.parent.SaveParameterFile(comment, True)
-            (N, events, interrepeat) = self.save_eventList()
-            self.parent.parent.LoadProtocolFromGUI(N,events, interrepeat)
+            try:
+                (N, events, interrepeat) = self.save_eventList()
+            except TypeError:
+                self.parent.printToLog('Event List Invalid!')
+                return
+            self.parent.parent.LoadProtocolFromGUI(N, events, interrepeat)
             self.parent.parent.SaveProtocolFile()
+            
             # ~ interleaf_time = self.parent.InterleafTimeEntry.get_text()
             # ~ try:
                 # ~ interleaf_time = float(interleaf_time)
@@ -501,8 +513,9 @@ class Handlers:
                 # ~ self.parent.printToLog('Invalid intraleaf time!')
                 # ~ return
             
+            
             self.stop_run_thread = False
-            # ~ button.set_sensitive(False)
+            # NOOOO ~ button.set_sensitive(False)
             self.run_thread = threading.Thread(target=self.parent.parent.RunProgram, args=(lambda:self.stop_run_thread,) )
             self.run_thread.daemon=True
             self.run_thread.start()

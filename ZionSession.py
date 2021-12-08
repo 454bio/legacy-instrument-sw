@@ -84,7 +84,7 @@ class ZionSession():
                 f.write(key + ': '+str(params[key])+'\n')
         return filename+'.txt'
 
-    def LoadParameterFile(self, filename):
+    def LoadParameterFile(self, filename, protocol=False):
         params = dict()
         with open(filename) as f:
             for line in f:
@@ -109,7 +109,7 @@ class ZionSession():
                             except ValueError:
                             #therefore it must be a string:
                                 params[parameter_key] = parameter_value
-        self.Camera.load_params(params)
+        self.Camera.load_params(params, protocol)
         return params
         
     # ~ def SaveProtocolFile(self, default=False):

@@ -1,3 +1,4 @@
+import os
 import gi
 gi.require_version('Gtk', '3.0')
 gi.require_version('Gst', '1.0')
@@ -39,13 +40,6 @@ class ColorEntry(Gtk.HBox):
                 return
         else:
             return
-
-# ~ class LEDColorComboBox(Gtk.ComboBoxText):
-    # ~ def __init__(self, *args):
-        # ~ super(LEDColorComboBox,self).__init__(*args)
-        # ~ for color in colors:
-            # ~ self.append(None, color)
-        # ~ super(LEDColorComboBox,self).set_active(0)
 
 class LEDColorComboBox(Gtk.Grid):
     def __init__(self, *args):
@@ -188,5 +182,18 @@ class ParamEventEntry(Gtk.HBox):
             self.ParamFilename = self.parent.paramFileChooser.get_filename()
             self.ParamFileTextBuffer.set_text(self.ParamFilename)
             self.parent.paramFileChooser.hide()
+            self.format_filename_for_display()
         elif response == Gtk.ResponseType.CANCEL:
             self.parent.paramFileChooser.hide()
+        
+    def format_filename_for_display(self):
+        strs = self.ParamFilename.split('/')
+        self.ParamFileTextBuffer.set_text(strs[-2]+'/'+strs[-1])
+        # ~ print(self.ParamFilename)
+        
+    def exportEvent(self):
+        if self.ParamFilename is None or not os.path.exists(self.ParamFilename):
+            return False
+        else:
+            #todo do real validity check here
+            return (self.ParamFilename,)

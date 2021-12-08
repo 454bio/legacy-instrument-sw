@@ -35,10 +35,13 @@ class ZionProtocol:
 
 	def performEvent(self, event, gpio_ctrl):
 		if not event[0] is None:
-			gpio_ctrl.enable_vsync_callback(event[0], event[1], event[2], event[4])
-			# ~ gpio_ctrl.enable_vsync_callback()
-		if event[3]>0:
-			time.sleep(event[3]/1000.)
+			if isinstance(event[0], str):
+				gpio_ctrl.parent.LoadParameterFile(event[0], protocol=True)
+				time.sleep(1)
+			else:
+				gpio_ctrl.enable_vsync_callback(event[0], event[1], event[2], event[4])
+				if event[3]>0:
+					time.sleep(event[3]/1000.)
 
 #Check for well-formed timing arrays:
 def check_led_timings(LED_Blu_Timing, LED_Or_Timing, LED_UV_Timing, UV_duty_cycle=3.0):
