@@ -140,21 +140,6 @@ class ZionGPIO(pigpio.pi):
 	def camera_trigger(self, bEnable):
 		super(ZionGPIO, self).write(self.Camera_Trigger, bEnable)
 
-	def read_temperature(self):
-		if self.Temp_1W_device:
-			f = open(self.Temp_1W_device+'/w1_slave', 'r')
-			lines = f.readlines()
-			f.close()
-			if not lines[0][-4:-1]=='YES':
-				print('Serial communications issue!')
-			else:
-				equals_pos = lines[1].find('t=')
-				temp_c = float(lines[1][equals_pos+2:])/1000.
-				# ~ print('\nTemperature = '+str(temp_c)+' C')
-			return temp_c
-		else:
-			return None
-			
 	def set_pulse_start_in_micros(self, color, start):
 		start %= self.micros
 		self.pS[color] = start / self.micros
@@ -277,8 +262,18 @@ class ZionGPIO(pigpio.pi):
 
 	def enable_vsync_callback(self, colors, pw, capture, grp):
 		self.callback_for_uv_pulse = super(ZionGPIO,self).callback(XVS, pigpio.RISING_EDGE, lambda gpio,level,ticks: self.parent.pulse_on_trigger(colors, pw, capture, grp, gpio, level, ticks))
-	
-	# ~ def enable_vsync_callback(self):
-		# ~ self.callback_for_uv_pulse = super(ZionGPIO,self).callback(XVS, pigpio.RISING_EDGE, lambda gpio,level,ticks: self.uv_pulse_on_trigger(gpio, level, ticks))
 
-
+	def read_temperature(self):
+		if self.Temp_1W_device:
+			f = open(self.Temp_1W_device+'/w1_slave', 'r')
+			lines = f.readlines()
+			f.close()
+			if not lines[0][-4:-1]=='YES':
+				print('Serial communications issue!')
+			else:
+				equals_pos = lines[1].find('t=')
+				temp_c = float(lines[1][equals_pos+2:])/1000.
+				# ~ print('\nTemperature = '+str(temp_c)+' C')
+			return temp_c
+		else:
+			return None
