@@ -117,18 +117,22 @@ class ZionGPIO(pigpio.pi):
 			# ~ self.Orange_Reg |= (1<<bit)
 		
 		self.Camera_Trigger = camera_trigger_gpio
-        
+
 		self.Temp_Output_GPIO = temp_out_gpio
 		#TODO: implement heat control output
-        
-        #No check for Temperature Input GPIO pin, this is done in boot config file (including GPIO choice)
+
+		#No check for Temperature Input GPIO pin, this is done in boot config file (including GPIO choice)
 		base_dir = '/sys/bus/w1/devices/'
 		try:
 			self.Temp_1W_device = glob.glob(base_dir + '28*')[0]
 		except IndexError:
 			print('Warning: 1-Wire interface not connected.')
-			self.Temp_1W_device = None 
-		
+			self.Temp_1W_device = None
+
+		self.Temperature = self.read_temperature()
+		self.Temp_Loop_On = False
+
+
 		# Last thing is to ensure all gpio outputs are off:
 		for color in range(3):
 			self.enable_led(color, 0)
@@ -140,21 +144,6 @@ class ZionGPIO(pigpio.pi):
 	def camera_trigger(self, bEnable):
 		super(ZionGPIO, self).write(self.Camera_Trigger, bEnable)
 
-	def read_temperature(self):
-		if self.Temp_1W_device:
-			f = open(self.Temp_1W_device+'/w1_slave', 'r')
-			lines = f.readlines()
-			f.close()
-			if not lines[0][-4:-1]=='YES':
-				print('Serial communications issue!')
-			else:
-				equals_pos = lines[1].find('t=')
-				temp_c = float(lines[1][equals_pos+2:])/1000.
-				# ~ print('\nTemperature = '+str(temp_c)+' C')
-			return temp_c
-		else:
-			return None
-			
 	def set_pulse_start_in_micros(self, color, start):
 		start %= self.micros
 		self.pS[color] = start / self.micros
@@ -282,3 +271,58 @@ class ZionGPIO(pigpio.pi):
 		# ~ self.callback_for_uv_pulse = super(ZionGPIO,self).callback(XVS, pigpio.RISING_EDGE, lambda gpio,level,ticks: self.uv_pulse_on_trigger(gpio, level, ticks))
 
 
+	#temmperature stuff:
+	def read_temperature(self):
+		if self.Temp_1W_device:
+			f = open(self.Temp_1W_device+'/w1_slave', 'r')
+			lines = f.readlines()
+			f.close()
+			if not lines[0][-4:-1]=='YES':
+				print('Serial communications issue!')
+			else:
+				equals_pos = lines[1].find('t=')
+				temp_c = float(lines[1][equals_pos+2:])/1000.
+				# ~ print('\nTemperature = '+str(temp_c)+' C')
+			return temp_c
+		else:
+			return None
+
+	def set_temperature(self, target_temp, P=6, I=2, B=22, thresh1=6, time1=10):
+		integral_error = 0
+		power_cnt=1
+		power_tot=0
+
+		self.Temp_Loop_On = True
+		#first ramp up:
+		while target_temp - self.Temperature  > thresh1:
+			#todo thread timer sleep for time1 sec
+			self.Temperature = self.read_temperature()
+			
+		#now start control loop
+		while True:
+			self.Temperature = self.read_temperature()
+			new_err = target_temp-self.Temperature
+			integral_error += error
+			power = B + ((P*error) + ((I*integral_error)/100))/100
+			print(power)
+			if power>0:
+				power_tot += power
+			power_ave = power_tot/power_cnt
+			power_cnt += 1
+			print(power_ave)
+			if not self.Temp_Loop_On:
+				#turn off
+			else:
+				#turn on
+				
+			#now do pwm:
+			for x in range(1,100):
+				if power>x:
+					if not self.Temp_Loop_On
+						self.Temp_Loop_On = True
+						#turn on
+				else:
+					if self.Temp_Loop_On:
+						self.Temp_Loop_On = False
+				#todo add sleep for 1 sec
+			
