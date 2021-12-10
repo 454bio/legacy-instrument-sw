@@ -79,12 +79,10 @@ class ZionGPIO(pigpio.pi):
 		self.micros = 1000000./self.frequency #period in microseconds
 
 		# Check that GPIO settings are valid:
-		#TODO: may need adjustment for temperature output (eg if it takes more than one pin)
-		for g in UV_gpios+Blue_gpios+Orange_gpios+[temp_out_gpio, camera_trigger_gpio]:
+		for g in UV_gpios+Blue_gpios+Orange_gpios+[camera_trigger_gpio]:
 			if GpioPins[g][1]:
 				super(ZionGPIO,self).set_mode(g, pigpio.PUD_DOWN)
 				if g in UV_gpios+Blue_gpios+Orange_gpios:
-					# ~ super(ZionGPIO,self).set_pull_up_down(g, pigpio.PUD_DOWN)
 					super(ZionGPIO,self).set_PWM_range(g, 100)
 			else:
 				raise ValueError('Chosen GPIO is not enabled!')
@@ -117,44 +115,25 @@ class ZionGPIO(pigpio.pi):
 			# ~ self.Orange_Reg |= (1<<bit)
 		
 		self.Camera_Trigger = camera_trigger_gpio
-        
-		self.Temp_Output_GPIO = temp_out_gpio
-		#TODO: implement heat control output
-        
+		
         #No check for Temperature Input GPIO pin, this is done in boot config file (including GPIO choice)
 		base_dir = '/sys/bus/w1/devices/'
 		try:
 			self.Temp_1W_device = glob.glob(base_dir + '28*')[0]
 		except IndexError:
 			print('Warning: 1-Wire interface not connected.')
-			self.Temp_1W_device = None 
+			self.Temp_1W_device = None
+		
+		self.PID = ZionPID(self, TEMP_OUTPUT)
 		
 		# Last thing is to ensure all gpio outputs are off:
 		for color in range(3):
 			self.enable_led(color, 0)
 		self.camera_trigger(False)
-		
-		self.test_delay = 0
-		self.test_pulse_width = 1
 
 	def camera_trigger(self, bEnable):
 		super(ZionGPIO, self).write(self.Camera_Trigger, bEnable)
 
-	def read_temperature(self):
-		if self.Temp_1W_device:
-			f = open(self.Temp_1W_device+'/w1_slave', 'r')
-			lines = f.readlines()
-			f.close()
-			if not lines[0][-4:-1]=='YES':
-				print('Serial communications issue!')
-			else:
-				equals_pos = lines[1].find('t=')
-				temp_c = float(lines[1][equals_pos+2:])/1000.
-				# ~ print('\nTemperature = '+str(temp_c)+' C')
-			return temp_c
-		else:
-			return None
-			
 	def set_pulse_start_in_micros(self, color, start):
 		start %= self.micros
 		self.pS[color] = start / self.micros
@@ -170,7 +149,6 @@ class ZionGPIO(pigpio.pi):
 				self.Orange_DC = int(dc*100)
 
 	def update_pwm_settings(self):
-
 		null_wave = True
 		for color in range(len(self.gpioList)):
 			for g in self.gpioList[color]:
@@ -278,7 +256,79 @@ class ZionGPIO(pigpio.pi):
 	def enable_vsync_callback(self, colors, pw, capture, grp):
 		self.callback_for_uv_pulse = super(ZionGPIO,self).callback(XVS, pigpio.RISING_EDGE, lambda gpio,level,ticks: self.parent.pulse_on_trigger(colors, pw, capture, grp, gpio, level, ticks))
 	
-	# ~ def enable_vsync_callback(self):
-		# ~ self.callback_for_uv_pulse = super(ZionGPIO,self).callback(XVS, pigpio.RISING_EDGE, lambda gpio,level,ticks: self.uv_pulse_on_trigger(gpio, level, ticks))
+	def read_temperature(self):
+		if self.Temp_1W_device:
+			f = open(self.Temp_1W_device+'/w1_slave', 'r')
+			lines = f.readlines()
+			f.close()
+			if not lines[0][-4:-1]=='YES':
+				print('Serial communications issue!')
+			else:
+				equals_pos = lines[1].find('t=')
+				temp_c = float(lines[1][equals_pos+2:])/1000.
+				# ~ print('\nTemperature = '+str(temp_c)+' C')
+			return temp_c
+		else:
+			return None
 
-
+class ZionPID():
+	def __init__(self, parent, gpio, frequency=10, P=10, I=2, D=0, delta_t=1, threshold1=10, target_temp=60):
+		self.parent = parent
+		self.gpio = gpio
+		if GpioPins[gpio][1]:
+			self.parent.set_mode(gpio, pigpio.PUD_DOWN)
+			self.parent.set_PWM_range(gpio, 100)
+			self.parent.set_PWM_frequency(gpio,frequency)
+		else:
+			raise ValueError('Chosen GPIO is not enabled!')
+		
+		self.P = P
+		self.I = I
+		self.D = D
+		
+		self.delta_t = 0.5
+		self.threshold1 = threshold1
+		self.target_temp = target_temp
+		
+		self.init_vars()
+		self.update_temp()
+		
+	def init_vars(self):
+		self.error = 0
+		self.interror = 0
+		self.dc_cnt = 1
+		self.dc_tot = 0
+	
+	def set_P(self, p):
+		self.P = p
+	
+	def set_I(self, i):
+		self.I = i
+	
+	def set_D(self, d):
+		self.D = d
+	
+	def set_threshold1(self, thresh):
+		self.threshold1 = thresh
+		
+	def set_target_temp(self, temp):
+		self.target_temp = temp
+		
+	def set_frequency(self, freq):
+		self.parent.set_PWM_frequency(self.gpio,frequency)
+		
+	def set_dc(self, dc):
+		self.parent.set_PWM_dutycycle(self.gpio,dc)
+	
+	def update_temp(self):
+		self.temperature = self.parent.read_temperature()
+		
+	def start_ramp(self):
+		self.update_temp()
+		self.set_dc(100)
+		while self.temperature - self.target_temp > self.threshold1:
+			update_temp()
+			time.sleep(self.delta_t)
+		
+	
+		
