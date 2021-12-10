@@ -272,7 +272,7 @@ class ZionGPIO(pigpio.pi):
 			return None
 
 class ZionPID():
-	def __init__(self, parent, gpio, frequency=10, P=10, I=2, D=0, delta_t=1, threshold1=10, target_temp=60):
+	def __init__(self, parent, gpio, frequency=10, P=10, I=2, D=0, delta_t=1, ramp_threshold=10, target_temp=60):
 		self.parent = parent
 		self.gpio = gpio
 		if GpioPins[gpio][1]:
@@ -286,12 +286,14 @@ class ZionPID():
 		self.I = I
 		self.D = D
 		
-		self.delta_t = 0.5
-		self.threshold1 = threshold1
+		self.delta_t = delta_t
+		self.ramp_threshold = ramp_threshold
 		self.target_temp = target_temp
 		
 		self.init_vars()
+		self.set_dc(0)
 		self.update_temp()
+		
 		
 	def init_vars(self):
 		self.error = 0
@@ -307,9 +309,6 @@ class ZionPID():
 	
 	def set_D(self, d):
 		self.D = d
-	
-	def set_threshold1(self, thresh):
-		self.threshold1 = thresh
 		
 	def set_target_temp(self, temp):
 		self.target_temp = temp
@@ -319,16 +318,34 @@ class ZionPID():
 		
 	def set_dc(self, dc):
 		self.parent.set_PWM_dutycycle(self.gpio,dc)
+		self.dc = dc
 	
 	def update_temp(self):
 		self.temperature = self.parent.read_temperature()
 		
-	def start_ramp(self):
+	def pid_control_loop(self, bias=0):
 		self.update_temp()
+		print('starting initial ramp, temp = '+str(self.temperature))
 		self.set_dc(100)
-		while self.temperature - self.target_temp > self.threshold1:
+		while self.target_temp - self.temperature > self.ramp_threshold:
 			update_temp()
 			time.sleep(self.delta_t)
-		
-	
-		
+			
+		print('control loop started')
+		prev_time = time.time()
+		self.init_vars()
+		while True:
+			self.update_temp()
+			curr_time = time.time()
+			self.error = self.target_temp-self.temperature
+			self.interror += error*(curr_time-prev_time)
+			new_dc_value = bias + (self.P*self.error + self.I*self.interror) #todo add D term?
+			# ~ print(str(curr_temp)+ ', power = '+str(power)+', error = '+str(error)+', interror = '+str(interror))
+			if new_dc_value>0:
+				self.dc_tot += new_dc_value
+			self.dc_avg = self.dc_tot/self.dc_cnt
+			self.dc_cnt += 1
+			# ~ print('pwr_avg = '+str(pwr_avg))
+			pi.set_dc(max(min( int(new_dc_value), 100 ),0))
+			prev_time = curr_time
+			time.sleep(self.delta_t)
