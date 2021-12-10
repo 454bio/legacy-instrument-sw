@@ -19,9 +19,9 @@ class Handlers:
         self.parent = gui
         self.ExpModeLastChoice = self.parent.Def_row_idx if self.parent.Def_row_idx else 1
         self.updateExpParams()
-        self.source_id = GObject.timeout_add(2000, self.updateExpParams)
-        # ~ self.updateTemp()
-        # ~ self.source_id2 = GObject.timeout_add(2000, self.updateTemp)
+        self.update_exp_params_sourceid = GObject.timeout_add(2000, self.updateExpParams)
+        self.updateTemp()
+        self.update_temp_sourceid = GObject.timeout_add(5000, self.updateTemp)
         self.lastShutterTime = self.parent.parent.Camera.exposure_speed
         self.run_thread = None
         self.stop_run_thread = False
@@ -29,8 +29,8 @@ class Handlers:
         
     def on_window1_delete_event(self, *args):
         self.parent.parent.GPIO.cancel_PWM()
-        GObject.source_remove(self.source_id)
-        # ~ GObject.source_remove(self.source_id2)
+        GObject.source_remove(self.update_exp_params_sourceid)
+        GObject.source_remove(self.update_temp_sourceid)
         Gtk.main_quit(*args)
         
     def on_script_save_button_clicked(self, button):
@@ -116,9 +116,11 @@ class Handlers:
         return True
         
     def updateTemp(self):
-        temp = self.parent.parent.GPIO.read_temperature()
-        if temp:
-            self.parent.temperatureBuffer.set_text("{:02.1f}".format(temp))
+        get_temp_thread = threading.Thread(target=self.parent.parent.get_temperature)
+        get_temp_thread.daemon = True
+        get_temp_thread.start()
+        if self.parent.parent.Temperature:
+            self.parent.temperatureBuffer.set_text("{:02.1f}".format(self.parent.parent.Temperature))
         else:
             self.parent.temperatureBuffer.set_text("-")
         return True

@@ -27,6 +27,7 @@ class ZionSession():
         os.mkdir(self.Dir)
         
         self.GPIO = ZionGPIO(PWM_freq, parent=self)
+        self.Temperature = None
         
         self.Camera = ZionCamera(Binning, Initial_Values, parent=self)
         self.CaptureCount = 0
@@ -35,7 +36,6 @@ class ZionSession():
         self.SplitterCount = 0
 
         self.gui = ZionGUI(Initial_Values, self)
-                
         self.TimeOfLife = time.time()
 
     def CaptureImage(self, cropping=(0,0,1,1), group=None, verbose=False, comment='', protocol=True):
@@ -205,3 +205,6 @@ class ZionSession():
         time.sleep((pw-3)/1000)
         self.GPIO.disable_leds(colors)
         # ~ self.enable_led('Orange', 0)
+
+    def get_temperature(self):
+        self.Temperature = self.GPIO.read_temperature()
