@@ -116,7 +116,7 @@ class ZionGPIO(pigpio.pi):
 		
 		self.Camera_Trigger = camera_trigger_gpio
 		
-        #No check for Temperature Input GPIO pin, this is done in boot config file (including GPIO choice)
+		#No check for Temperature Input GPIO pin, this is done in boot config file (including GPIO choice)
 		base_dir = '/sys/bus/w1/devices/'
 		try:
 			self.Temp_1W_device = glob.glob(base_dir + '28*')[0]
@@ -124,7 +124,7 @@ class ZionGPIO(pigpio.pi):
 			print('Warning: 1-Wire interface not connected.')
 			self.Temp_1W_device = None
 		
-		self.PID = ZionPID(self, TEMP_OUTPUT)
+		self.PID = ZionPID(self, temp_out_gpio)
 		
 		# Last thing is to ensure all gpio outputs are off:
 		for color in range(3):
@@ -330,7 +330,7 @@ class ZionPID():
 		while self.target_temp - self.temperature > self.ramp_threshold:
 			update_temp()
 			time.sleep(self.delta_t)
-			
+
 		print('control loop started')
 		prev_time = time.time()
 		self.init_vars()
@@ -349,3 +349,4 @@ class ZionPID():
 			pi.set_dc(max(min( int(new_dc_value), 100 ),0))
 			prev_time = curr_time
 			time.sleep(self.delta_t)
+
