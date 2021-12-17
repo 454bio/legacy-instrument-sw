@@ -1,6 +1,5 @@
 import time
 from operator import itemgetter
-import keyboard
 import threading
 
 class ZionProtocol:

@@ -4,7 +4,6 @@ from operator import itemgetter
 import gi
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk
-import keyboard
 from ZionCamera import ZionCamera
 from ZionGPIO import ZionGPIO
 from ZionEvents import check_led_timings, ZionProtocol, print_eventList
