@@ -28,7 +28,12 @@ class ZionSession():
         
         self.GPIO = ZionGPIO(PWM_freq, parent=self)
         
-        self.Camera = ZionCamera(Binning, Initial_Values, parent=self)
+        try:
+                self.Camera = ZionCamera(Binning, Initial_Values, parent=self)
+                self.isCameraPresent = True
+        except:
+                self.isCameraPresent = False
+                
         self.CaptureCount = 0
         self.SplitterCount = 0
         self.ProtocolCount = 0
@@ -175,13 +180,15 @@ class ZionSession():
         # ~ self.gui.runProgramButton.set_sensitive(True)
 
     def InteractivePreview(self, window):
-        self.Camera.start_preview(fullscreen=False, window=window)
+        if self.isCameraPresent:
+            self.Camera.start_preview(fullscreen=False, window=window)
         Gtk.main()
-        self.Camera.stop_preview()
+        if self.isCameraPresent:
+            self.Camera.stop_preview()
 
     def QuitSession(self):
-        # ~ self.GPIO.cancel_PWM()
-        self.Camera.quit()
+        if self.isCameraPresent:
+            self.Camera.quit()
 
     def pulse_on_trigger(self, colors, pw, capture, grp, gpio, level, ticks):
         self.GPIO.callback_for_uv_pulse.cancel() #to make this a one-shot

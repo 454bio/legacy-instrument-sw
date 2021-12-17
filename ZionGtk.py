@@ -22,7 +22,7 @@ class Handlers:
         self.source_id = GObject.timeout_add(2000, self.updateExpParams)
         # ~ self.updateTemp()
         # ~ self.source_id2 = GObject.timeout_add(2000, self.updateTemp)
-        self.lastShutterTime = self.parent.parent.Camera.exposure_speed
+        self.lastShutterTime = self.parent.parent.Camera.exposure_speed if self.parent.parent.isCameraPresent else 0
         self.run_thread = None
         self.stop_run_thread = False
         # ~ self.load_eventList(self.parent.parent.EventList)
@@ -105,10 +105,16 @@ class Handlers:
             self.parent.EventList.show_all()
 
     def updateExpParams(self):
-        a_gain = float(self.parent.parent.Camera.analog_gain)
-        d_gain = float(self.parent.parent.Camera.digital_gain)
-        e_time = float(self.parent.parent.Camera.exposure_speed/1000.)
-        fr = float(self.parent.parent.Camera.framerate)
+        if self.parent.parent.isCameraPresent:
+            a_gain = float(self.parent.parent.Camera.analog_gain)
+            d_gain = float(self.parent.parent.Camera.digital_gain)
+            e_time = float(self.parent.parent.Camera.exposure_speed/1000.)
+            fr = float(self.parent.parent.Camera.framerate)
+        else:
+            a_gain = 0
+            d_gain = 0
+            e_time = 0
+            fr = 0
         self.parent.analogGainBuffer.set_text("{:04.3f}".format(a_gain))
         self.parent.digitalGainBuffer.set_text("{:04.3f}".format(d_gain))
         self.parent.expTimeBuffer.set_text("{:07.3f}".format(e_time))
