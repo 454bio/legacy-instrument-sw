@@ -1,10 +1,19 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
+import os
+import sys
+import argparse
 import spidev
 import time
 import math
 import numpy as np
 from collections import deque
+
+#color defa:
+ORANGE = (19,0xFF,0x45,0x00)
+GREEN = (14, 0x12, 0xFF, 0x15)
+BLUE = (20,0x00,0x48, 0xFF)
+RED = (15, 0xFF,0x00,0x00)
 
 #some useful defines here:
 start_frame = [0x00,0x00,0x00,0x00]
@@ -47,18 +56,17 @@ class ZionStatusLEDs():
         if brightness<0 or brightness>=32:
             raise ValueError('Brightness must be a 5 bit integer!')
         elif R<0 or R>=256:
-            raise ValueError('Brightness must be a 8 bit integer!')
+            raise ValueError('Red must be a 8 bit integer!')
         elif B<0 or B>=256:
-            raise ValueError('Brightness must be a 8 bit integer!')
+            raise ValueError('Blue must be a 8 bit integer!')
         elif G<0 or G>=256:
-            raise ValueError('Brightness must be a 8 bit integer!')
+            raise ValueError('Green must be a 8 bit integer!')
         else:
             byte0 = 0xE0 | int(hex(brightness), 16)
             frame = [byte0, int(hex(B), 16), int(hex(G), 16), int(hex(R), 16)]
             self.send_init()
             for n in range(self.N):
                 self.spi.writebytes(frame)
-#             self.spi.writebytes(color_off)
             self.spi.writebytes(self.stop_frame)
             
     def pulse_color(self, brightness, R, G, B, rate=0.75):
@@ -68,25 +76,42 @@ class ZionStatusLEDs():
             for b in brightnesses:
                 self.set_color(b, R, G, B)
                 time.sleep(1./(rate*len(brightnesses)))
+            
+if __name__=='__main__':
     
-    def spin_color(self, brightness, R,G,B, rate=1.2, window_length=9):
-#         ramp_down = list(range(31,1,math.floor(-31/(math.ceil(window_length/2)))))[1:]
-        ramp_down = np.linspace(start=brightness, stop=0, num=2+math.floor(window_length/2)).round().astype(int).tolist()[1:-1]
-        ramp_up = np.linspace(start=0, stop=brightness, num=2+math.floor(window_length/2)).round().astype(int).tolist()[1:-1]
-        #         brightnesses = deque(ramp_up+[31]+ramp_down+(self.N-window_length)*[0])
-        brightnesses = deque(ramp_up+[31]+ramp_down+(self.N-len(ramp_up)-len(ramp_down)-1)*[0])
-
-        while True:
-            self.send_init()
-            for n in range(self.N):
-                byte0 = 0xE0 | int(hex(brightnesses[n]), 16)
-                frame = [byte0, int(hex(B), 16), int(hex(G), 16), int(hex(R), 16)]
-                self.spi.writebytes(frame)
-            self.spi.writebytes(self.stop_frame)
-            time.sleep(1./(rate*self.N))
-            brightnesses.rotate(1)
-         
-leds = ZionStatusLEDs()
-# leds.pulse_color(31, 0,125,255)
-# leds.spin_color(31, 255,0,255, window_length=9)
-
+    os.system('pkill -9 -f status_leds_spin_color')
+    
+    nArgs = len(sys.argv)
+    if nArgs==1:
+        leds = ZionStatusLEDs()
+    elif nArgs==2:
+        opt = sys.argv[1]
+        if opt=='demo':
+            leds = ZionStatusLEDs()
+            while True:
+                leds.set_color(*GREEN)
+                time.sleep(1)
+                leds.set_color(*ORANGE)
+                time.sleep(1)
+                leds.set_color(*RED)
+                time.sleep(1)
+                leds.set_color(*BLUE)
+                time.sleep(1)
+        elif opt=='green':
+            leds = ZionStatusLEDs()
+            while True:
+                leds.pulse_color(*GREEN)
+        elif opt=='orange':
+            leds = ZionStatusLEDs()
+            while True:
+                leds.pulse_color(*ORANGE)
+        elif opt=='blue':
+            leds = ZionStatusLEDs()
+            while True:
+                leds.pulse_color(*BLUE)
+        elif opt=='red':
+            leds = ZionStatusLEDs()
+            while True:
+                leds.pulse_color(*RED)
+        else:
+            leds = ZionStatusLEDs()
