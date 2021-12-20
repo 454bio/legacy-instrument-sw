@@ -25,7 +25,7 @@ while True:
         else:
             state=2
     elif state==2:
-        os.system('/home/pi/Desktop/canyonlands/status_leds_pulse_color.py blue &')
+        os.system(f'{os.getcwd()}/status_leds_pulse_color.py blue &')
         #todo turn BT pairing on...
         state = 3
         #todo remove, following only necessary for spoofing connecting after 5 seconds
@@ -34,7 +34,7 @@ while True:
     elif state==3:
         #todo flesh out bluetooth connection check, right now spoof        
         if time_now>timer_start+5:
-            os.system('/home/pi/Desktop/canyonlands/status_leds_set_color.py blue')
+            os.system(f'{os.getcwd()}/status_leds_set_color.py blue')
             state = 0
         else:
             time_now = time.time()
