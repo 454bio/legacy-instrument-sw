@@ -11,6 +11,6 @@ rmvirtualenv $PROJECT_NAME
 mkvirtualenv \
     -a . \
     -p ~/.pyenv/versions/$PYTHON_VERSION/bin/python \
-    -r requirements-dev.txt \
+    -r requirements.txt \
     $PROJECT_NAME
 

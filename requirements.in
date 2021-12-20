@@ -1,0 +1,8 @@
+
+numpy
+picamera
+pigpio
+pybluez
+pycairo
+PyGObject
+spidev
