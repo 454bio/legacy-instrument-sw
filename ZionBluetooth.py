@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 
-import dbus
+#TODO: change all UUIDs
 
+import dbus
 from BTAdvertisement import Advertisement
 from BTService import Application, Service, Characteristic, Descriptor
 
@@ -32,16 +33,15 @@ class ZionService(Service):
 
         self.add_characteristic(ParameterCharacteristic(self))
         self.add_characteristic(ProtocolCharacteristic(self))
+        self.add_characteristic(ReportFileCharacteristic(self))
         self.ParameterFile = 'default_parameter_file.txt'
         self.ProtocolFile = 'default_protocol_file.txt'
+        self.ReportFilename = 'default_report_filename.txt'
 
         self.add_characteristic(ReportStatusCharacteristic(self))
         self.ReportStatus = STATUS_INIT
 
         self.add_characteristic(ReportCharacteristic(self))
-        self.add_characteristic(ReportFileCharacteristic(self))
-        self.ReportFilename = 'default_report_filename.txt'
-        
 
     def get_parameter_file(self):
         return self.ParameterFile
@@ -52,13 +52,19 @@ class ZionService(Service):
     def get_report_filename(self):
         return self.ReportFilename
 
+    def get_state(self):
+        return self.ReportFilename
+
+    def get_report_filename(self, filename):
+        return self.ReportFilename
+
     def set_parameter_file(self, filename):
         self.ParameterFile = filename
 
     def set_protocol_file(self, filename):
         self.ProtocolFile = filename
 
-    def get_report_filename(self, filename):
+    def set_report_filename(self, filename):
         self.ReportFilename = filename
 
     def update_status(self):
@@ -83,7 +89,17 @@ class ZionService(Service):
                  self.ProtocolFile, 
                  self.ReportFilename)
         self._report_result = zion_report.apply_async(args, time_limit = 60)
-
+        
+    def read_report_file(self):
+        self.update_status()
+        if self.ReportStatus == STATUS_READY:
+            with open(self.ReportFilename, 'r') as file:
+                report_text = file.readlines()
+        else:
+            report_text='-'
+        #must eventually call get() or forget() on EVERY AsyncResult instance returned after calling a task.
+        self._report_result.forget() #dummy return value anyway
+        return report_text
 
 class ReportStatusCharacteristic(Characteristic):
     UUID = "00000003-710e-4a5b-8d75-3e5b444bc3cf"
@@ -105,9 +121,9 @@ class ReportStatusCharacteristic(Characteristic):
 
     def set_status_callback(self):
         if self.notifying:
-            old_state = self.service.get_report_status()
+            old_state = self.service.get_state()
             status = self.get_status()
-            if not self.serivce.get_report_status() == old_state:
+            if not self.serivce.get_state() == old_state:
                 self.PropertiesChanged(GATT_CHRC_IFACE, {"Value": status}, [])
         return self.notifying
 
@@ -115,9 +131,9 @@ class ReportStatusCharacteristic(Characteristic):
         if self.notifying:
             return
         self.notifying = True
-        old_state = self.service.get_report_status()
+        old_state = self.service.get_state()
             status = self.get_status()
-            if not self.serivce.get_report_status() == old_state:
+            if not self.serivce.get_state() == old_state:
                 self.PropertiesChanged(GATT_CHRC_IFACE, {"Value": status}, [])
         self.add_timeout(NOTIFY_TIMEOUT, self.set_status_callback)
 
@@ -126,7 +142,6 @@ class ReportStatusCharacteristic(Characteristic):
 
     def ReadValue(self, options):
         status = self.get_status()
-
         return status
 
 class ReportStatusDescriptor(Descriptor):
@@ -160,17 +175,16 @@ class ReportCharacteristic(Characteristic):
 
     def get_report(self):
         value = []
-        try:
-            with open(self.ReportFilename, 'r') as reportFile:
-                strtemp = reportFile.read()
-        except FileError:
-            strtemp=''
-        for c in strtemp:
+        val = self.service.read_report_file()
+        #todo something with size here?
+        for c in val:
             value.append(dbus.Byte(c.encode()))
         return value
 
     def ReadValue(self, options):
         value = self.get_report()
+        self.ser
+        #todo figure out size limits here?
         return value
 
 class ReportDescriptor(Descriptor):
