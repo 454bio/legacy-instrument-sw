@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import dbus
 
 from BTAdvertisement import Advertisement
@@ -57,7 +59,7 @@ class ReportCharacteristic(Characteristic):
         cpu = CPUTemperature()
         temp = cpu.temperature
 
-        strtemp = str(round(temp, 1)) + " " + unit
+        strtemp = str(round(temp, 1)) + " C"
         for c in strtemp:
             value.append(dbus.Byte(c.encode()))
         return value
@@ -115,7 +117,6 @@ class ParameterCharacteristic(Characteristic):
         self.add_descriptor(ParameterDescriptor(self))
 
     def WriteValue(self, value, options):
-#        val = str(value[0]).upper()
          val = value
          self.service.set_parameter_file(val)
 
@@ -154,7 +155,6 @@ class ProtocolCharacteristic(Characteristic):
         self.add_descriptor(ProtocolDescriptor(self))
 
     def WriteValue(self, value, options):
-#        val = str(value[0]).upper()
          val = value
          self.service.set_protocol_file(val)
 
@@ -185,10 +185,10 @@ class ProtocolDescriptor(Descriptor):
 
 
 app = Application()
-app.add_service(ThermometerService(0))
+app.add_service(ZionService(0))
 app.register()
 
-adv = ThermometerAdvertisement(0)
+adv = ZionAdvertisement(0)
 adv.register()
 
 try:
