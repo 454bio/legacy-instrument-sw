@@ -69,13 +69,20 @@ class ZionStatusLEDs():
                 self.spi.writebytes(frame)
             self.spi.writebytes(self.stop_frame)
             
-    def pulse_color(self, brightness, R, G, B, rate=0.75):
-        #first define ramp: (make sine wave??)
+    def pulse_color(self, brightness, R, G, B, rate=0.75, sine=True):
+        #first define ramp:
         brightnesses = list(range(1,brightness+1,1))+list(range(brightness-1,1,-1))
-        while True: #todo how to interrupt/stop this?
-            for b in brightnesses:
-                self.set_color(b, R, G, B)
-                time.sleep(1./(rate*len(brightnesses)))
+        #sine wave:
+        brightnesses_wave = [round(brightness/2 - (brightness/2)*math.cos(b*2*math.pi/len(brightnesses))) for b in brightnesses]
+        while True:
+            if sine:
+                for b in brightnesses_wave:
+                    self.set_color(b, R, G, B)
+                    time.sleep(1./(rate*len(brightnesses)))
+            else:
+                for b in brightnesses:
+                    self.set_color(b, R, G, B)
+                    time.sleep(1./(rate*len(brightnesses)))
             
 if __name__=='__main__':
     
