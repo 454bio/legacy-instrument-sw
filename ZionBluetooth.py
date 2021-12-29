@@ -6,7 +6,7 @@ import dbus
 from BTAdvertisement import Advertisement
 from BTService import Application, Service, Characteristic, Descriptor
 
-from ZionCelery import zion_report
+from ZionCelery import zion_report, spoof_zion_report
 
 GATT_CHRC_IFACE = "org.bluez.GattCharacteristic1"
 NOTIFY_TIMEOUT = 5000
@@ -88,7 +88,7 @@ class ZionService(Service):
         args = (self.ParameterFile,
                  self.ProtocolFile, 
                  self.ReportFilename)
-        self._report_result = zion_report.apply_async(args, time_limit = 60)
+        self._report_result = spoof_zion_report.apply_async(args, time_limit = 60)
         
     def read_report_file(self):
         self.update_status()
