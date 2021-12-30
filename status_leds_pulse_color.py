@@ -33,24 +33,24 @@ class ZionStatusLEDs():
         self.spi.lsbfirst = False
         self.spi.mode = 0b11
         self.spi.max_speed_hz = spi_speed
-        
+
         # make sure all leds are off:
         self.stop_frame = math.floor((self.N+15)/16)*[0xFF,]
         self.turn_off_all()
-        
+
         self.running = False
-        
-        
+
+
     def turn_off_all(self):
         self.send_init()
         for n in range(self.N+5):
             self.spi.writebytes(color_off)
 #             time.sleep(0.1)
 #         self.spi.writebytes(self.stop_frame)
-            
+
     def send_init(self):
         self.spi.writebytes(start_frame)
-        
+
     def set_color(self, brightness, R, G, B):
         #brightness is 5 bit number!
         if brightness<0 or brightness>=32:
@@ -68,14 +68,12 @@ class ZionStatusLEDs():
             for n in range(self.N):
                 self.spi.writebytes(frame)
             self.spi.writebytes(self.stop_frame)
-            
-    def pulse_color(self, brightness, R, G, B, rate=0.55, sine=True):
+
+    def pulse_color(self, brightness, R, G, B, rate=0.5, sine=True):
         #first define ramp:
         brightnesses = list(range(1,brightness+1,1))+list(range(brightness-1,1,-1))
-        print(brightnesses)
         #sine wave:
         brightnesses_wave = [1]+[round(brightness/2 - (brightness/2)*math.cos(b*2*math.pi/len(brightnesses))) for b in brightnesses[1:]]
-        print(brightnesses_wave)
         while True:
             if sine:
                 for b in brightnesses_wave:
@@ -85,11 +83,11 @@ class ZionStatusLEDs():
                 for b in brightnesses:
                     self.set_color(b, R, G, B)
                     time.sleep(1./(rate*len(brightnesses)))
-            
+
 if __name__=='__main__':
-    
+
     os.system('pkill -9 -f status_leds_spin_color')
-    
+
     nArgs = len(sys.argv)
     if nArgs==1:
         leds = ZionStatusLEDs()

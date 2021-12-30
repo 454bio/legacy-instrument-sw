@@ -32,8 +32,8 @@ while True:
         timer_start = time.time()
         time_now = time.time()
     elif state==3:
-        #todo flesh out bluetooth connection check, right now spoof        
-        if time_now>timer_start+5:
+        #todo flesh out bluetooth connection check, right now spoof
+        if time_now>timer_start+20:
             os.system('/home/pi/Desktop/canyonlands/status_leds_set_color.py blue')
             state = 0
         else:
