@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 #TODO: change all UUIDs
+#https://www.oreilly.com/library/view/getting-started-with/9781491900550/ch04.html
 
 import dbus
 from BTAdvertisement import Advertisement
@@ -183,8 +184,7 @@ class ReportCharacteristic(Characteristic):
 
     def ReadValue(self, options):
         value = self.get_report()
-        self.ser
-        #todo figure out size limits here?
+
         return value
 
 class ReportDescriptor(Descriptor):
