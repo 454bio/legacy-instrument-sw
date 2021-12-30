@@ -40,7 +40,7 @@ class ZionService(Service):
         self.ReportFilename = 'default_report_filename.txt'
 
         self.add_characteristic(ReportStatusCharacteristic(self))
-        self.ReportStatus = STATUS_INIT
+        self.ReportStatus = STATUS_PENDING
 
         self.add_characteristic(ReportCharacteristic(self))
 
@@ -133,9 +133,9 @@ class ReportStatusCharacteristic(Characteristic):
             return
         self.notifying = True
         old_state = self.service.get_state()
-            status = self.get_status()
-            if not self.serivce.get_state() == old_state:
-                self.PropertiesChanged(GATT_CHRC_IFACE, {"Value": status}, [])
+        status = self.get_status()
+        if not self.serivce.get_state() == old_state:
+            self.PropertiesChanged(GATT_CHRC_IFACE, {"Value": status}, [])
         self.add_timeout(NOTIFY_TIMEOUT, self.set_status_callback)
 
     def StopNotify(self):

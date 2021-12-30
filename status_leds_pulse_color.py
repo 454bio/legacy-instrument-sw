@@ -69,16 +69,18 @@ class ZionStatusLEDs():
                 self.spi.writebytes(frame)
             self.spi.writebytes(self.stop_frame)
             
-    def pulse_color(self, brightness, R, G, B, rate=0.75, sine=True):
+    def pulse_color(self, brightness, R, G, B, rate=0.55, sine=True):
         #first define ramp:
         brightnesses = list(range(1,brightness+1,1))+list(range(brightness-1,1,-1))
+        print(brightnesses)
         #sine wave:
-        brightnesses_wave = [round(brightness/2 - (brightness/2)*math.cos(b*2*math.pi/len(brightnesses))) for b in brightnesses]
+        brightnesses_wave = [1]+[round(brightness/2 - (brightness/2)*math.cos(b*2*math.pi/len(brightnesses))) for b in brightnesses[1:]]
+        print(brightnesses_wave)
         while True:
             if sine:
                 for b in brightnesses_wave:
                     self.set_color(b, R, G, B)
-                    time.sleep(1./(rate*len(brightnesses)))
+                    time.sleep(1./(rate*len(brightnesses_wave)))
             else:
                 for b in brightnesses:
                     self.set_color(b, R, G, B)

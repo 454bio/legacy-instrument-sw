@@ -104,3 +104,5 @@ if __name__=='__main__':
             leds.set_color(*RED)
         else:
             leds = ZionStatusLEDs()
+            
+            ZionStatusLEDs(*GREEN)

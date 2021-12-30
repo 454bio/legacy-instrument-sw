@@ -77,6 +77,7 @@ class ZionStatusLEDs():
             brightnesses = deque(ramp_up+[brightness]+ramp_down+(self.N-len(ramp_up)-len(ramp_down)-1)*[0])
         else:
             ramp_up = np.linspace(start=0, stop=brightness, num=window_length+1).round().astype(int).tolist()
+            print(ramp_up)
             brightnesses = deque(ramp_up+(self.N-len(ramp_up))*[0])
         while True:
             self.send_init()

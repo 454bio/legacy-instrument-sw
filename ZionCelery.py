@@ -10,7 +10,7 @@ def spoof_zion_report(params, protocol, report_filename, timeout=20):
     ret = 0
     time.sleep(timeout)
     with open(report_filename, 'w') as file:
-        file.writelines(['This is a Zion Report!,
+        file.writelines(['This is a Zion Report!',
                          'Parameters from: '+parameter_file,
                          'Protocol from: '+protocol_file])
     ret = 1
@@ -21,7 +21,7 @@ def zion_report(params, protocol, report_filename, timeout=20):
     ret = 0
     time.sleep(timeout)
     with open(report_filename, 'w') as file:
-        file.writelines(['This is a Zion Report!,
+        file.writelines(['This is a Zion Report!',
                          'Parameters from: '+parameter_file,
                          'Protocol from: '+protocol_file])
     ret = 1
