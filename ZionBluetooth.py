@@ -226,7 +226,7 @@ class ParameterCharacteristic(Characteristic):
         return value
 
 class ParameterDescriptor(Descriptor):
-    UUID = "2901"
+    UUID = "2901" #1717?
     DESCRIPTOR_VALUE = "Parameter File"
 
     def __init__(self, characteristic):
@@ -266,7 +266,7 @@ class ProtocolCharacteristic(Characteristic):
         return value
 
 class ProtocolDescriptor(Descriptor):
-    UUID = "2902"
+    UUID = "2902" #1717?
     DESCRIPTOR_VALUE = "Protocol File"
 
     def __init__(self, characteristic):
@@ -303,7 +303,7 @@ class ReportFileCharacteristic(Characteristic):
         return value
 
 class ReportFileDescriptor(Descriptor):
-    UUID = "2902"
+    UUID = "2902" #1717?
     DESCRIPTOR_VALUE = "Report Filename"
 
     def __init__(self, characteristic):
