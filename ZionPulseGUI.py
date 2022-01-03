@@ -76,7 +76,7 @@ class LEDColorComboBox(Gtk.Grid):
     def set_active(self, dDutyCycles):
         if dDutyCycles:
             for key in dDutyCycles.keys():
-                self.ColorEntries[colors.index(key)-1].set_text(str(dDutyCycles[key]))
+                self.ColorEntries[colors.index(key)-1].DutyCycleEntry.set_text(str(dDutyCycles[key]))
                 
 class EventEntry(Gtk.HBox): 
     def __init__(self, parent, *args):

@@ -40,11 +40,8 @@ GpioPins = (
 # Now define GPIO uses for Zion:
 
 # 2 GPIOs for each LED:
-# ~ UV = [6,12] #pins 31, 32
 UV = [12] #pin 32
-# ~ BLUE = [19,16] #pins 35,36
 BLUE = [16] #pins 36
-# ~ ORANGE = [26,20] #pins 37,38
 ORANGE = [20] #pin 38
 
 # 1 GPIO for camera capture timing testing:
