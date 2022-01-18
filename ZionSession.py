@@ -1,5 +1,7 @@
 import os
+from glob import glob
 import time
+from datetime import datetime
 from operator import itemgetter
 import gi
 gi.require_version('Gtk', '3.0')
@@ -14,15 +16,22 @@ import threading
 import json
 from types import SimpleNamespace
 
+
 class ZionSession():
+        
+    captureCountDigits = 6
 
     def __init__(self, session_name, Binning, Initial_Values, PWM_freq, overwrite=False):
 
         self.Name=session_name
+        now = datetime.now()
+        now_date = str(now.year)+str(now.month).zfill(2)+str(now.day).zfill(2)
+        now_time = str(now.hour).zfill(2)+str(now.minute).zfill(2)
+        filename = now_date+'_'+now_time+'_'+self.Name
         currSuffix = 1
-        while os.path.exists(session_name+"_{:02}".format(currSuffix)):
+        while glob('*_'+session_name+"_{:04}".format(currSuffix)):
             currSuffix+=1
-        self.Dir = session_name+"_{:02}".format(currSuffix)
+        self.Dir = filename+"_{:04}".format(currSuffix)
         print('Creating directory '+str(self.Dir))
         os.mkdir(self.Dir)
         
@@ -32,6 +41,7 @@ class ZionSession():
         self.CaptureCount = 0
         self.SplitterCount = 0
         self.ProtocolCount = 0
+        self.captureCountThisProtocol = 0
         self.SplitterCount = 0
 
         self.gui = ZionGUI(Initial_Values, self)
@@ -39,21 +49,29 @@ class ZionSession():
         self.TimeOfLife = time.time()
 
     def CaptureImage(self, cropping=(0,0,1,1), group=None, verbose=False, comment='', protocol=True):
+        
         group = '' if group is None else group
-        if not protocol:
-            filename = os.path.join(self.Dir, str(group)+'_'+self.Name)
-        else:
-            filename = os.path.join(self.Dir, str(self.ProtocolCount).zfill(2)+'_'+str(group)+'_'+self.Name)
+        
         self.CaptureCount += 1
-        filename += '_'+str(self.CaptureCount).zfill(3)+'_'+str(round(1000*(time.time()-self.TimeOfLife)))
+        self.captureCountThisProtocol += 1
+        
+        filename = os.path.join(self.Dir, str(self.CaptureCount).zfill(ZionSession.captureCountDigits))
+
+        if protocol:
+            filename += '_'+str(self.ProtocolCount).zfill(2)+'A'+str(self.captureCountThisProtocol).zfill(3)+'_'+group
+        else:
+            filename += '_'+str(self.ProtocolCount).zfill(2)+'M'+str(self.captureCountThisProtocol).zfill(3)
+        
+        timestamp_ms = round(1000*(time.time()-self.TimeOfLife))
+        filename += '_'+str(timestamp_ms)
         if verbose:
             self.gui.printToLog('Writing image to file '+filename+'.jpg')
         # ~ try:
         self.SplitterCount += 1
         self.Camera.capture(filename, cropping=cropping, splitter=self.SplitterCount % 4)
         ret = 0
-        if group=='P':
-            self.SaveParameterFile(comment, False)
+        if not protocol:
+            self.SaveParameterFile(comment, False, timestamp_ms)
         # ~ except PiCameraValueError or PiCameraAlreadyRecording:
             # ~ print('Camera Busy! '+filename+' not written!')
             # ~ if verbose:
@@ -71,14 +89,15 @@ class ZionSession():
             # ~ ret = 1
         return ret
         
-    def SaveParameterFile(self, comment, bSession):
+    def SaveParameterFile(self, comment, bSession, timestamp=0):
         params = self.Camera.get_all_params()
         params['comment'] = comment
         if bSession:
-            filename = os.path.join(self.Dir, self.Name)
+            filename = filename = os.path.join(self.Dir, str(self.CaptureCount).zfill(ZionSession.captureCountDigits)+'_'+str(self.ProtocolCount+1).zfill(2)+'_Params')
         else:
-            filename = os.path.join(self.Dir, 'P_'+self.Name)
-            filename += '_'+str(self.CaptureCount).zfill(3)+'_'+str(round(1000*(time.time()-self.TimeOfLife)))	
+            filename = os.path.join(self.Dir, str(self.CaptureCount).zfill(ZionSession.captureCountDigits)+'_'+str(self.ProtocolCount).zfill(2)+'M'+str(self.captureCountThisProtocol).zfill(3))
+            if timestamp > 0:
+                    filename += '_'+str(timestamp)
         with open(filename+'.txt', 'w') as f:
             for key in params.keys():
                 f.write(key + ': '+str(params[key])+'\n')
@@ -127,7 +146,8 @@ class ZionSession():
     def SaveProtocolFile(self, filename=None):
         if not filename:
             self.ProtocolCount += 1
-            filename = os.path.join(self.Dir, self.Name+'_Protocol_'+str(self.ProtocolCount).zfill(2))
+            self.captureCountThisProtocol = 0
+            filename = filename = os.path.join(self.Dir, str(self.CaptureCount).zfill(ZionSession.captureCountDigits)+'_'+str(self.ProtocolCount).zfill(2)+'_Protocol')
         json_str = json.dumps(self.EventList.__dict__)
         # ~ print(json_str)
         with open(filename+'.txt', 'w') as f:
@@ -173,6 +193,7 @@ class ZionSession():
                 time.sleep(self.EventList.Interrepeat_Delay)
         # ~ self.gui.runProgramButton.set_active(False)
         # ~ self.gui.runProgramButton.set_sensitive(True)
+        self.captureCountThisProtocol = 0
 
     def InteractivePreview(self, window):
         self.Camera.start_preview(fullscreen=False, window=window)
