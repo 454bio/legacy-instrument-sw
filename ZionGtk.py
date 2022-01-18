@@ -85,7 +85,7 @@ class Handlers:
                 #event[2] is bCapture
                 #event[3] is postdelay
                 #event[4] is group
-                eventEntry.PulseTimeEntry.set_text(str(event[1]))
+                eventEntry.PulseTimeEntry.set_text(str(int(event[1])))
 
                 if event[0]==None: #should this be {}?
                     eventEntry.ColorComboBox.set_active(None)
@@ -97,9 +97,9 @@ class Handlers:
                         eventEntry.CaptureGroupEntry.set_text('')
                     eventEntry.CaptureToggleButton.set_active(event[2])
                     if event[3]:
-                        eventEntry.PostDelayEntry.set_text(str(event[3]))
+                        eventEntry.PostDelayEntry.set_text(str(int(event[3])))
                     else:
-                        eventEntry.CaptureGroupEntry.set_text('')
+                        eventEntry.PostDelayEntry.set_text('')
                 self.parent.EventEntries.append( eventEntry )
                 self.parent.EventList.pack_start( self.parent.EventEntries[-1], False, False, 0 )
             self.parent.EventList.show_all()
