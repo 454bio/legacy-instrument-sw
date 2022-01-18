@@ -7,8 +7,8 @@ from ZionSession import ZionSession
 ######################### User-Level Settings ##########################
 ######################################################################## 
 
-# Session Name: This will be the name of the folder.
-Session_Name = 'Test_Session'
+# Session Name: This will be the name of the folder (prefixed with datetime info and suffixed with index).
+Session_Name = 'TS'
 
 # Camera Properties:
     # These can't change while camera is open:

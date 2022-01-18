@@ -475,7 +475,7 @@ class Handlers:
     def on_capture_button_clicked(self, button):
         #TODO: get cropping from some self object here
         comment = self.parent.commentBox.get_text()
-        capture_thread = threading.Thread(target=self.parent.parent.CaptureImage, kwargs={'group': 'P', 'comment': comment,'verbose': True, 'protocol': False})
+        capture_thread = threading.Thread(target=self.parent.parent.CaptureImage, kwargs={'comment': comment,'verbose': True, 'protocol': False})
         capture_thread.daemon = True
         capture_thread.start()
 
