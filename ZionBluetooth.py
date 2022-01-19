@@ -34,7 +34,7 @@ class ZionService(Service):
 
         self.add_characteristic(ParameterCharacteristic(self))
         self.add_characteristic(ProtocolCharacteristic(self))
-        self.add_characteristic(ReportFileCharacteristic(self))
+        self.add_characteristic(ReportFilenameCharacteristic(self))
         self.ParameterFile = 'default_parameter_file.txt'
         self.ProtocolFile = 'default_protocol_file.txt'
         self.ReportFilename = 'default_report_filename.txt'
@@ -54,10 +54,7 @@ class ZionService(Service):
         return self.ReportFilename
 
     def get_state(self):
-        return self.ReportFilename
-
-    def get_report_filename(self, filename):
-        return self.ReportFilename
+        return self.ReportStatus
 
     def set_parameter_file(self, filename):
         self.ParameterFile = filename
