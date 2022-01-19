@@ -299,7 +299,7 @@ class ReportFileCharacteristic(Characteristic):
             value.append(dbus.Byte(c.encode()))
         return value
 
-class ReportFileDescriptor(Descriptor):
+class ReportFilenameDescriptor(Descriptor):
     UUID = "2902" #1717?
     DESCRIPTOR_VALUE = "Report Filename"
 
