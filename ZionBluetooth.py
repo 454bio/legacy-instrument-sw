@@ -279,7 +279,7 @@ class ProtocolDescriptor(Descriptor):
             value.append(dbus.Byte(c.encode()))
         return value
 
-class ReportFileCharacteristic(Characteristic):
+class ReportFilenameCharacteristic(Characteristic):
     UUID = "00000006-710e-4a5b-8d75-3e5b444bc3cf"
 
     def __init__(self, service):
@@ -304,7 +304,7 @@ class ReportFilenameDescriptor(Descriptor):
     DESCRIPTOR_VALUE = "Report Filename"
 
     def __init__(self, characteristic):
-        super(ReportFileDescriptor, self).__init__(
+        super(ReportFilenameDescriptor, self).__init__(
                 self.UUID,
                 ["read"],
                 characteristic)
