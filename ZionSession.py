@@ -147,7 +147,7 @@ class ZionSession():
         if not filename:
             self.ProtocolCount += 1
             self.captureCountThisProtocol = 0
-            filename = filename = os.path.join(self.Dir, str(self.CaptureCount).zfill(ZionSession.captureCountDigits)+'_'+str(self.ProtocolCount).zfill(2)+'_Protocol')
+            filename = os.path.join(self.Dir, str(self.CaptureCount).zfill(ZionSession.captureCountDigits)+'_'+str(self.ProtocolCount).zfill(2)+'_Protocol')
         json_str = json.dumps(self.EventList.__dict__)
         # ~ print(json_str)
         with open(filename+'.txt', 'w') as f:
