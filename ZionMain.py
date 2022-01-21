@@ -8,6 +8,7 @@ from ZionSession import ZionSession
 ######################################################################## 
 
 # Session Name: This will be the name of the folder (prefixed with datetime info and suffixed with index).
+# NOTE: No underscores allowed in session name!
 Session_Name = 'TS'
 
 # Camera Properties:
