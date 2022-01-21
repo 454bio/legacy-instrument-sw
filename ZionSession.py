@@ -28,10 +28,18 @@ class ZionSession():
         now_date = str(now.year)+str(now.month).zfill(2)+str(now.day).zfill(2)
         now_time = str(now.hour).zfill(2)+str(now.minute).zfill(2)
         filename = now_date+'_'+now_time+'_'+self.Name
-        currSuffix = 1
-        while glob('*_'+session_name+"_{:04}".format(currSuffix)):
-            currSuffix+=1
-        self.Dir = filename+"_{:04}".format(currSuffix)
+        
+        listOfSessions = glob('*_'+session_name+"_*")
+        print(listOfSessions)
+        #currSuffix = 1
+        #while glob('*_'+session_name+"_{:04}".format(currSuffix)):
+         #   currSuffix+=1
+        lastSuffix = 0
+        for f in glob('*_'+session_name+"_*"):
+            lastHyphenIdx = f.rfind('_')
+            newSuffix = int(f[(lastHyphenIdx+1):])
+            lastSuffix = newSuffix if newSuffix>lastSuffix else lastSuffix
+        self.Dir = filename+"_{:04}".format(lastSuffix+1)
         print('Creating directory '+str(self.Dir))
         os.mkdir(self.Dir)
         
