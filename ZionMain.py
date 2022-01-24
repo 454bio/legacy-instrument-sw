@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from ZionSession import ZionSession
+from ZionGtk import check_for_valid_filename
 
 ########################################################################
 ######################### User-Level Settings ##########################
@@ -10,7 +11,9 @@ from ZionSession import ZionSession
 # Session Name: This will be the name of the folder (prefixed with datetime info and suffixed with index).
 # NOTE: No underscores allowed in session name!
 Session_Name = 'TS'
-
+if not check_for_valid_filename(Session_Name):
+    raise Exception("Invalid character (or whitespace) detected in session name!")
+    
 # Camera Properties:
     # These can't change while camera is open:
 Binning = False
@@ -52,7 +55,7 @@ mySession = ZionSession(Session_Name, Binning, Initial_Values, PWM_Frequency)
 
 #Start preview:
 # ~ mySession.InteractivePreview(window=(560,75,640,480))
-mySession.InteractivePreview(window=(1190,75,720,540))
+mySession.InteractivePreview(window=(1172,75,720,540))
 
 ########################################################################
 ######################### Shutdown Script ##############################

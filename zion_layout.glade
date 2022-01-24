@@ -161,10 +161,12 @@
     <property name="name">main_window</property>
     <property name="visible">True</property>
     <property name="can_focus">False</property>
+    <property name="default_width">1287</property>
+    <property name="default_height">712</property>
     <property name="icon_name">applications-science</property>
     <property name="gravity">north-east</property>
     <signal name="delete-event" handler="on_window1_delete_event" swapped="no"/>
-    <child>
+    <child type="titlebar">
       <placeholder/>
     </child>
     <child>
@@ -2147,7 +2149,6 @@ Repeats (sec): </property>
                     <property name="can_focus">True</property>
                     <property name="receives_default">True</property>
                     <property name="halign">center</property>
-                    <property name="margin_right">6</property>
                     <property name="image">stop_button_image</property>
                     <signal name="clicked" handler="on_stop_program_button_clicked" swapped="no"/>
                   </object>
@@ -2161,6 +2162,7 @@ Repeats (sec): </property>
                   <object class="GtkLabel">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
+                    <property name="margin_left">6</property>
                     <property name="label" translatable="yes">Comment:  </property>
                   </object>
                   <packing>
@@ -2173,13 +2175,38 @@ Repeats (sec): </property>
                   <object class="GtkEntry" id="comment_entry">
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
-                    <property name="width_chars">50</property>
+                    <property name="width_chars">20</property>
                     <signal name="activate" handler="on_led_test_button_activate" swapped="no"/>
                   </object>
                   <packing>
                     <property name="expand">False</property>
                     <property name="fill">True</property>
                     <property name="position">4</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkLabel">
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <property name="margin_left">6</property>
+                    <property name="label" translatable="yes">Suffix:  </property>
+                  </object>
+                  <packing>
+                    <property name="expand">False</property>
+                    <property name="fill">True</property>
+                    <property name="position">5</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkEntry" id="suffix_entry">
+                    <property name="visible">True</property>
+                    <property name="can_focus">True</property>
+                    <property name="width_chars">8</property>
+                  </object>
+                  <packing>
+                    <property name="expand">False</property>
+                    <property name="fill">True</property>
+                    <property name="position">6</property>
                   </packing>
                 </child>
                 <child>
@@ -2194,7 +2221,7 @@ Repeats (sec): </property>
                   <packing>
                     <property name="expand">False</property>
                     <property name="fill">True</property>
-                    <property name="position">5</property>
+                    <property name="position">7</property>
                   </packing>
                 </child>
                 <child>
@@ -2209,7 +2236,7 @@ Repeats (sec): </property>
                   <packing>
                     <property name="expand">False</property>
                     <property name="fill">True</property>
-                    <property name="position">6</property>
+                    <property name="position">8</property>
                   </packing>
                 </child>
                 <child>
@@ -2224,7 +2251,7 @@ Repeats (sec): </property>
                   <packing>
                     <property name="expand">False</property>
                     <property name="fill">True</property>
-                    <property name="position">7</property>
+                    <property name="position">9</property>
                   </packing>
                 </child>
               </object>
