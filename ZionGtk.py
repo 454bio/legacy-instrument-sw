@@ -9,6 +9,8 @@ from operator import itemgetter
 from ZionEvents import print_eventList
 from ZionPulseGUI import EventEntry, colors
 
+
+
 def get_handler_id(obj, signal_name):
     signal_id, detail = GObject.signal_parse_name(signal_name, obj, True)
     return GObject.signal_handler_find(obj, GObject.SignalMatchType.ID, signal_id, detail, None, None, None)
@@ -136,6 +138,8 @@ class Handlers:
     def on_image_denoise_button(self, button):
         # ~ position = self.parent.mainWindow.get_position()
         # ~ print(position)
+        # ~ size = self.parent.mainWindow.get_size()
+        # ~ print(size)
         if button.get_active():
             self.parent.printToLog('Image denoising on')
             self.parent.parent.Camera.set_image_denoising(True)
@@ -477,9 +481,14 @@ class Handlers:
     def on_capture_button_clicked(self, button):
         #TODO: get cropping from some self object here
         comment = self.parent.commentBox.get_text()
-        capture_thread = threading.Thread(target=self.parent.parent.CaptureImage, kwargs={'comment': comment,'verbose': True, 'protocol': False})
-        capture_thread.daemon = True
-        capture_thread.start()
+        suffix = self.parent.suffixBox.get_text()
+        if not check_for_valid_filename(suffix):
+            print("Invalid character (or whitespace) detected in filename suffix!")
+            self.parent.printToLog("Invalid character (or whitespace) detected in filename suffix!")
+        else:
+            capture_thread = threading.Thread(target=self.parent.parent.CaptureImage, kwargs={'comment': comment,'verbose': True, 'protocol': False, 'suffix': suffix})
+            capture_thread.daemon = True
+            capture_thread.start()
 
     def on_run_program_button_clicked(self,button):
         if button.get_active():
@@ -749,8 +758,7 @@ class ZionGUI():
         
         # ~ Gtk.Window.maximize(self.mainWindow)
         self.mainWindow.move(633,36)
-        self.mainWindow.resize(1287,712)
-        
+        # ~ self.mainWindow.resize(1287,712)
         
         self.parent = parent
 
@@ -828,6 +836,8 @@ class ZionGUI():
         self.isoButton800 = self.builder.get_object("radiobutton7")
 
         self.commentBox = self.builder.get_object("comment_entry")
+        self.suffixBox = self.builder.get_object("suffix_entry")
+
         
         if initial_values['exposure_mode']=='off':
             self.expModeLockButton.set_active(True)
@@ -879,4 +889,23 @@ class ZionGUI():
 
 # ~ builder.connect_signals(Handlers())
 
-# ~ Gtk.main()
+illegal_chars = [
+'/',
+'\\',
+'<',
+'>',
+':',
+'"',
+'|',
+'?',
+'*',
+' ',
+]
+
+def check_for_valid_filename(filename):
+    ret = True
+    for c in illegal_chars:
+        if c in filename:
+            ret = False
+            break
+    return ret

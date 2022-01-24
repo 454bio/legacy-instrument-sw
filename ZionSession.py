@@ -58,7 +58,7 @@ class ZionSession():
                 
         self.TimeOfLife = time.time()
 
-    def CaptureImage(self, cropping=(0,0,1,1), group=None, verbose=False, comment='', protocol=True):
+    def CaptureImage(self, cropping=(0,0,1,1), group=None, verbose=False, comment='', suffix='', protocol=True):
         
         group = '' if group is None else group
         
@@ -73,7 +73,8 @@ class ZionSession():
             filename += '_'+str(self.ProtocolCount).zfill(ZionSession.protocolCountDigits)+'M_'+str(self.captureCountThisProtocol).zfill(ZionSession.captureCountPerProtocolDigits)
         
         timestamp_ms = round(1000*(time.time()-self.TimeOfLife))
-        filename += '_'+str(timestamp_ms).zfill(8)
+        filename += '_'+str(timestamp_ms).zfill(9)
+        filename = filename+'_'+suffix if not protocol else filename
         if verbose:
             self.gui.printToLog('Writing image to file '+filename+'.jpg')
         # ~ try:
