@@ -19,7 +19,9 @@ from types import SimpleNamespace
 
 class ZionSession():
         
-    captureCountDigits = 6
+    captureCountDigits = 8
+    protocolCountDigits = 3
+    captureCountPerProtocolDigits = 5
 
     def __init__(self, session_name, Binning, Initial_Values, PWM_freq, overwrite=False):
 
@@ -30,7 +32,7 @@ class ZionSession():
         filename = now_date+'_'+now_time+'_'+self.Name
         
         listOfSessions = glob('*_'+session_name+"_*")
-        print(listOfSessions)
+        #print(listOfSessions)
         #currSuffix = 1
         #while glob('*_'+session_name+"_{:04}".format(currSuffix)):
          #   currSuffix+=1
@@ -66,12 +68,12 @@ class ZionSession():
         filename = os.path.join(self.Dir, str(self.CaptureCount).zfill(ZionSession.captureCountDigits))
 
         if protocol:
-            filename += '_'+str(self.ProtocolCount).zfill(2)+'A'+str(self.captureCountThisProtocol).zfill(3)+'_'+group
+            filename += '_'+str(self.ProtocolCount).zfill(ZionSession.protocolCountDigits)+'A_'+str(self.captureCountThisProtocol).zfill(ZionSession.captureCountPerProtocolDigits)+'_'+group
         else:
-            filename += '_'+str(self.ProtocolCount).zfill(2)+'M'+str(self.captureCountThisProtocol).zfill(3)
+            filename += '_'+str(self.ProtocolCount).zfill(ZionSession.protocolCountDigits)+'M_'+str(self.captureCountThisProtocol).zfill(ZionSession.captureCountPerProtocolDigits)
         
         timestamp_ms = round(1000*(time.time()-self.TimeOfLife))
-        filename += '_'+str(timestamp_ms)
+        filename += '_'+str(timestamp_ms).zfill(8)
         if verbose:
             self.gui.printToLog('Writing image to file '+filename+'.jpg')
         # ~ try:
@@ -101,9 +103,9 @@ class ZionSession():
         params = self.Camera.get_all_params()
         params['comment'] = comment
         if bSession:
-            filename = filename = os.path.join(self.Dir, str(self.CaptureCount).zfill(ZionSession.captureCountDigits)+'_'+str(self.ProtocolCount+1).zfill(2)+'_Params')
+            filename = filename = os.path.join(self.Dir, str(self.CaptureCount).zfill(ZionSession.captureCountDigits)+'_'+str(self.ProtocolCount+1).zfill(ZionSession.protocolCountDigits)+'A_Params')
         else:
-            filename = os.path.join(self.Dir, str(self.CaptureCount).zfill(ZionSession.captureCountDigits)+'_'+str(self.ProtocolCount).zfill(2)+'M'+str(self.captureCountThisProtocol).zfill(3))
+            filename = os.path.join(self.Dir, str(self.CaptureCount).zfill(ZionSession.captureCountDigits)+'_'+str(self.ProtocolCount).zfill(ZionSession.protocolCountDigits)+'M_'+str(self.captureCountThisProtocol).zfill(ZionSession.captureCountPerProtocolDigits))
             if timestamp > 0:
                     filename += '_'+str(timestamp)
         with open(filename+'.txt', 'w') as f:
@@ -155,7 +157,7 @@ class ZionSession():
         if not filename:
             self.ProtocolCount += 1
             self.captureCountThisProtocol = 0
-            filename = os.path.join(self.Dir, str(self.CaptureCount).zfill(ZionSession.captureCountDigits)+'_'+str(self.ProtocolCount).zfill(2)+'_Protocol')
+            filename = os.path.join(self.Dir, str(self.CaptureCount).zfill(ZionSession.captureCountDigits)+'_'+str(self.ProtocolCount).zfill(3)+'A_Protocol')
         json_str = json.dumps(self.EventList.__dict__)
         # ~ print(json_str)
         with open(filename+'.txt', 'w') as f:
