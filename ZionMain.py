@@ -51,7 +51,8 @@ mySession = ZionSession(Session_Name, Binning, Initial_Values, PWM_Frequency)
 # ~ myGPIO.turn_off_led('UV')
 
 #Start preview:
-mySession.InteractivePreview(window=(560,75,640,480))
+# ~ mySession.InteractivePreview(window=(560,75,640,480))
+mySession.InteractivePreview(window=(1190,75,720,540))
 
 ########################################################################
 ######################### Shutdown Script ##############################

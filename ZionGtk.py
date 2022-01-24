@@ -134,6 +134,8 @@ class Handlers:
         # ~ print('Saturation: '+str(self.parent.parent.Camera.saturation))
         
     def on_image_denoise_button(self, button):
+        # ~ position = self.parent.mainWindow.get_position()
+        # ~ print(position)
         if button.get_active():
             self.parent.printToLog('Image denoising on')
             self.parent.parent.Camera.set_image_denoising(True)
@@ -744,7 +746,12 @@ class ZionGUI():
         #Create Window and Maximize:
         self.builder = Gtk.Builder.new_from_file(glade_file)
         self.mainWindow = self.builder.get_object("window1")
-        Gtk.Window.maximize(self.mainWindow)
+        
+        # ~ Gtk.Window.maximize(self.mainWindow)
+        self.mainWindow.move(633,36)
+        self.mainWindow.resize(1287,712)
+        
+        
         self.parent = parent
 
         #define default values
