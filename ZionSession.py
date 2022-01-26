@@ -232,8 +232,9 @@ class ZionSession():
         # ~ print(pw/2)
         # ~ time.sleep((self.frame_period-(self.exposure_time+pw)/2)/1000) #wait for ~87 ms
         time.sleep(max([time1, time2]))
-        self.GPIO.enable_leds(colors)
+        if not colors is None:
+            self.GPIO.enable_leds(colors)
         # ~ self.enable_led('Orange', 100)
-        time.sleep((pw-3)/1000)
-        self.GPIO.disable_leds(colors)
+            time.sleep((pw-3)/1000)
+            self.GPIO.disable_leds(colors)
         # ~ self.enable_led('Orange', 0)

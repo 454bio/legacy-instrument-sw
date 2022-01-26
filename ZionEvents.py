@@ -34,8 +34,8 @@ class ZionProtocol:
 			# ~ self.capture_threads = []
 
 	def performEvent(self, event, gpio_ctrl):
-		if not event[0] is None:
-			gpio_ctrl.enable_vsync_callback(event[0], event[1], event[2], event[4])
+		#if not event[0] is None:
+		gpio_ctrl.enable_vsync_callback(event[0], event[1], event[2], event[4])
 			# ~ gpio_ctrl.enable_vsync_callback()
 		if event[3]>0:
 			time.sleep(event[3]/1000.)
