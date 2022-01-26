@@ -36,7 +36,11 @@ class Handlers:
         Gtk.main_quit(*args)
         
     def on_script_save_button_clicked(self, button):
-        (N, events, interrepeat) = self.save_eventList()
+        try:
+            (N, events, interrepeat) = self.save_eventList()
+        except TypeError:
+            self.parent.printToLog('No Event List!')
+            return
         self.parent.parent.LoadProtocolFromGUI(N,events,interrepeat)
         self.parent.paramFileChooser.set_action(Gtk.FileChooserAction.SAVE)
         response = self.parent.paramFileChooser.run()
@@ -50,7 +54,12 @@ class Handlers:
     def save_eventList(self):
         eventList = []
         for eventEntry in self.parent.EventEntries:
-            eventList.append(eventEntry.exportEvent())
+            event = eventEntry.exportEvent()
+            if event:
+                eventList.append(event)
+            else:
+                self.parent.printToLog('Eventlist not saved!')
+                return
         N = self.parent.RepeatNEntry.get_value_as_int()
         # ~ print_eventList(eventList)
         interrepeat_delay = self.parent.InterleafTimeEntry.get_text()
@@ -495,7 +504,11 @@ class Handlers:
             self.parent.expModeComboBox.set_active(0)
             comment = self.parent.commentBox.get_text()
             self.parent.parent.SaveParameterFile(comment, True)
-            (N, events, interrepeat) = self.save_eventList()
+            try:
+                (N, events, interrepeat) = self.save_eventList()
+            except TypeError:
+                self.parent.printToLog('No event list!')
+                return
             self.parent.parent.LoadProtocolFromGUI(N,events, interrepeat)
             self.parent.parent.SaveProtocolFile()
             # ~ interleaf_time = self.parent.InterleafTimeEntry.get_text()

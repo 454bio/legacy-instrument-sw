@@ -108,7 +108,6 @@ class EventEntry(Gtk.HBox):
         self.DeleteButton.connect("clicked", self.on_event_delete_button)
         self.CaptureToggleButton.connect("toggled", self.on_capture_toggle_toggled)
 
-
     def on_event_delete_button(self, button):
         idx = self.parent.EventEntries.index(self)
         self.destroy()
@@ -134,12 +133,12 @@ class EventEntry(Gtk.HBox):
                 return
         if colorList is None:
                 pulsetime = 0
-                bCapture = False
+                # ~ bCapture = False
         else:
             try:
                 pulsetime = float(pulsetime)
             except ValueError:
                 print('Invalid Time Entry!')
-                return
+                return False
         capture_grp = self.CaptureGroupEntry.get_text() if bCapture else None
         return (colorList, pulsetime, bCapture, postdelay, capture_grp)
