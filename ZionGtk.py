@@ -10,7 +10,6 @@ from ZionEvents import print_eventList
 from ZionPulseGUI import EventEntry, colors
 
 
-
 def get_handler_id(obj, signal_name):
     signal_id, detail = GObject.signal_parse_name(signal_name, obj, True)
     return GObject.signal_handler_find(obj, GObject.SignalMatchType.ID, signal_id, detail, None, None, None)
@@ -27,14 +26,46 @@ class Handlers:
         self.lastShutterTime = self.parent.parent.Camera.exposure_speed
         self.run_thread = None
         self.stop_run_thread = False
+        self.camera_preview_window = (1172, 75, 720, 540)
         # ~ self.load_eventList(self.parent.parent.EventList)
         
+    def _update_camera_preview(self):
+        parent_window = self.parent.cameraPreview.get_toplevel()
+        gdk_window = parent_window.get_window()
+
+        # Use the GDK window instead of the GTK window
+        # since get_position will take into consideration the
+        # title bar in the case of the GDK method
+        window_x, window_y = gdk_window.get_position()
+        # print(f"window_x, window_y: ({window_x}, {window_y})")
+
+        w = self.parent.cameraPreview.get_allocated_width()
+        h = self.parent.cameraPreview.get_allocated_height()
+
+        rel_x, rel_y = self.parent.cameraPreview.translate_coordinates(parent_window, 0, 0)
+        # print(f"rel_x, rel_y: ({rel_x}, {rel_y})")
+
+        x, y = window_x + rel_x, window_y + rel_y
+
+        # print(f"Updating preview to (x,y): ({x}, {y})  (w,h): ({w}, {h})")
+        self.camera_preview_window = (x, y, w, h)
+        self.parent.parent.Camera.start_preview(fullscreen=False, window=self.camera_preview_window)
+
     def on_window1_delete_event(self, *args):
         self.parent.parent.GPIO.cancel_PWM()
         GObject.source_remove(self.source_id)
         # ~ GObject.source_remove(self.source_id2)
         Gtk.main_quit(*args)
         
+    def on_window1_focus_in_event(self, *args):
+        self.parent.parent.Camera.start_preview(fullscreen=False, window=self.camera_preview_window)
+
+    def on_window1_focus_out_event(self, *args):
+        self.parent.parent.Camera.stop_preview()
+
+    def on_window1_configure_event(self, widget, event):
+        self._update_camera_preview()
+
     def on_script_save_button_clicked(self, button):
         try:
             (N, events, interrepeat) = self.save_eventList()
@@ -715,7 +746,7 @@ class Handlers:
     def on_param_file_chooser_close(self, *args):
         self.parent.paramFileChooser.hide()
 
-    def on_drawingarea1_draw(self,widget,cr):
+    def on_camera_preview_draw(self,widget,cr):
         w = widget.get_allocated_width()
         h = widget.get_allocated_height()
         size = min(w,h)
@@ -730,14 +761,18 @@ class Handlers:
         # ~ cr.arc(0.5*w,0.5*h,0.5*size,0.0,6.3)
         # ~ cr.fill()
        
-    def on_drawingarea1_button_press_event(self, *args):
+    def on_camera_preview_button_press_event(self, *args):
         return
-        
+
+    def on_camera_preview_configure_event(self, widget, event):
+        # This will fire if the window is resized but not moved
+        self._update_camera_preview()
+
     # ~ def on_offButton_clicked(self, widget):
         # ~ self.LightOn = False
         # ~ da.queue_draw() 
     
-    # ~ # drawingarea1 is set as the userdata in glade
+    # ~ # camera_preview is set as the userdata in glade
     # ~ def on_onButton_clicked(self, widget):
         # ~ self.LightOn = True
         # ~ widget.queue_draw()
@@ -884,9 +919,7 @@ class ZionGUI():
         self.test_led_pulse_width_entry = self.builder.get_object("test_pulse_width_entry")
         self.test_led_delay_entry = self.builder.get_object("test_delay_entry")
         
-        
-        
-        
+        self.cameraPreview = self.builder.get_object("camera_preview")
         
         self.builder.connect_signals(Handlers(self))
         
@@ -897,8 +930,6 @@ class ZionGUI():
         self.logBuffer.insert_at_cursor(text+'\n')
         # ~ mark = self.logBuffer.create_mark(None, self.logBuffer.get_end_iter(), False)
         # ~ self.logView.scroll_to_mark(mark, 0, False, 0,0)
-
-# ~ da    = builder.get_object("drawingarea1")
 
 # ~ builder.connect_signals(Handlers())
 
