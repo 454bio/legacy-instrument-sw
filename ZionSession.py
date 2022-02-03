@@ -211,6 +211,11 @@ class ZionSession():
         Gtk.main()
         self.Camera.stop_preview()
 
+    def StartSession(self):
+        # self.Camera.start_preview(fullscreen=False, window=window)
+        Gtk.main()
+        self.Camera.stop_preview()
+
     def QuitSession(self):
         # ~ self.GPIO.cancel_PWM()
         self.Camera.quit()
