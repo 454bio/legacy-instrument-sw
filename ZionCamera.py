@@ -148,13 +148,17 @@ class ZionCamera(PiCamera):
 			print('\nWriting image to file '+fileToWrite)
 			ret = super(ZionCamera,self).capture(fileToWrite, use_video_port=False, bayer=True)
 		else:
+			# fstrobe doesn't fire when using the video port
 			print('\nWriting image to file '+fileToWrite+', using splitter port '+str(splitter))
 			# ~ print('\nWriting image to file '+fileToWrite)
 			ret = super(ZionCamera,self).capture(fileToWrite, use_video_port=True, splitter_port=splitter)
 			# ~ ret = super(ZionCamera,self).capture_sequence([fileToWrite], use_video_port=True, splitter_port=splitter)
 			# ~ ret = super(ZionCamera,self).capture_sequence([fileToWrite], use_video_port=False, bayer=False, burst=True)
+
 		if self.parent:
 			self.parent.GPIO.camera_trigger(False)
+			self.parent.update_last_capture(fileToWrite)
+
 		self.zoom=(0,0,1,1)
 		return ret
 

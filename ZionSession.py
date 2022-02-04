@@ -243,3 +243,6 @@ class ZionSession():
             time.sleep((pw-3)/1000)
             self.GPIO.disable_leds(colors)
         # ~ self.enable_led('Orange', 0)
+
+    def update_last_capture(self, last_capture_file):
+        pass
