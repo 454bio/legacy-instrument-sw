@@ -8,6 +8,7 @@ import threading
 from operator import itemgetter
 from ZionEvents import print_eventList
 from ZionPulseGUI import EventEntry, colors
+from zion_widgets.ZionGladePlugin import PictureView
 
 
 def get_handler_id(obj, signal_name):
