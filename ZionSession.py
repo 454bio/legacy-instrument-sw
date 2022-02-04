@@ -245,4 +245,6 @@ class ZionSession():
         # ~ self.enable_led('Orange', 0)
 
     def update_last_capture(self, last_capture_file):
-        pass
+        print(f"Updating capture with {last_capture_file}")
+        self.gui.cameraPreview.update_picture(last_capture_file)
+        self.gui.cameraPreview.get_parent().queue_draw()
