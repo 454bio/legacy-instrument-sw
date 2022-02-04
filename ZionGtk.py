@@ -1,15 +1,18 @@
 #!/usr/bin/python3
+import os
 
 import gi
 gi.require_version('Gtk', '3.0')
 gi.require_version('Gst', '1.0')
-from gi.repository import Gtk, GObject, Gst
+from gi.repository import Gtk, GObject, Gst, GdkPixbuf, Gdk
 import threading
 from operator import itemgetter
 from ZionEvents import print_eventList
 from ZionPulseGUI import EventEntry, colors
-from zion_widgets.ZionGladePlugin import PictureView
+from ZionGtkHelpers import PictureView
+from rich import print as rprint
 
+mod_path = os.path.dirname(os.path.abspath(__file__))
 
 def get_handler_id(obj, signal_name):
     signal_id, detail = GObject.signal_parse_name(signal_name, obj, True)
@@ -28,29 +31,18 @@ class Handlers:
         self.run_thread = None
         self.stop_run_thread = False
         self.camera_preview_window = (1172, 75, 720, 540)
+        
         # ~ self.load_eventList(self.parent.parent.EventList)
         
+    
     def _update_camera_preview(self):
-        parent_window = self.parent.cameraPreview.get_toplevel()
-        gdk_window = parent_window.get_window()
+        (x,y,w,h) = self.parent.cameraPreviewWrapper.get_bbox()
 
-        # Use the GDK window instead of the GTK window
-        # since get_position will take into consideration the
-        # title bar in the case of the GDK method
-        window_x, window_y = gdk_window.get_position()
-        # print(f"window_x, window_y: ({window_x}, {window_y})")
-
-        w = self.parent.cameraPreview.get_allocated_width()
-        h = self.parent.cameraPreview.get_allocated_height()
-
-        rel_x, rel_y = self.parent.cameraPreview.translate_coordinates(parent_window, 0, 0)
-        # print(f"rel_x, rel_y: ({rel_x}, {rel_y})")
-
-        x, y = window_x + rel_x, window_y + rel_y
-
-        # print(f"Updating preview to (x,y): ({x}, {y})  (w,h): ({w}, {h})")
-        self.camera_preview_window = (x, y, w, h)
-        self.parent.parent.Camera.start_preview(fullscreen=False, window=self.camera_preview_window)
+        if self.camera_preview_window != (x, y, w, h):
+            # print(f"Updating preview to (x,y): ({x}, {y})  (w,h): ({w}, {h})")
+            self.camera_preview_window = (x, y, w, h)
+            # self.camera_preview_window = self.parent.cameraPreviewWrapper.get_bbox()
+            self.parent.parent.Camera.start_preview(fullscreen=False, window=self.camera_preview_window)
 
     def on_window1_delete_event(self, *args):
         self.parent.parent.GPIO.cancel_PWM()
@@ -60,12 +52,15 @@ class Handlers:
         
     def on_window1_focus_in_event(self, *args):
         self.parent.parent.Camera.start_preview(fullscreen=False, window=self.camera_preview_window)
+        return False
 
     def on_window1_focus_out_event(self, *args):
         self.parent.parent.Camera.stop_preview()
+        return False
 
     def on_window1_configure_event(self, widget, event):
         self._update_camera_preview()
+        return False
 
     def on_script_save_button_clicked(self, button):
         try:
@@ -377,6 +372,9 @@ class Handlers:
         except ValueError: 
             self.parent.printToLog('Requested exposure time must be a number!')
             return
+        else:
+            self.parent.printToLog(f"Requesting exposure time of {newval:.0f} ms")
+            
         if newval==0:
             self.parent.parent.Camera.shutter_speed = 0
             self.parent.parent.Camera.set_shutter_speed(0)
@@ -747,27 +745,23 @@ class Handlers:
     def on_param_file_chooser_close(self, *args):
         self.parent.paramFileChooser.hide()
 
-    def on_camera_preview_draw(self,widget,cr):
-        w = widget.get_allocated_width()
-        h = widget.get_allocated_height()
-        size = min(w,h)
-
-        # ~ cr.set_source_rgb(0.0,0.2,0.0)
-        # ~ cr.paint()
-
-        # ~ if self.LightOn == True:
-            # ~ cr.set_source_rgb(1.0,0.0,0.0)
-        # ~ else:
-            # ~ cr.set_source_rgb(0.2,0.0,0.0)
-        # ~ cr.arc(0.5*w,0.5*h,0.5*size,0.0,6.3)
-        # ~ cr.fill()
+    def on_camera_preview_draw(self, *args):
+        # print(f"on_camera_preview_draw")
+        self.parent.cameraPreviewWrapper.on_draw(*args)
+        # print("on_camera_preview_draw: done!")
+        return False
        
     def on_camera_preview_button_press_event(self, *args):
-        return
+        print("on_camera_preview_button_press_event")
+        print("on_camera_preview_button_press_event: done!")
 
-    def on_camera_preview_configure_event(self, widget, event):
-        # This will fire if the window is resized but not moved
+    def on_camera_preview_configure_event(self, *args):
+        # This will fire if the area is resized
+        # print("on_camera_preview_configure_event")
+        self.parent.cameraPreviewWrapper.on_configure(*args)
         self._update_camera_preview()
+        # print("on_camera_preview_configure_event: done!")
+        return False
 
     # ~ def on_offButton_clicked(self, widget):
         # ~ self.LightOn = False
@@ -798,6 +792,7 @@ class Handlers:
             print('delay needs to be float')
             return
         self.parent.parent.GPIO.test_delay = val
+
 
 class ZionGUI():
     def __init__(self, initial_values, parent, glade_file='zion_layout.glade'):
@@ -921,7 +916,8 @@ class ZionGUI():
         self.test_led_delay_entry = self.builder.get_object("test_delay_entry")
         
         self.cameraPreview = self.builder.get_object("camera_preview")
-        
+        self.cameraPreviewWrapper = PictureView(self.cameraPreview, os.path.join(mod_path, "Detect_Logo.png"))
+
         self.builder.connect_signals(Handlers(self))
         
         # ~ self.printToLog('Center Pixel Value = '+str(self.parent.Camera.center_pixel_value))
