@@ -525,7 +525,7 @@ class Handlers:
             print("Invalid character (or whitespace) detected in filename suffix!")
             self.parent.printToLog("Invalid character (or whitespace) detected in filename suffix!")
         else:
-            capture_thread = threading.Thread(target=self.parent.parent.CaptureImage, kwargs={'comment': comment,'verbose': True, 'protocol': False, 'suffix': suffix})
+            capture_thread = threading.Thread(target=self.parent.parent.CaptureImageThread, kwargs={'comment': comment,'verbose': True, 'protocol': False, 'suffix': suffix})
             capture_thread.daemon = True
             capture_thread.start()
 

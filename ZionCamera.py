@@ -10,6 +10,8 @@ from time import sleep
 import time
 import os
 
+from gi.repository import GLib
+
 MMAL_PARAMETER_ANALOG_GAIN = mmal.MMAL_PARAMETER_GROUP_CAMERA + 0x59
 MMAL_PARAMETER_DIGITAL_GAIN = mmal.MMAL_PARAMETER_GROUP_CAMERA + 0x5A
 
@@ -158,7 +160,7 @@ class ZionCamera(PiCamera):
 
 		if self.parent:
 			self.parent.GPIO.camera_trigger(False)
-			self.parent.update_last_capture(fileToWrite)
+			GLib.idle_add(self.parent.update_last_capture, fileToWrite)
 
 		self.zoom=(0,0,1,1)
 		return ret

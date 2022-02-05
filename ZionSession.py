@@ -5,7 +5,7 @@ from datetime import datetime
 from operator import itemgetter
 import gi
 gi.require_version('Gtk', '3.0')
-from gi.repository import Gtk
+from gi.repository import Gtk, GLib
 import keyboard
 from ZionCamera import ZionCamera
 from ZionGPIO import ZionGPIO
@@ -55,11 +55,11 @@ class ZionSession():
         self.SplitterCount = 0
 
         self.gui = ZionGUI(Initial_Values, self)
-                
+
         self.TimeOfLife = time.time()
 
-    def CaptureImage(self, cropping=(0,0,1,1), group=None, verbose=False, comment='', suffix='', protocol=True):
-        
+    def CaptureImageThread(self, cropping=(0,0,1,1), group=None, verbose=False, comment='', suffix='', protocol=True):
+        """ This is running in a thread. It should not call any GTK functions """
         group = '' if group is None else group
         
         self.CaptureCount += 1
@@ -76,7 +76,8 @@ class ZionSession():
         filename += '_'+str(timestamp_ms).zfill(9)
         filename = filename+'_'+suffix if not protocol else filename
         if verbose:
-            self.gui.printToLog('Writing image to file '+filename+'.jpg')
+            GLib.idle_add(self.gui.printToLog, f"Writing image to file {filename}.jpg")
+
         # ~ try:
         self.SplitterCount += 1
         self.Camera.capture(filename, cropping=cropping, splitter=self.SplitterCount % 4)
@@ -225,7 +226,7 @@ class ZionSession():
         #entering this function ~1ms after vsync trigger
         time.sleep((self.frame_period-3)/2000)
         if capture:
-            capture_thread = threading.Thread(target=self.CaptureImage, kwargs={'group':grp})
+            capture_thread = threading.Thread(target=self.CaptureImageThread, kwargs={'group':grp})
             capture_thread.daemon = True
             capture_thread.start()
         time1 = (self.frame_period-6)/2000
