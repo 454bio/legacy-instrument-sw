@@ -187,25 +187,33 @@ class ZionSession():
         check_led_timings(blue_timing, orange_timing, uv_timing)
         self.EventList = None #EventList(blue_timing, orange_timing, uv_timing, capture_times, N=repeatN)
 
-    def RunProgram(self, stop):
-        self.frame_period = 1000./self.Camera.framerate
-        self.exposure_time = self.Camera.shutter_speed/1000. if self.Camera.shutter_speed else self.frame_period
-        time.sleep(0.5)
-        self.TimeOfLife = time.time()
-        for n in range(self.EventList.N+1):
-            if stop():
-                break
-            for e in range(len(self.EventList.Events)):
-                if stop():
+    def RunProgram(self, stop : threading.Event):
+        try:
+            self.frame_period = 1000./self.Camera.framerate
+            self.exposure_time = self.Camera.shutter_speed/1000. if self.Camera.shutter_speed else self.frame_period
+            time.sleep(0.5)
+            self.TimeOfLife = time.time()
+            for n in range(self.EventList.N+1):
+                if stop.is_set():
                     break
-                event = self.EventList.Events[e]
-                self.EventList.performEvent(event, self.GPIO)
-                time.sleep(self.frame_period/250)
-            if not stop():
-                time.sleep(self.EventList.Interrepeat_Delay)
-        # ~ self.gui.runProgramButton.set_active(False)
-        # ~ self.gui.runProgramButton.set_sensitive(True)
-        self.captureCountThisProtocol = 0
+                for e in range(len(self.EventList.Events)):
+                    event = self.EventList.Events[e]
+                    self.EventList.performEvent(event, self.GPIO)
+                    if stop.is_set():
+                        break
+                    time.sleep(self.frame_period/250)
+                if not stop.is_set():
+                    time.sleep(self.EventList.Interrepeat_Delay)
+            # ~ self.gui.runProgramButton.set_active(False)
+            # ~ self.gui.runProgramButton.set_sensitive(True)
+        except e:
+            print(f"RunProgram Error!!: {e}")
+        finally:
+            self.captureCountThisProtocol = 0
+            if stop.is_set():
+                print("RunProgram has been stopped!")
+            else:
+                print("RunProgram has finished")
 
     def InteractivePreview(self, window):
         self.Camera.start_preview(fullscreen=False, window=window)
