@@ -10,7 +10,6 @@ from operator import itemgetter
 from ZionEvents import print_eventList
 from ZionPulseGUI import EventEntry, colors
 from ZionGtkHelpers import PictureView
-from rich import print as rprint
 
 mod_path = os.path.dirname(os.path.abspath(__file__))
 
@@ -555,15 +554,15 @@ class Handlers:
                 # ~ self.parent.printToLog('Invalid intraleaf time!')
                 # ~ return
             
-            self.stop_run_thread = False
+            self.stop_run_thread = threading.Event()
             # ~ button.set_sensitive(False)
-            self.run_thread = threading.Thread(target=self.parent.parent.RunProgram, args=(lambda:self.stop_run_thread,) )
+            self.run_thread = threading.Thread(target=self.parent.parent.RunProgram, args=(self.stop_run_thread,) )
             self.run_thread.daemon=True
             self.run_thread.start()
         
     def on_stop_program_button_clicked(self, button):
         if self.run_thread:
-            self.stop_run_thread = True
+            self.stop_run_thread.set()
             self.parent.printToLog('Requesting script to stop')
             print('Requesting thread to stop')
             self.run_thread.join()
