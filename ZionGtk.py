@@ -101,6 +101,7 @@ class Handlers:
             return
         return (N, eventList, interrepeat_delay)
 
+    # TODO: Make the naming consistent
     def on_script_load_button_clicked(self, button):
         self.parent.paramFileChooser.set_action(Gtk.FileChooserAction.OPEN)
         response = self.parent.paramFileChooser.run()
@@ -143,8 +144,8 @@ class Handlers:
                     else:
                         eventEntry.PostDelayEntry.set_text('')
                 self.parent.EventEntries.append( eventEntry )
-                self.parent.EventList.pack_start( self.parent.EventEntries[-1], False, False, 0 )
-            self.parent.EventList.show_all()
+                self.parent.EventListGtk.pack_start( self.parent.EventEntries[-1], False, False, 0 )
+            self.parent.EventListGtk.show_all()
 
     def updateExpParams(self):
         a_gain = float(self.parent.parent.Camera.analog_gain)
@@ -585,8 +586,8 @@ class Handlers:
     #Event List stuff
     def on_new_event_button_clicked(self, button):
         self.parent.EventEntries.append( EventEntry(self.parent) )
-        self.parent.EventList.pack_start( self.parent.EventEntries[-1], False, False, 0 )
-        self.parent.EventList.show_all()
+        self.parent.EventListGtk.pack_start( self.parent.EventEntries[-1], False, False, 0 )
+        self.parent.EventListGtk.show_all()
         adjustment = self.parent.EventListScroll.get_vadjustment()
         adjustment.set_value(adjustment.get_upper())
         Gtk.Widget.show(self.parent.EventListScroll)
@@ -907,10 +908,10 @@ class ZionGUI():
             
         self.paramFileChooser = self.builder.get_object('param_file_chooser_dialog')
         
-        self.EventList = self.builder.get_object("event_list")
+        self.EventListGtk = self.builder.get_object("event_list")
         self.EventEntries = [EventEntry(self)]
-        self.EventList.pack_start(self.EventEntries[0], False, True, 0)
-        self.EventList.show_all()
+        self.EventListGtk.pack_start(self.EventEntries[0], False, True, 0)
+        self.EventListGtk.show_all()
         self.EventListScroll = self.builder.get_object("eventlist_scroll")
         
         self.runProgramButton = self.builder.get_object("run_program_button")
