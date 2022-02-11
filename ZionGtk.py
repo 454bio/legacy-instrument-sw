@@ -28,12 +28,11 @@ class Handlers:
         # ~ self.source_id2 = GObject.timeout_add(2000, self.updateTemp)
         self.lastShutterTime = self.parent.parent.Camera.exposure_speed
         self.run_thread = None
-        self.stop_run_thread = False
+        self.stop_run_thread = threading.Event()
         self.camera_preview_window = (1172, 75, 720, 540)
         
         # ~ self.load_eventList(self.parent.parent.EventList)
-        
-    
+
     def _update_camera_preview(self):
         (x,y,w,h) = self.parent.cameraPreviewWrapper.get_bbox()
 
@@ -41,7 +40,8 @@ class Handlers:
             # print(f"Updating preview to (x,y): ({x}, {y})  (w,h): ({w}, {h})")
             self.camera_preview_window = (x, y, w, h)
             # self.camera_preview_window = self.parent.cameraPreviewWrapper.get_bbox()
-            self.parent.parent.Camera.start_preview(fullscreen=False, window=self.camera_preview_window)
+            if not self.is_program_running():
+                self.parent.parent.Camera.start_preview(fullscreen=False, window=self.camera_preview_window)
 
     def on_window1_delete_event(self, *args):
         self.parent.parent.GPIO.cancel_PWM()
@@ -49,12 +49,17 @@ class Handlers:
         # ~ GObject.source_remove(self.source_id2)
         Gtk.main_quit(*args)
         
+    def is_program_running(self):
+        return self.run_thread and self.run_thread.is_alive()
+
     def on_window1_focus_in_event(self, *args):
-        self.parent.parent.Camera.start_preview(fullscreen=False, window=self.camera_preview_window)
+        if not self.is_program_running():
+            self.parent.parent.Camera.start_preview(fullscreen=False, window=self.camera_preview_window)
         return False
 
     def on_window1_focus_out_event(self, *args):
-        self.parent.parent.Camera.stop_preview()
+        if not self.is_program_running():
+            self.parent.parent.Camera.stop_preview()
         return False
 
     def on_window1_configure_event(self, widget, event):
@@ -554,14 +559,16 @@ class Handlers:
                 # ~ self.parent.printToLog('Invalid intraleaf time!')
                 # ~ return
             
-            self.stop_run_thread = threading.Event()
+            self.stop_run_thread.clear()
+            self.parent.parent.Camera.stop_preview()
+
             # ~ button.set_sensitive(False)
             self.run_thread = threading.Thread(target=self.parent.parent.RunProgram, args=(self.stop_run_thread,) )
             self.run_thread.daemon=True
             self.run_thread.start()
         
     def on_stop_program_button_clicked(self, button):
-        if self.run_thread:
+        if self.is_program_running():
             self.stop_run_thread.set()
             self.parent.printToLog('Requesting script to stop')
             print('Requesting thread to stop')
@@ -572,7 +579,8 @@ class Handlers:
             self.parent.parent.GPIO.enable_led('Orange',0)
             self.parent.runProgramButton.set_active(False)
             self.parent.runProgramButton.set_sensitive(True)
-        
+            self.parent.parent.Camera.start_preview(fullscreen=False, window=self.camera_preview_window)
+
         
     #Event List stuff
     def on_new_event_button_clicked(self, button):
@@ -917,7 +925,8 @@ class ZionGUI():
         self.cameraPreview = self.builder.get_object("camera_preview")
         self.cameraPreviewWrapper = PictureView(self.cameraPreview, os.path.join(mod_path, "Detect_Logo.png"))
 
-        self.builder.connect_signals(Handlers(self))
+        self.handlers = Handlers(self)
+        self.builder.connect_signals(self.handlers)
         
         # ~ self.printToLog('Center Pixel Value = '+str(self.parent.Camera.center_pixel_value))
         

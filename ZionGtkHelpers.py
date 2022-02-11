@@ -6,7 +6,7 @@ class PictureView(GObject.Object):
     def __init__(self, drawing_area_widget, default_image_path):
         GObject.Object.__init__(self)
         self._area = drawing_area_widget
-        self._img_path = default_image_path
+        self._img_path = self._default_img_path = default_image_path
         self._pixbuf = GdkPixbuf.Pixbuf.new_from_file(self._img_path)
         self._img_surface = None
         self._img_offset = (0.0, 0.0)
@@ -49,6 +49,9 @@ class PictureView(GObject.Object):
     def parent_gdk_window(self):
         return self._area.get_toplevel().get_window()
 
+    def clear_image(self):
+        self.image_path = self._default_img_path
+        
     def get_bbox(self):
         """ Returns the x,y and width,height of the bounding box for the drawing area
             in absolute pixel coordinates """
