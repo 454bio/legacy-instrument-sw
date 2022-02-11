@@ -2,36 +2,59 @@ import time
 from operator import itemgetter
 import keyboard
 import threading
+from dataclasses import dataclass, field
+from enum import Enum, auto
+import json
+from types import SimpleNamespace
+import traceback
+class ZionLEDColor(Enum):
+	BLUE_GREEN = auto()
+	ORANGE = auto()
+	UV = auto()
 
+@dataclass
+class ZionLED:
+	color: ZionLEDColor
+	intensity: float
+
+@dataclass
+class ZionEvent:
+	enabled: bool
+	leds: list[ZionLED] = field(default_factory=list)
+	
 class ZionProtocol:
-	def __init__(self, filename=None):
-		eventList = []
+	N = 0
+	Events = []
+	Interrepeat_Delay = 0.0
+
+	def __init__(
+		self, 
+		N: int = 0, 
+		Events: list = [], 
+		Interrepeat_Delay: float = 0.0, 
+		filename: str = None
+	):
 		if filename:
-			with open(filename) as f:
-				for line in f:
-					if line[0]=='N':
-						N = int(line[2:-1])
-					else:
-						event = tuple()
-						event_params = line[1:-2].split(', ')
-						event_time = float(event_params[1])
-						event_color = event_params[0].strip('\'')
-						if event_color=='None':
-							event += (None, event_time, None, None)
-						else:
-							event += (event_color, event_time, int(event_params[2]))
-							if event_params[3]=='True':
-								event += (True,)
-							else:
-								event += (False,)
-						eventList.append(event)
-			self.N = N
-			self.Events = eventList
-			# ~ self.capture_threads = []
+			self.loadProtocolFromFile(filename)
 		else:
-			self.N = 0
-			self.Events = []
-			# ~ self.capture_threads = []
+			self.N = N
+			self.Interrepeat_Delay = Interrepeat_Delay
+			self.Events = list(map(tuple, Events))
+
+	def loadProtocolFromFile(self, filename : str):
+		try:
+			with open(filename) as f:
+				json_ns = SimpleNamespace(**json.load(f))
+			self.N = json_ns.N
+			self.Events = list(map(tuple, json_ns.Events))
+			self.Interrepeat_Delay = json_ns.Interrepeat_Delay
+		except Exception as e:
+			tb = "".join(traceback.format_exception(type(e), e, e.__traceback__))
+			print(f"ERROR Loading Protocol File: {filename}\n{tb}")
+
+	def saveProtocolToFile(self, filename : str):
+		with open(filename, 'w') as f:
+			json.dump(self.__dict__, f, indent=1)
 
 	def performEvent(self, event, gpio_ctrl):
 		#if not event[0] is None:

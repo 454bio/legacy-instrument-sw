@@ -15,6 +15,7 @@ from picamera.exc import PiCameraValueError, PiCameraAlreadyRecording, PiCameraM
 import threading
 import json
 from types import SimpleNamespace
+import traceback
 
 
 class ZionSession():
@@ -57,6 +58,7 @@ class ZionSession():
         self.gui = ZionGUI(Initial_Values, self)
 
         self.TimeOfLife = time.time()
+        self.EventList = ZionProtocol()
 
     def CaptureImageThread(self, cropping=(0,0,1,1), group=None, verbose=False, comment='', suffix='', protocol=True):
         """ This is running in a thread. It should not call any GTK functions """
@@ -160,32 +162,34 @@ class ZionSession():
             self.ProtocolCount += 1
             self.captureCountThisProtocol = 0
             filename = os.path.join(self.Dir, str(self.CaptureCount).zfill(ZionSession.captureCountDigits)+'_'+str(self.ProtocolCount).zfill(ZionSession.protocolCountDigits)+'A_Protocol')
-        json_str = json.dumps(self.EventList.__dict__)
+
+        self.EventList.saveProtocolToFile(filename)
+        # json_str = json.dumps(self.EventList.__dict__)
         # ~ print(json_str)
-        with open(filename+'.txt', 'w') as f:
-            f.write(json_str)
+        # with open(filename+'.txt', 'w') as f:
+        #     json.dump(f.__dict__, f, indent=1)
 
     def LoadProtocolFromFile(self, filename):
-        with open(filename) as f:
-            lines = f.readlines()
-        json_str = lines[0]
-        self.EventList = SimpleNamespace(**json.loads(json_str))
-        self.EventList.Events = [ tuple(event) for event in self.EventList.Events]
+        # TODO: Add error handling and notify user
+        self.EventList.loadProtocolFromFile(filename)
+
+        # with open(filename) as f:
+        #     self.EventList = SimpleNamespace(**json.load(f))
+            # lines = f.readlines()
+        # json_str = lines[0]
+        # self.EventList = SimpleNamespace(**json.loads(json_str))
+        # self.EventList.Events = [ tuple(event) for event in self.EventList.Events ]
         # ~ print(self.EventList.N)
         # ~ print(self.EventList.Interrepeat_Delay)
         return self.EventList
         
     def LoadProtocolFromGUI(self, N, events, interrepeat):
-        self.EventList = ZionProtocol()
+        # self.EventList = ZionProtocol()
         self.EventList.N = N
         self.EventList.Events = events
         self.EventList.Interrepeat_Delay = interrepeat
         # ~ print_eventList(events)
         return self.EventList
-
-    def CreateProgram(self, blue_timing, orange_timing, uv_timing, capture_times, repeatN=0):
-        check_led_timings(blue_timing, orange_timing, uv_timing)
-        self.EventList = None #EventList(blue_timing, orange_timing, uv_timing, capture_times, N=repeatN)
 
     def RunProgram(self, stop : threading.Event):
         try:
@@ -193,11 +197,11 @@ class ZionSession():
             self.exposure_time = self.Camera.shutter_speed/1000. if self.Camera.shutter_speed else self.frame_period
             time.sleep(0.5)
             self.TimeOfLife = time.time()
-            for n in range(self.EventList.N+1):
+            for _ in range(self.EventList.N + 1):
                 if stop.is_set():
                     break
-                for e in range(len(self.EventList.Events)):
-                    event = self.EventList.Events[e]
+                for event in self.EventList.Events:
+                    # event = self.EventList.Events[e]
                     self.EventList.performEvent(event, self.GPIO)
                     if stop.is_set():
                         break
@@ -206,8 +210,9 @@ class ZionSession():
                     time.sleep(self.EventList.Interrepeat_Delay)
             # ~ self.gui.runProgramButton.set_active(False)
             # ~ self.gui.runProgramButton.set_sensitive(True)
-        except e:
-            print(f"RunProgram Error!!: {e}")
+        except Exception as e:
+            tb = "".join(traceback.format_exception(type(e), e, e.__traceback__))
+            print(f"RunProgram Error!!\n{tb}")
         finally:
             self.captureCountThisProtocol = 0
             if stop.is_set():
@@ -249,10 +254,11 @@ class ZionSession():
         # ~ print(pw/2)
         # ~ time.sleep((self.frame_period-(self.exposure_time+pw)/2)/1000) #wait for ~87 ms
         time.sleep(max([time1, time2]))
-        if not colors is None:
+        if colors is not None:
             self.GPIO.enable_leds(colors)
         # ~ self.enable_led('Orange', 100)
-            time.sleep((pw-3)/1000)
+            # time.sleep((pw-3)/1000)
+            time.sleep((pw-3)/1000)   #
             self.GPIO.disable_leds(colors)
         # ~ self.enable_led('Orange', 0)
 
