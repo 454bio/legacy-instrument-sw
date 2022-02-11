@@ -215,6 +215,9 @@ class ZionSession():
             else:
                 print("RunProgram has finished")
 
+            GLib.idle_add(self.gui.cameraPreviewWrapper.clear_image)
+            GLib.idle_add(self.gui.handlers._update_camera_preview)
+
     def InteractivePreview(self, window):
         self.Camera.start_preview(fullscreen=False, window=window)
         Gtk.main()

@@ -140,7 +140,7 @@ class ZionCamera(PiCamera):
 			else:
 				pass
 
-	def capture(self, filename, cropping=(0,0,1,1), bayer=True, splitter=0):
+	def capture(self, filename, cropping=(0,0,1,1), bayer=False, splitter=0):
 		self.zoom = cropping
 		fileToWrite = filename+'.jpg'
 		# ~ fileToWrite = filename+'.raw'
@@ -148,8 +148,8 @@ class ZionCamera(PiCamera):
 			self.parent.GPIO.camera_trigger(True)
 		if bayer:
 			print('\nWriting image to file '+fileToWrite)
-			ret = super(ZionCamera,self).capture(fileToWrite, use_video_port=False)
-			# ret = super(ZionCamera,self).capture(fileToWrite, use_video_port=False, bayer=True)
+			# ret = super(ZionCamera,self).capture(fileToWrite, use_video_port=False)
+			ret = super(ZionCamera,self).capture(fileToWrite, use_video_port=False, bayer=True)
 		else:
 			# fstrobe doesn't fire when using the video port
 			print('\nWriting image to file '+fileToWrite+', using splitter port '+str(splitter))
