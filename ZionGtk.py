@@ -535,38 +535,26 @@ class Handlers:
             capture_thread.start()
 
     def on_run_program_button_clicked(self,button):
-        if button.get_active():
-            self.parent.expModeComboBox.set_active(0)
-            comment = self.parent.commentBox.get_text()
-            self.parent.parent.SaveParameterFile(comment, True)
-            try:
-                (N, events, interrepeat) = self.save_eventList()
-            except TypeError:
-                self.parent.printToLog('No event list!')
-                return
-            self.parent.parent.LoadProtocolFromGUI(N,events, interrepeat)
-            self.parent.parent.SaveProtocolFile()
-            # ~ interleaf_time = self.parent.InterleafTimeEntry.get_text()
-            # ~ try:
-                # ~ interleaf_time = float(interleaf_time)
-            # ~ except ValueError:
-                # ~ self.parent.printToLog('Invalid interleaf time!')
-                # ~ return
-            
-            # ~ intraleaf_time = self.parent.IntraleafTimeEntry.get_text()
-            # ~ try:
-                # ~ intraleaf_time = float(intraleaf_time)
-            # ~ except ValueError:
-                # ~ self.parent.printToLog('Invalid intraleaf time!')
-                # ~ return
-            
-            self.stop_run_thread.clear()
-            self.parent.parent.Camera.stop_preview()
+        button.set_sensitive(False)
+        self.parent.expModeComboBox.set_active(0)
+        comment = self.parent.commentBox.get_text()
+        self.parent.parent.SaveParameterFile(comment, True)
+        try:
+            (N, events, interrepeat) = self.save_eventList()
+        except TypeError:
+            self.parent.printToLog('No event list!')
+            button.set_sensitive(True)
+            return
+        self.parent.parent.LoadProtocolFromGUI(N,events, interrepeat)
+        self.parent.parent.SaveProtocolFile()
 
-            # ~ button.set_sensitive(False)
-            self.run_thread = threading.Thread(target=self.parent.parent.RunProgram, args=(self.stop_run_thread,) )
-            self.run_thread.daemon=True
-            self.run_thread.start()
+        self.stop_run_thread.clear()
+        self.parent.parent.Camera.stop_preview()
+
+        # ~ button.set_sensitive(False)
+        self.run_thread = threading.Thread(target=self.parent.parent.RunProgram, args=(self.stop_run_thread, ) )
+        self.run_thread.daemon=True
+        self.run_thread.start()
         
     def on_stop_program_button_clicked(self, button):
         if self.is_program_running():
@@ -578,7 +566,6 @@ class Handlers:
             self.parent.parent.GPIO.enable_led('UV',0)
             self.parent.parent.GPIO.enable_led('Blue',0)
             self.parent.parent.GPIO.enable_led('Orange',0)
-            self.parent.runProgramButton.set_active(False)
             self.parent.runProgramButton.set_sensitive(True)
             self.parent.parent.Camera.start_preview(fullscreen=False, window=self.camera_preview_window)
 

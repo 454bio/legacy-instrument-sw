@@ -7,6 +7,8 @@ from enum import Enum, auto
 import json
 from types import SimpleNamespace
 import traceback
+from typing import List
+
 class ZionLEDColor(Enum):
 	BLUE_GREEN = auto()
 	ORANGE = auto()
@@ -20,7 +22,7 @@ class ZionLED:
 @dataclass
 class ZionEvent:
 	enabled: bool
-	leds: list[ZionLED] = field(default_factory=list)
+	leds: List[ZionLED] = field(default_factory=list)
 	
 class ZionProtocol:
 	N = 0

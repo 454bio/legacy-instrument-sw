@@ -222,6 +222,7 @@ class ZionSession():
 
             GLib.idle_add(self.gui.cameraPreviewWrapper.clear_image)
             GLib.idle_add(self.gui.handlers._update_camera_preview)
+            GLib.idle_add(self.gui.runProgramButton.set_sensitive, True)
 
     def InteractivePreview(self, window):
         self.Camera.start_preview(fullscreen=False, window=window)

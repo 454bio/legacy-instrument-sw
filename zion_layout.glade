@@ -2147,7 +2147,7 @@ Repeats (sec): </property>
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkToggleButton" id="run_program_button">
+                  <object class="GtkButton" id="run_program_button">
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
                     <property name="receives_default">True</property>
