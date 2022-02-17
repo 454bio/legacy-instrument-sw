@@ -242,6 +242,11 @@ class ZionSession():
         # ~ self.GPIO.cancel_PWM()
         self.Camera.quit()
 
+        # Delete the session folder if it's empty
+        if os.path.isdir(self.Dir) and not any(os.scandir(self.Dir)):
+            print(f"Removing {self.Dir} since it's empty!")
+            os.removedirs(self.Dir)
+
     def pulse_on_trigger(self, colors, pw, capture, grp, gpio, level, ticks):
         self.GPIO.callback_for_uv_pulse.cancel() #to make this a one-shot
         #entering this function ~1ms after vsync trigger
