@@ -4,7 +4,7 @@ import os
 import gi
 gi.require_version('Gtk', '3.0')
 gi.require_version('Gst', '1.0')
-from gi.repository import Gtk, GObject, Gst, GdkPixbuf, Gdk
+from gi.repository import Gtk, GObject
 import threading
 from operator import itemgetter
 from ZionEvents import print_eventList
@@ -30,7 +30,9 @@ class Handlers:
         self.run_thread = None
         self.stop_run_thread = threading.Event()
         self.camera_preview_window = (1172, 75, 720, 540)
-        
+        self.recent_protocol_file = None
+        self.recent_params_file = None
+
         # ~ self.load_eventList(self.parent.parent.EventList)
 
     def _update_camera_preview(self):
@@ -74,14 +76,23 @@ class Handlers:
             return
         self.parent.parent.LoadProtocolFromGUI(N,events,interrepeat)
         self.parent.paramFileChooser.set_action(Gtk.FileChooserAction.SAVE)
+
+        self.parent.set_file_chooser_for_protocol_files()
+        if self.recent_protocol_file:
+            self.parent.paramFileChooser.set_current_folder(os.path.dirname(self.recent_protocol_file))
+        else:
+            self.parent.paramFileChooser.set_current_folder(mod_path)
+
         response = self.parent.paramFileChooser.run()
+
         if response == Gtk.ResponseType.OK:
             filename = self.parent.paramFileChooser.get_filename()
+            self.recent_protocol_file = filename
             self.parent.paramFileChooser.hide()
             self.parent.parent.SaveProtocolFile(filename)
         elif response == Gtk.ResponseType.CANCEL:
             self.parent.paramFileChooser.hide()
-        
+
     def save_eventList(self):
         eventList = []
         for eventEntry in self.parent.EventEntries:
@@ -104,10 +115,19 @@ class Handlers:
     # TODO: Make the naming consistent
     def on_script_load_button_clicked(self, button):
         self.parent.paramFileChooser.set_action(Gtk.FileChooserAction.OPEN)
+
+        self.parent.set_file_chooser_for_protocol_files()
+        if self.recent_protocol_file:
+            self.parent.paramFileChooser.set_current_folder(os.path.dirname(self.recent_protocol_file))
+        else:
+            self.parent.paramFileChooser.set_current_folder(mod_path)
+
         response = self.parent.paramFileChooser.run()
+
         if response == Gtk.ResponseType.OK:
             filename = self.parent.paramFileChooser.get_filename()
             self.parent.paramFileChooser.hide()
+            self.recent_protocol_file = filename
             eventList = self.parent.parent.LoadProtocolFromFile(filename)
             self.load_eventList(eventList)
         elif response == Gtk.ResponseType.CANCEL:
@@ -596,10 +616,19 @@ class Handlers:
         
     def on_load_params_button(self,button):
         self.parent.paramFileChooser.set_action(Gtk.FileChooserAction.OPEN)
+
+        self.parent.set_file_chooser_for_parameter_files()
+        if self.recent_params_file:
+            self.parent.paramFileChooser.set_current_folder(os.path.dirname(self.recent_params_file))
+        else:
+            self.parent.paramFileChooser.set_current_folder(mod_path)
+
         response = self.parent.paramFileChooser.run()
+
         if response == Gtk.ResponseType.OK:
             filename = self.parent.paramFileChooser.get_filename()
             self.parent.paramFileChooser.hide()
+            self.recent_params_file = filename
             params = self.parent.parent.LoadParameterFile(filename)
             self.parent.BrightnessEntry.set_text('')
             self.parent.ContrastEntry.set_text('')
@@ -894,7 +923,17 @@ class ZionGUI():
             self.expModeComboBox.set_active(self.Def_row_idx)
             
         self.paramFileChooser = self.builder.get_object('param_file_chooser_dialog')
-        
+        self.filter_protocol = Gtk.FileFilter()
+        self.filter_protocol.set_name("Protocol Files")
+        self.filter_protocol.add_mime_type("application/json")
+        self.filter_protocol.add_pattern("*.txt")
+        self.filter_parameter = Gtk.FileFilter()
+        self.filter_parameter.set_name("Parameter Files")
+        self.filter_parameter.add_pattern("*.txt")
+        self.paramFileChooser.add_filter(self.filter_protocol)
+        self.paramFileChooser.add_filter(self.filter_parameter)
+        self.paramFileChooser.set_filter(self.filter_protocol)
+
         self.EventListGtk = self.builder.get_object("event_list")
         self.EventEntries = [EventEntry(self)]
         self.EventListGtk.pack_start(self.EventEntries[0], False, True, 0)
@@ -923,6 +962,13 @@ class ZionGUI():
         self.logBuffer.insert_at_cursor(text+'\n')
         # ~ mark = self.logBuffer.create_mark(None, self.logBuffer.get_end_iter(), False)
         # ~ self.logView.scroll_to_mark(mark, 0, False, 0,0)
+
+    def set_file_chooser_for_protocol_files(self):
+        self.paramFileChooser.set_filter(self.filter_protocol)
+
+    def set_file_chooser_for_parameter_files(self):
+        self.paramFileChooser.set_filter(self.filter_parameter)
+
 
 # ~ builder.connect_signals(Handlers())
 

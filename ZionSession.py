@@ -112,10 +112,14 @@ class ZionSession():
             filename = os.path.join(self.Dir, str(self.CaptureCount).zfill(ZionSession.captureCountDigits)+'_'+str(self.ProtocolCount).zfill(ZionSession.protocolCountDigits)+'M_'+str(self.captureCountThisProtocol).zfill(ZionSession.captureCountPerProtocolDigits))
             if timestamp > 0:
                     filename += '_'+str(timestamp)
-        with open(filename+'.txt', 'w') as f:
+
+        if not filename.endswith('.txt'):
+            filename += ".txt"
+
+        with open(filename, 'w') as f:
             for key in params.keys():
                 f.write(key + ': '+str(params[key])+'\n')
-        return filename+'.txt'
+        return filename
 
     def LoadParameterFile(self, filename):
         params = dict()
