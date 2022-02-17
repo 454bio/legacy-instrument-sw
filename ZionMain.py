@@ -55,7 +55,8 @@ mySession = ZionSession(Session_Name, Binning, Initial_Values, PWM_Frequency)
 
 #Start preview:
 # ~ mySession.InteractivePreview(window=(560,75,640,480))
-mySession.InteractivePreview(window=(1172,75,720,540))
+# mySession.InteractivePreview(window=(1172,75,720,540))
+mySession.StartSession()
 
 ########################################################################
 ######################### Shutdown Script ##############################
