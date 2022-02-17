@@ -273,8 +273,12 @@ class ZionGPIO(pigpio.pi):
 		self.enable_led('UV', 0)
 
 	def enable_vsync_callback(self, colors, pw, capture, grp):
-		self.callback_for_uv_pulse = super(ZionGPIO,self).callback(XVS, pigpio.RISING_EDGE, lambda gpio,level,ticks: self.parent.pulse_on_trigger(colors, pw, capture, grp, gpio, level, ticks))
-	
+		self.callback_for_uv_pulse = self.callback(
+			XVS,
+			pigpio.RISING_EDGE,
+			partial(self.parent.pulse_on_trigger, colors, pw, capture, grp)
+		)
+
 	# ~ def enable_vsync_callback(self):
 		# ~ self.callback_for_uv_pulse = super(ZionGPIO,self).callback(XVS, pigpio.RISING_EDGE, lambda gpio,level,ticks: self.uv_pulse_on_trigger(gpio, level, ticks))
 
