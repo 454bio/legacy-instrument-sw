@@ -35,14 +35,14 @@ class Handlers:
 
         # ~ self.load_eventList(self.parent.parent.EventList)
 
-    def _update_camera_preview(self):
+    def _update_camera_preview(self, force=False):
         (x,y,w,h) = self.parent.cameraPreviewWrapper.get_bbox()
 
-        if self.camera_preview_window != (x, y, w, h):
+        if self.camera_preview_window != (x, y, w, h) or force:
             # print(f"Updating preview to (x,y): ({x}, {y})  (w,h): ({w}, {h})")
             self.camera_preview_window = (x, y, w, h)
             # self.camera_preview_window = self.parent.cameraPreviewWrapper.get_bbox()
-            if not self.is_program_running():
+            if not self.is_program_running() or force:
                 self.parent.parent.Camera.start_preview(fullscreen=False, window=self.camera_preview_window)
 
     def on_window1_delete_event(self, *args):
@@ -575,19 +575,32 @@ class Handlers:
         self.run_thread = threading.Thread(target=self.parent.parent.RunProgram, args=(self.stop_run_thread, ) )
         self.run_thread.daemon=True
         self.run_thread.start()
-        
+
     def on_stop_program_button_clicked(self, button):
         if self.is_program_running():
-            self.stop_run_thread.set()
-            self.parent.printToLog('Requesting script to stop')
-            print('Requesting thread to stop')
-            self.run_thread.join()
-            self.run_thread = None
-            self.parent.parent.GPIO.enable_led('UV',0)
-            self.parent.parent.GPIO.enable_led('Blue',0)
-            self.parent.parent.GPIO.enable_led('Orange',0)
-            self.parent.runProgramButton.set_sensitive(True)
-            self.parent.parent.Camera.start_preview(fullscreen=False, window=self.camera_preview_window)
+            d = Gtk.MessageDialog(
+                transient_for=self.parent.mainWindow,
+                modal=True,
+                buttons=Gtk.ButtonsType.OK_CANCEL
+            )
+            d.props.text = 'Are you sure you stop the protocol?'
+            response = d.run()
+            d.destroy()
+
+            # We only terminate when the user presses the OK button
+            if response == Gtk.ResponseType.OK:
+                self.stop_run_thread.set()
+                self.parent.printToLog('Requesting script to stop')
+                print('Requesting thread to stop')
+                self.run_thread.join(5.0)
+                if self.run_thread.is_alive():
+                    self.parent.printToLog("WARNING: The thread running the protocol didn't stop!\n You might want to restart the program...")
+
+                self.run_thread = None
+                self.parent.parent.GPIO.enable_led('UV',0)
+                self.parent.parent.GPIO.enable_led('Blue',0)
+                self.parent.parent.GPIO.enable_led('Orange',0)
+                self.parent.runProgramButton.set_sensitive(True)
 
         
     #Event List stuff
@@ -890,6 +903,8 @@ class ZionGUI():
         
         self.logBuffer = self.builder.get_object("textbuffer_log")
         self.logView = self.builder.get_object("textview_log")
+        self.logMarkEnd = self.logBuffer.create_mark("", self.logBuffer.get_end_iter(), False)
+
         self.temperatureBuffer = self.builder.get_object("temperature_buffer")
         
         self.imageDenoiseButton = self.builder.get_object("denoise_button")
@@ -959,7 +974,12 @@ class ZionGUI():
         
         
     def printToLog(self, text):
-        self.logBuffer.insert_at_cursor(text+'\n')
+        text_iter_end = self.logBuffer.get_end_iter()
+
+        self.logBuffer.insert(text_iter_end, f"{text}\n")
+        self.logView.scroll_to_mark(self.logMarkEnd, 0, False, 0, 0)
+
+        # self.logBuffer.insert_at_cursor(text+'\n')
         # ~ mark = self.logBuffer.create_mark(None, self.logBuffer.get_end_iter(), False)
         # ~ self.logView.scroll_to_mark(mark, 0, False, 0,0)
 

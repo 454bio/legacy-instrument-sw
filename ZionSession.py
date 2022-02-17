@@ -16,7 +16,7 @@ import threading
 import json
 from types import SimpleNamespace
 import traceback
-
+from functools import partial
 
 class ZionSession():
         
@@ -201,31 +201,43 @@ class ZionSession():
             self.exposure_time = self.Camera.shutter_speed/1000. if self.Camera.shutter_speed else self.frame_period
             time.sleep(0.5)
             self.TimeOfLife = time.time()
-            for _ in range(self.EventList.N + 1):
+            GLib.idle_add(
+                self.gui.printToLog,
+                "Starting protocol!"
+                f"   # Events: {len(self.EventList.Events)}"
+                f"   N: {self.EventList.N}"
+            )
+            for i in range(self.EventList.N + 1):
+                GLib.idle_add(self.gui.printToLog, f"Starting iteration {i}...")
                 if stop.is_set():
                     break
                 for event in self.EventList.Events:
+                    GLib.idle_add(self.gui.printToLog, f"Running event: {event}...")
                     # event = self.EventList.Events[e]
                     self.EventList.performEvent(event, self.GPIO)
                     if stop.is_set():
                         break
                     time.sleep(self.frame_period/250)
-                if not stop.is_set():
+                if not stop.is_set() and i != self.EventList.N:
+                    GLib.idle_add(self.gui.printToLog, f"Sleeping for {self.EventList.Interrepeat_Delay} seconds before starting next iteration!")
                     time.sleep(self.EventList.Interrepeat_Delay)
             # ~ self.gui.runProgramButton.set_active(False)
             # ~ self.gui.runProgramButton.set_sensitive(True)
         except Exception as e:
             tb = "".join(traceback.format_exception(type(e), e, e.__traceback__))
+            GLib.idle_add(self.gui.printToLog,  "ERROR Running Protocol!")
             print(f"RunProgram Error!!\n{tb}")
         finally:
             self.captureCountThisProtocol = 0
             if stop.is_set():
+                GLib.idle_add(self.gui.printToLog,  "Protocol has been stopped!")
                 print("RunProgram has been stopped!")
             else:
+                GLib.idle_add(self.gui.printToLog,  "Protocol has finished!")
                 print("RunProgram has finished")
 
             GLib.idle_add(self.gui.cameraPreviewWrapper.clear_image)
-            GLib.idle_add(self.gui.handlers._update_camera_preview)
+            GLib.idle_add(partial(self.gui.handlers._update_camera_preview, force=True))
             GLib.idle_add(self.gui.runProgramButton.set_sensitive, True)
 
     def InteractivePreview(self, window):
