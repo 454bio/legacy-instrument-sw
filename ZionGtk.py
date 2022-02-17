@@ -1,15 +1,17 @@
 #!/usr/bin/python3
+import os
 
 import gi
 gi.require_version('Gtk', '3.0')
 gi.require_version('Gst', '1.0')
-from gi.repository import Gtk, GObject, Gst
+from gi.repository import Gtk, GObject, Gst, GdkPixbuf, Gdk
 import threading
 from operator import itemgetter
 from ZionEvents import print_eventList
 from ZionPulseGUI import EventEntry, colors
+from ZionGtkHelpers import PictureView
 
-
+mod_path = os.path.dirname(os.path.abspath(__file__))
 
 def get_handler_id(obj, signal_name):
     signal_id, detail = GObject.signal_parse_name(signal_name, obj, True)
@@ -26,15 +28,44 @@ class Handlers:
         # ~ self.source_id2 = GObject.timeout_add(2000, self.updateTemp)
         self.lastShutterTime = self.parent.parent.Camera.exposure_speed
         self.run_thread = None
-        self.stop_run_thread = False
-        # ~ self.load_eventList(self.parent.parent.EventList)
+        self.stop_run_thread = threading.Event()
+        self.camera_preview_window = (1172, 75, 720, 540)
         
+        # ~ self.load_eventList(self.parent.parent.EventList)
+
+    def _update_camera_preview(self):
+        (x,y,w,h) = self.parent.cameraPreviewWrapper.get_bbox()
+
+        if self.camera_preview_window != (x, y, w, h):
+            # print(f"Updating preview to (x,y): ({x}, {y})  (w,h): ({w}, {h})")
+            self.camera_preview_window = (x, y, w, h)
+            # self.camera_preview_window = self.parent.cameraPreviewWrapper.get_bbox()
+            if not self.is_program_running():
+                self.parent.parent.Camera.start_preview(fullscreen=False, window=self.camera_preview_window)
+
     def on_window1_delete_event(self, *args):
         self.parent.parent.GPIO.cancel_PWM()
         GObject.source_remove(self.source_id)
         # ~ GObject.source_remove(self.source_id2)
         Gtk.main_quit(*args)
         
+    def is_program_running(self):
+        return self.run_thread and self.run_thread.is_alive()
+
+    def on_window1_focus_in_event(self, *args):
+        if not self.is_program_running():
+            self.parent.parent.Camera.start_preview(fullscreen=False, window=self.camera_preview_window)
+        return False
+
+    def on_window1_focus_out_event(self, *args):
+        if not self.is_program_running():
+            self.parent.parent.Camera.stop_preview()
+        return False
+
+    def on_window1_configure_event(self, widget, event):
+        self._update_camera_preview()
+        return False
+
     def on_script_save_button_clicked(self, button):
         try:
             (N, events, interrepeat) = self.save_eventList()
@@ -345,6 +376,9 @@ class Handlers:
         except ValueError: 
             self.parent.printToLog('Requested exposure time must be a number!')
             return
+        else:
+            self.parent.printToLog(f"Requesting exposure time of {newval:.0f} ms")
+            
         if newval==0:
             self.parent.parent.Camera.shutter_speed = 0
             self.parent.parent.Camera.set_shutter_speed(0)
@@ -495,7 +529,7 @@ class Handlers:
             print("Invalid character (or whitespace) detected in filename suffix!")
             self.parent.printToLog("Invalid character (or whitespace) detected in filename suffix!")
         else:
-            capture_thread = threading.Thread(target=self.parent.parent.CaptureImage, kwargs={'comment': comment,'verbose': True, 'protocol': False, 'suffix': suffix})
+            capture_thread = threading.Thread(target=self.parent.parent.CaptureImageThread, kwargs={'comment': comment,'verbose': True, 'protocol': False, 'suffix': suffix})
             capture_thread.daemon = True
             capture_thread.start()
 
@@ -525,15 +559,17 @@ class Handlers:
                 # ~ self.parent.printToLog('Invalid intraleaf time!')
                 # ~ return
             
-            self.stop_run_thread = False
+            self.stop_run_thread.clear()
+            self.parent.parent.Camera.stop_preview()
+
             # ~ button.set_sensitive(False)
-            self.run_thread = threading.Thread(target=self.parent.parent.RunProgram, args=(lambda:self.stop_run_thread,) )
+            self.run_thread = threading.Thread(target=self.parent.parent.RunProgram, args=(self.stop_run_thread,) )
             self.run_thread.daemon=True
             self.run_thread.start()
         
     def on_stop_program_button_clicked(self, button):
-        if self.run_thread:
-            self.stop_run_thread = True
+        if self.is_program_running():
+            self.stop_run_thread.set()
             self.parent.printToLog('Requesting script to stop')
             print('Requesting thread to stop')
             self.run_thread.join()
@@ -543,7 +579,8 @@ class Handlers:
             self.parent.parent.GPIO.enable_led('Orange',0)
             self.parent.runProgramButton.set_active(False)
             self.parent.runProgramButton.set_sensitive(True)
-        
+            self.parent.parent.Camera.start_preview(fullscreen=False, window=self.camera_preview_window)
+
         
     #Event List stuff
     def on_new_event_button_clicked(self, button):
@@ -715,29 +752,29 @@ class Handlers:
     def on_param_file_chooser_close(self, *args):
         self.parent.paramFileChooser.hide()
 
-    def on_drawingarea1_draw(self,widget,cr):
-        w = widget.get_allocated_width()
-        h = widget.get_allocated_height()
-        size = min(w,h)
-
-        # ~ cr.set_source_rgb(0.0,0.2,0.0)
-        # ~ cr.paint()
-
-        # ~ if self.LightOn == True:
-            # ~ cr.set_source_rgb(1.0,0.0,0.0)
-        # ~ else:
-            # ~ cr.set_source_rgb(0.2,0.0,0.0)
-        # ~ cr.arc(0.5*w,0.5*h,0.5*size,0.0,6.3)
-        # ~ cr.fill()
+    def on_camera_preview_draw(self, *args):
+        # print(f"on_camera_preview_draw")
+        self.parent.cameraPreviewWrapper.on_draw(*args)
+        # print("on_camera_preview_draw: done!")
+        return False
        
-    def on_drawingarea1_button_press_event(self, *args):
-        return
-        
+    def on_camera_preview_button_press_event(self, *args):
+        print("on_camera_preview_button_press_event")
+        print("on_camera_preview_button_press_event: done!")
+
+    def on_camera_preview_configure_event(self, *args):
+        # This will fire if the area is resized
+        # print("on_camera_preview_configure_event")
+        self.parent.cameraPreviewWrapper.on_configure(*args)
+        self._update_camera_preview()
+        # print("on_camera_preview_configure_event: done!")
+        return False
+
     # ~ def on_offButton_clicked(self, widget):
         # ~ self.LightOn = False
         # ~ da.queue_draw() 
     
-    # ~ # drawingarea1 is set as the userdata in glade
+    # ~ # camera_preview is set as the userdata in glade
     # ~ def on_onButton_clicked(self, widget):
         # ~ self.LightOn = True
         # ~ widget.queue_draw()
@@ -762,6 +799,7 @@ class Handlers:
             print('delay needs to be float')
             return
         self.parent.parent.GPIO.test_delay = val
+
 
 class ZionGUI():
     def __init__(self, initial_values, parent, glade_file='zion_layout.glade'):
@@ -884,11 +922,11 @@ class ZionGUI():
         self.test_led_pulse_width_entry = self.builder.get_object("test_pulse_width_entry")
         self.test_led_delay_entry = self.builder.get_object("test_delay_entry")
         
-        
-        
-        
-        
-        self.builder.connect_signals(Handlers(self))
+        self.cameraPreview = self.builder.get_object("camera_preview")
+        self.cameraPreviewWrapper = PictureView(self.cameraPreview, os.path.join(mod_path, "Detect_Logo.png"))
+
+        self.handlers = Handlers(self)
+        self.builder.connect_signals(self.handlers)
         
         # ~ self.printToLog('Center Pixel Value = '+str(self.parent.Camera.center_pixel_value))
         
@@ -897,8 +935,6 @@ class ZionGUI():
         self.logBuffer.insert_at_cursor(text+'\n')
         # ~ mark = self.logBuffer.create_mark(None, self.logBuffer.get_end_iter(), False)
         # ~ self.logView.scroll_to_mark(mark, 0, False, 0,0)
-
-# ~ da    = builder.get_object("drawingarea1")
 
 # ~ builder.connect_signals(Handlers())
 

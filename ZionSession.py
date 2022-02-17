@@ -5,7 +5,7 @@ from datetime import datetime
 from operator import itemgetter
 import gi
 gi.require_version('Gtk', '3.0')
-from gi.repository import Gtk
+from gi.repository import Gtk, GLib
 import keyboard
 from ZionCamera import ZionCamera
 from ZionGPIO import ZionGPIO
@@ -55,11 +55,11 @@ class ZionSession():
         self.SplitterCount = 0
 
         self.gui = ZionGUI(Initial_Values, self)
-                
+
         self.TimeOfLife = time.time()
 
-    def CaptureImage(self, cropping=(0,0,1,1), group=None, verbose=False, comment='', suffix='', protocol=True):
-        
+    def CaptureImageThread(self, cropping=(0,0,1,1), group=None, verbose=False, comment='', suffix='', protocol=True):
+        """ This is running in a thread. It should not call any GTK functions """
         group = '' if group is None else group
         
         self.CaptureCount += 1
@@ -76,7 +76,8 @@ class ZionSession():
         filename += '_'+str(timestamp_ms).zfill(9)
         filename = filename+'_'+suffix if not protocol else filename
         if verbose:
-            self.gui.printToLog('Writing image to file '+filename+'.jpg')
+            GLib.idle_add(self.gui.printToLog, f"Writing image to file {filename}.jpg")
+
         # ~ try:
         self.SplitterCount += 1
         self.Camera.capture(filename, cropping=cropping, splitter=self.SplitterCount % 4)
@@ -186,28 +187,44 @@ class ZionSession():
         check_led_timings(blue_timing, orange_timing, uv_timing)
         self.EventList = None #EventList(blue_timing, orange_timing, uv_timing, capture_times, N=repeatN)
 
-    def RunProgram(self, stop):
-        self.frame_period = 1000./self.Camera.framerate
-        self.exposure_time = self.Camera.shutter_speed/1000. if self.Camera.shutter_speed else self.frame_period
-        time.sleep(0.5)
-        self.TimeOfLife = time.time()
-        for n in range(self.EventList.N+1):
-            if stop():
-                break
-            for e in range(len(self.EventList.Events)):
-                if stop():
+    def RunProgram(self, stop : threading.Event):
+        try:
+            self.frame_period = 1000./self.Camera.framerate
+            self.exposure_time = self.Camera.shutter_speed/1000. if self.Camera.shutter_speed else self.frame_period
+            time.sleep(0.5)
+            self.TimeOfLife = time.time()
+            for n in range(self.EventList.N+1):
+                if stop.is_set():
                     break
-                event = self.EventList.Events[e]
-                self.EventList.performEvent(event, self.GPIO)
-                time.sleep(self.frame_period/250)
-            if not stop():
-                time.sleep(self.EventList.Interrepeat_Delay)
-        # ~ self.gui.runProgramButton.set_active(False)
-        # ~ self.gui.runProgramButton.set_sensitive(True)
-        self.captureCountThisProtocol = 0
+                for e in range(len(self.EventList.Events)):
+                    event = self.EventList.Events[e]
+                    self.EventList.performEvent(event, self.GPIO)
+                    if stop.is_set():
+                        break
+                    time.sleep(self.frame_period/250)
+                if not stop.is_set():
+                    time.sleep(self.EventList.Interrepeat_Delay)
+            # ~ self.gui.runProgramButton.set_active(False)
+            # ~ self.gui.runProgramButton.set_sensitive(True)
+        except e:
+            print(f"RunProgram Error!!: {e}")
+        finally:
+            self.captureCountThisProtocol = 0
+            if stop.is_set():
+                print("RunProgram has been stopped!")
+            else:
+                print("RunProgram has finished")
+
+            GLib.idle_add(self.gui.cameraPreviewWrapper.clear_image)
+            GLib.idle_add(self.gui.handlers._update_camera_preview)
 
     def InteractivePreview(self, window):
         self.Camera.start_preview(fullscreen=False, window=window)
+        Gtk.main()
+        self.Camera.stop_preview()
+
+    def StartSession(self):
+        # self.Camera.start_preview(fullscreen=False, window=window)
         Gtk.main()
         self.Camera.stop_preview()
 
@@ -220,7 +237,7 @@ class ZionSession():
         #entering this function ~1ms after vsync trigger
         time.sleep((self.frame_period-3)/2000)
         if capture:
-            capture_thread = threading.Thread(target=self.CaptureImage, kwargs={'group':grp})
+            capture_thread = threading.Thread(target=self.CaptureImageThread, kwargs={'group':grp})
             capture_thread.daemon = True
             capture_thread.start()
         time1 = (self.frame_period-6)/2000
@@ -238,3 +255,9 @@ class ZionSession():
             time.sleep((pw-3)/1000)
             self.GPIO.disable_leds(colors)
         # ~ self.enable_led('Orange', 0)
+
+    def update_last_capture(self, last_capture_file):
+        print(f"Updating capture with {last_capture_file}...")
+        self.gui.cameraPreviewWrapper.image_path = last_capture_file
+        print(f"Done!")
+        # self.gui.cameraPreview.get_parent().queue_draw()
