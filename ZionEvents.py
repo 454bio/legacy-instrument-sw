@@ -55,6 +55,9 @@ class ZionProtocol:
 			print(f"ERROR Loading Protocol File: {filename}\n{tb}")
 
 	def saveProtocolToFile(self, filename : str):
+		if not filename.endswith(".txt"):
+			filename += ".txt"
+			
 		with open(filename, 'w') as f:
 			json.dump(self.__dict__, f, indent=1)
 
