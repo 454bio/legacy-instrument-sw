@@ -1,0 +1,66 @@
+{
+ "Version": 2,
+ "EventGroups": [
+  {
+   "num_repeats": 1,
+   "interrepeat_delay": 0.0,
+   "events": [
+    {
+     "capture": true,
+     "group": "A",
+     "postdelay": 250.0,
+     "leds": [
+      {
+       "color": "BLUE",
+       "intensity": 10,
+       "pulsetime": 200.0
+      }
+     ]
+    },
+    {
+    "name": "nested group",
+    "num_repeats": 1,
+    "interrepeat_delay": 0.0,
+    "events": [
+        {
+        "capture": true,
+        "group": "AA",
+        "postdelay": 250.0,
+        "leds": [
+        {
+        "color": "BLUE",
+        "intensity": 10,
+        "pulsetime": 200.0
+        }
+        ]
+        },
+        {
+        "capture": true,
+        "group": "BB",
+        "postdelay": 250.0,
+        "leds": [
+        {
+        "color": "ORANGE",
+        "intensity": 10,
+        "pulsetime": 200.0
+        }
+        ]
+        }
+    ]
+    },
+    {
+     "capture": true,
+     "group": "B",
+     "postdelay": 250.0,
+     "leds": [
+      {
+       "color": "UV",
+       "intensity": 10,
+       "pulsetime": 200.0
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}
