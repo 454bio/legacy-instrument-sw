@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 import os
+from typing import List
 
 import gi
 gi.require_version('Gtk', '3.0')
@@ -7,9 +8,9 @@ gi.require_version('Gst', '1.0')
 from gi.repository import Gtk, GObject
 import threading
 from operator import itemgetter
-from ZionEvents import print_eventList
-from ZionPulseGUI import EventEntry, colors
+from ZionPulseGUI import EventEntry
 from ZionGtkHelpers import PictureView
+from ZionEvents import ZionProtocol
 
 mod_path = os.path.dirname(os.path.abspath(__file__))
 
@@ -32,8 +33,6 @@ class Handlers:
         self.camera_preview_window = (1172, 75, 720, 540)
         self.recent_protocol_file = None
         self.recent_params_file = None
-
-        # ~ self.load_eventList(self.parent.parent.EventList)
 
     def _update_camera_preview(self, force=False):
         (x,y,w,h) = self.parent.cameraPreviewWrapper.get_bbox()
@@ -103,7 +102,6 @@ class Handlers:
                 self.parent.printToLog('Eventlist not saved!')
                 return
         N = self.parent.RepeatNEntry.get_value_as_int()
-        # ~ print_eventList(eventList)
         interrepeat_delay = self.parent.InterleafTimeEntry.get_text()
         try:
             interrepeat_delay = float(interrepeat_delay)
@@ -128,41 +126,45 @@ class Handlers:
             filename = self.parent.paramFileChooser.get_filename()
             self.parent.paramFileChooser.hide()
             self.recent_protocol_file = filename
-            eventList = self.parent.parent.LoadProtocolFromFile(filename)
-            self.load_eventList(eventList)
+            protocol = self.parent.parent.LoadProtocolFromFile(filename)
+            self.load_protocol(protocol)
         elif response == Gtk.ResponseType.CANCEL:
             self.parent.paramFileChooser.hide()
-            
-    def load_eventList(self, eventList):
-            self.parent.RepeatNEntry.set_value(eventList.N)
-            self.parent.InterleafTimeEntry.set_text(str(eventList.Interrepeat_Delay))
+
+    def load_protocol(self, protocol : ZionProtocol):
+            # Temporary to make old GUI work...
+            event_group = protocol.get_event_groups()[0]
+
+            self.parent.RepeatNEntry.set_value(event_group.num_repeats)
+            self.parent.InterleafTimeEntry.set_text(str(event_group.interrepeat_delay))
             #clear out current gui list:
-            for entry_idx in range(len(self.parent.EventEntries)):
-                self.parent.EventEntries[entry_idx].destroy()
+            for entry in self.parent.EventEntries:
+                entry.destroy()
             del(self.parent.EventEntries[:])
+
             #now fill it up:
-            for event in eventList.Events:
+            for event in event_group.events:
                 eventEntry = EventEntry(self.parent)
+                eventEntry.import_event(event)
                 #event[0] is color dc dict
                 #event[1] is time
                 #event[2] is bCapture
                 #event[3] is postdelay
                 #event[4] is group
-                eventEntry.PulseTimeEntry.set_text(str(int(event[1])))
 
-                if event[0]==None: #should this be {}?
-                    eventEntry.ColorComboBox.set_active(None)
-                else:
-                    eventEntry.ColorComboBox.set_active(event[0])
-                    if event[4]:
-                        eventEntry.CaptureGroupEntry.set_text(event[4])
-                    else:
-                        eventEntry.CaptureGroupEntry.set_text('')
-                    eventEntry.CaptureToggleButton.set_active(event[2])
-                    if event[3]:
-                        eventEntry.PostDelayEntry.set_text(str(int(event[3])))
-                    else:
-                        eventEntry.PostDelayEntry.set_text('')
+                # if event[0]==None: #should this be {}?
+                #     eventEntry.ColorComboBox.set_active(None)
+                # else:
+                #     eventEntry.ColorComboBox.set_active(event[0])
+                #     if event[4]:
+                #         eventEntry.CaptureGroupEntry.set_text(event[4])
+                #     else:
+                #         eventEntry.CaptureGroupEntry.set_text('')
+                #     eventEntry.CaptureToggleButton.set_active(event[2])
+                #     if event[3]:
+                #         eventEntry.PostDelayEntry.set_text(str(int(event[3])))
+                #     else:
+                #         eventEntry.PostDelayEntry.set_text('')
                 self.parent.EventEntries.append( eventEntry )
                 self.parent.EventListGtk.pack_start( self.parent.EventEntries[-1], False, False, 0 )
             self.parent.EventListGtk.show_all()
@@ -326,7 +328,8 @@ class Handlers:
             # ~ self.parent.secretUVSwitchButton.set_sensitive(False)
             
     def on_led_test_button_activate(self, button):
-        self.parent.parent.GPIO.enable_vsync_callback()
+        print("WARNING: Not implemented")
+        # self.parent.parent.GPIO.enable_vsync_callback()
 
     def on_uv_led_pulse_button(self, button):
         newVal = self.parent.pulseTextInput.get_text()
@@ -832,6 +835,9 @@ class Handlers:
 
 
 class ZionGUI():
+
+    EventEntries : List[EventEntry]
+
     def __init__(self, initial_values, parent, glade_file='zion_layout.glade'):
         #Create Window and Maximize:
         self.builder = Gtk.Builder.new_from_file(glade_file)

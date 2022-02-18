@@ -9,7 +9,7 @@ from gi.repository import Gtk, GLib
 import keyboard
 from ZionCamera import ZionCamera
 from ZionGPIO import ZionGPIO
-from ZionEvents import check_led_timings, ZionProtocol, print_eventList
+from ZionEvents import ZionEventGroup, check_led_timings, ZionProtocol
 from ZionGtk import ZionGUI
 from picamera.exc import PiCameraValueError, PiCameraAlreadyRecording, PiCameraMMALError
 import threading
@@ -17,11 +17,12 @@ import json
 from types import SimpleNamespace
 import traceback
 from functools import partial
+from ZionEvents import ZionEvent
 
 mod_path = os.path.dirname(os.path.abspath(__file__))
 
 class ZionSession():
-        
+
     captureCountDigits = 8
     protocolCountDigits = 3
     captureCountPerProtocolDigits = 5
@@ -33,12 +34,7 @@ class ZionSession():
         now_date = str(now.year)+str(now.month).zfill(2)+str(now.day).zfill(2)
         now_time = str(now.hour).zfill(2)+str(now.minute).zfill(2)
         filename = now_date+'_'+now_time+'_'+self.Name
-        
-        listOfSessions = glob('*_'+session_name+"_*")
-        #print(listOfSessions)
-        #currSuffix = 1
-        #while glob('*_'+session_name+"_{:04}".format(currSuffix)):
-         #   currSuffix+=1
+
         lastSuffix = 0
         for f in glob('*_'+session_name+"_*"):
             lastHyphenIdx = f.rfind('_')
@@ -47,9 +43,9 @@ class ZionSession():
         self.Dir = os.path.join(mod_path, "sessions", f"{filename}_{lastSuffix+1:04d}")
         print('Creating directory '+str(self.Dir))
         os.makedirs(self.Dir)
-        
+
         self.GPIO = ZionGPIO(PWM_freq, parent=self)
-        
+
         self.Camera = ZionCamera(Binning, Initial_Values, parent=self)
         self.CaptureCount = 0
         self.SplitterCount = 0
@@ -60,7 +56,7 @@ class ZionSession():
         self.gui = ZionGUI(Initial_Values, self)
 
         self.TimeOfLife = time.time()
-        self.EventList = ZionProtocol()
+        self.Protocol = ZionProtocol()
 
     def CaptureImageThread(self, cropping=(0,0,1,1), group=None, verbose=False, comment='', suffix='', protocol=True):
         """ This is running in a thread. It should not call any GTK functions """
@@ -150,52 +146,31 @@ class ZionSession():
                                 params[parameter_key] = parameter_value
         self.Camera.load_params(params)
         return params
-        
-    # ~ def SaveProtocolFile(self, default=False):
-        # ~ if default:
-            # ~ filename = 'Zion_Default_Protocol'
-        # ~ else:
-            # ~ self.ProtocolCount += 1
-            # ~ filename = os.path.join(self.Dir, self.Name+'_Protocol_'+str(self.ProtocolCount).zfill(2))
-        # ~ with open(filename+'.txt', 'w') as f:
-            # ~ f.write('N='+str(self.EventList.N)+'\n')
-            # ~ for event in self.EventList.Events:
-                # ~ f.write(str(event)+'\n')
-        # ~ return filename+'.txt'
-        
+
     def SaveProtocolFile(self, filename=None):
         if not filename:
             self.ProtocolCount += 1
             self.captureCountThisProtocol = 0
             filename = os.path.join(self.Dir, str(self.CaptureCount).zfill(ZionSession.captureCountDigits)+'_'+str(self.ProtocolCount).zfill(ZionSession.protocolCountDigits)+'A_Protocol')
 
-        self.EventList.saveProtocolToFile(filename)
-        # json_str = json.dumps(self.EventList.__dict__)
-        # ~ print(json_str)
-        # with open(filename+'.txt', 'w') as f:
-        #     json.dump(f.__dict__, f, indent=1)
+        self.Protocol.save_to_file(filename)
 
     def LoadProtocolFromFile(self, filename):
         # TODO: Add error handling and notify user
-        self.EventList.loadProtocolFromFile(filename)
+        self.Protocol.load_from_file(filename)
 
-        # with open(filename) as f:
-        #     self.EventList = SimpleNamespace(**json.load(f))
-            # lines = f.readlines()
-        # json_str = lines[0]
-        # self.EventList = SimpleNamespace(**json.loads(json_str))
-        # self.EventList.Events = [ tuple(event) for event in self.EventList.Events ]
-        # ~ print(self.EventList.N)
-        # ~ print(self.EventList.Interrepeat_Delay)
-        return self.EventList
-        
+        return self.Protocol
+
     def LoadProtocolFromGUI(self, N, events, interrepeat):
-        # self.EventList = ZionProtocol()
-        self.EventList.N = N
-        self.EventList.Events = events
-        self.EventList.Interrepeat_Delay = interrepeat
-        # ~ print_eventList(events)
-        return self.EventList
+        # Temporary to be compatible with old GUI
+        print(f"N: {N}, events: {events}, interrepeat: {interrepeat}")
+        self.Protocol.EventGroups[0] = ZionEventGroup(
+            num_repeats=N,
+            interrepeat_delay=interrepeat,
+            events=events
+            )
+
+        return self.Protocol
 
     def RunProgram(self, stop : threading.Event):
         try:
@@ -203,28 +178,36 @@ class ZionSession():
             self.exposure_time = self.Camera.shutter_speed/1000. if self.Camera.shutter_speed else self.frame_period
             time.sleep(0.5)
             self.TimeOfLife = time.time()
+            event_groups = self.Protocol.get_event_groups()
             GLib.idle_add(
                 self.gui.printToLog,
                 "Starting protocol!"
-                f"   # Events: {len(self.EventList.Events)}"
-                f"   N: {self.EventList.N}"
+                f"   # Event Groups: {len(event_groups)}"
             )
-            for i in range(self.EventList.N + 1):
-                GLib.idle_add(self.gui.printToLog, f"Starting iteration {i}...")
-                if stop.is_set():
-                    break
-                for event in self.EventList.Events:
-                    GLib.idle_add(self.gui.printToLog, f"Running event: {event}...")
-                    # event = self.EventList.Events[e]
-                    self.EventList.performEvent(event, self.GPIO)
+            for eg_ind, eg in enumerate(event_groups):
+                GLib.idle_add(
+                    self.gui.printToLog,
+                    f"Starting event group {eg_ind}..."
+                    f"   # Events: {len(eg.events)}"
+                    f"   N: {eg.num_repeats}"
+                )
+                final_group = eg is event_groups[-1]
+                for i in range(eg.num_repeats + 1):
+                    GLib.idle_add(self.gui.printToLog, f"Starting iteration {i}...")
+                    final_repeat = (i == eg.num_repeats)
                     if stop.is_set():
                         break
-                    time.sleep(self.frame_period/250)
-                if not stop.is_set() and i != self.EventList.N:
-                    GLib.idle_add(self.gui.printToLog, f"Sleeping for {self.EventList.Interrepeat_Delay} seconds before starting next iteration!")
-                    time.sleep(self.EventList.Interrepeat_Delay)
-            # ~ self.gui.runProgramButton.set_active(False)
-            # ~ self.gui.runProgramButton.set_sensitive(True)
+                    for event in eg.events:
+                        GLib.idle_add(self.gui.printToLog, f"Running event: {event}...")
+                        self.Protocol.performEvent(event, self.GPIO)
+                        if stop.is_set():
+                            break
+                        time.sleep(self.frame_period/250)
+                    # No need to sleep on the very last event of a protocol
+                    if not stop.is_set() and not (final_repeat and final_group):
+                        GLib.idle_add(self.gui.printToLog, f"Sleeping for {eg.interrepeat_delay} seconds before starting next iteration!")
+                        time.sleep(eg.interrepeat_delay)
+
         except Exception as e:
             tb = "".join(traceback.format_exception(type(e), e, e.__traceback__))
             GLib.idle_add(self.gui.printToLog,  "ERROR Running Protocol!")
@@ -261,16 +244,23 @@ class ZionSession():
             print(f"Removing {self.Dir} since it's empty!")
             os.removedirs(self.Dir)
 
-    def pulse_on_trigger(self, colors, pw, capture, grp, gpio, level, ticks):
+    def pulse_on_trigger(self, event : ZionEvent, gpio, level, ticks):
         self.GPIO.callback_for_uv_pulse.cancel() #to make this a one-shot
         #entering this function ~1ms after vsync trigger
+        if event.leds:
+            pt = event.leds[0].pulsetime
+            colors = event.leds
+        else:
+            pt = 0
+            colors = []
+
         time.sleep((self.frame_period-3)/2000)
-        if capture:
-            capture_thread = threading.Thread(target=self.CaptureImageThread, kwargs={'group':grp})
+        if event.capture:
+            capture_thread = threading.Thread(target=self.CaptureImageThread, kwargs={'group':event.group})
             capture_thread.daemon = True
             capture_thread.start()
         time1 = (self.frame_period-6)/2000
-        time2 = (3*self.frame_period-(self.exposure_time+pw+6))/2000
+        time2 = (3*self.frame_period-(self.exposure_time+pt+6))/2000
         # ~ time.sleep((2*self.frame_period-(self.exposure_time+pw+6)/2000)
         # ~ time.sleep(0.087+(self.frame_period-self.exposure_time)/1000) #wait for ~87 ms
         # ~ print(self.frame_period)
@@ -278,12 +268,12 @@ class ZionSession():
         # ~ print(pw/2)
         # ~ time.sleep((self.frame_period-(self.exposure_time+pw)/2)/1000) #wait for ~87 ms
         time.sleep(max([time1, time2]))
-        if colors is not None:
+        if colors:
             self.GPIO.enable_leds(colors)
         # ~ self.enable_led('Orange', 100)
             # time.sleep((pw-3)/1000)
-            if pw > 3:
-                time.sleep((pw-3)/1000)   #
+            if pt > 3:
+                time.sleep((pt-3)/1000)   #
             self.GPIO.disable_leds(colors)
         # ~ self.enable_led('Orange', 0)
 

@@ -1,72 +1,206 @@
 import time
-from operator import itemgetter
-import keyboard
-import threading
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, asdict, is_dataclass
 from enum import Enum, auto
 import json
 from types import SimpleNamespace
 import traceback
 from typing import List
 
+from ZionErrors import (
+	ZionProtocolVersionError,
+	ZionProtocolFileError,
+)
+
 class ZionLEDColor(Enum):
-	BLUE_GREEN = auto()
-	ORANGE = auto()
 	UV = auto()
+	BLUE = auto()
+	ORANGE = auto()
+
 
 @dataclass
 class ZionLED:
 	color: ZionLEDColor
-	intensity: float
+	intensity: int
+	pulsetime: float
+
+	@classmethod
+	def from_json(cls, json_dict : dict) -> 'ZionLED':
+		return cls(
+			ZionLEDColor[json_dict["color"]],
+			json_dict["intensity"],
+			json_dict["pulsetime"]
+		)
 
 @dataclass
 class ZionEvent:
-	enabled: bool
+	capture: bool = False
+	group: str = ""
+	postdelay: float = 0.0
 	leds: List[ZionLED] = field(default_factory=list)
-	
-class ZionProtocol:
-	N = 0
-	Events = []
-	Interrepeat_Delay = 0.0
 
+	@classmethod
+	def from_json(cls, json_dict : dict) -> 'ZionEvent':
+		# Remove "leds" from the dictionary
+		leds_list = json_dict.pop("leds", [])
+		leds = [ZionLED.from_json(led) for led in leds_list]
+		return cls(**json_dict, leds=leds)
+
+@dataclass
+class ZionEventGroup:
+	name: str = ""
+	num_repeats: int = 0
+	interrepeat_delay: float = 0.0
+	events: List[ZionEvent] = field(default_factory=list)
+
+	@classmethod
+	def from_json(cls, json_dict : dict) -> 'ZionEventGroup':
+		# Remove "event" from the dictionary
+		events_list = json_dict.pop("events", [])
+		events = []
+		for event_or_group in events_list:
+			# This is not a robust way to go from json <-> python...
+			# But for now it allows people to edit the JSON directly without crazy class names
+			if "events" in event_or_group:
+				# Hurray recursion!
+				events.append(cls.from_json(event_or_group))
+			else:
+				events.append(ZionEvent.from_json(event_or_group))
+
+		return cls(**json_dict, events=events)
+
+	def flatten(self) -> List[ZionEvent]:
+		"""" Convert a ZionEventGroup to an equivalent list of ZionEvents """
+		flat_events = []
+		for _ in range(self.num_repeats + 1):
+			for event in self.events:
+				if isinstance(event, ZionEvent):
+					flat_events.append(event)
+				elif isinstance(event, ZionEventGroup):
+					flat_events.extend(event.flatten())
+				else:
+					raise RuntimeError(f"Unrecognized type in the event list: {type(event)}")
+			# Don't use the interrepeat delay
+			# flat_events.append(ZionEvent(postdelay=self.interrepeat_delay * 1000))
+		# If we're flattening it, than zero out the delay
+		self.interrepeat_delay = 0.0
+
+		return flat_events
+
+class ZionProtocolEncoder(json.JSONEncoder):
+	def default(self, obj):
+		if is_dataclass(obj):
+			return asdict(obj)
+		if isinstance(obj, ZionProtocol):
+			return obj.__dict__
+		if isinstance(obj, ZionLEDColor):
+			return obj.name
+		return json.JSONEncoder.default(self, obj)
+
+
+class ZionProtocol:
 	def __init__(
-		self, 
-		N: int = 0, 
-		Events: list = [], 
-		Interrepeat_Delay: float = 0.0, 
+		self,
 		filename: str = None
 	):
-		if filename:
-			self.loadProtocolFromFile(filename)
-		else:
-			self.N = N
-			self.Interrepeat_Delay = Interrepeat_Delay
-			self.Events = list(map(tuple, Events))
+		self.Version : int = 2
+		self.EventGroups : List[ZionEventGroup] = [ZionEventGroup()]
 
-	def loadProtocolFromFile(self, filename : str):
+		if filename:
+			self.load_from_file(filename, flatten=False)
+
+	def _load_v1(self, json_ns : dict):
+		print(f"Loading a Version 1 protocol...")
+		self.EventGroups = []
+
+		events = []
+		for e in json_ns.Events:
+			leds = []
+			if e[0]:
+				for color, intensity in e[0].items():
+					leds.append(
+						ZionLED(
+							ZionLEDColor[color.upper()], intensity, e[1])
+						)
+			events.append(
+				ZionEvent(
+					capture=e[2],
+					group=e[4],
+					postdelay=e[3],
+					leds=leds
+				)
+			)
+
+		# event_group = ZionEventGroup(
+		# 	num_repeats=json_ns.N,
+		# 	interrepeat_delay=json_ns.Interrepeat_Delay,
+		# 	events=events
+		# )
+		event_group = ZionEventGroup(
+			num_repeats=json_ns.N,
+			interrepeat_delay=0.0,
+			events=events
+		)
+		self.EventGroups.append(event_group)
+
+	def _load_v2(self, json_ns : dict):
+		print(f"Loading a Version 2 protocol...")
+
+		# TODO: Use a serialization library that's still human editable
+		self.EventGroups = []
+		# Ensure each element of EventGroups looks like an EventGroup
+		for eg in json_ns.EventGroups:
+			if "events" not in eg:
+				raise  ZionProtocolFileError("Each top-level element in 'EventGroups' must be an EventGroup!")
+
+			self.EventGroups.append(ZionEventGroup.from_json(eg))
+
+	def load_from_file(self, filename : str, flatten : bool = True):
 		try:
 			with open(filename) as f:
 				json_ns = SimpleNamespace(**json.load(f))
-			self.N = json_ns.N
-			self.Events = list(map(tuple, json_ns.Events))
-			self.Interrepeat_Delay = json_ns.Interrepeat_Delay
+
+			# Previous version of the protocol won't have a verison number
+			file_version = getattr(json_ns, 'Version', 1)
+
+			# Convert the old protocol version to the new one
+			if file_version == 1:
+				self._load_v1(json_ns)
+			elif file_version == 2:
+				self._load_v2(json_ns)
+				# Unwrap nested event groups for now
+				# TODO: Add support for multiple/nested event groups in the GUI
+				if flatten:
+					if len(self.EventGroups) > 1:
+						raise ZionProtocolFileError("Multiple top-level EventsGroups is not supported yet....")
+
+					flat_events = self.EventGroups[0].flatten()
+					self.EventGroups[0].events = flat_events
+			else:
+				raise ZionProtocolVersionError(f"Version {file_version} is not supported... "
+												"Check if there's an newer version of the GUI available")
+
+			print(self.EventGroups)
 		except Exception as e:
 			tb = "".join(traceback.format_exception(type(e), e, e.__traceback__))
 			print(f"ERROR Loading Protocol File: {filename}\n{tb}")
 
-	def saveProtocolToFile(self, filename : str):
+	def save_to_file(self, filename : str):
 		if not filename.endswith(".txt"):
 			filename += ".txt"
-			
-		with open(filename, 'w') as f:
-			json.dump(self.__dict__, f, indent=1)
 
-	def performEvent(self, event, gpio_ctrl):
+		with open(filename, 'w') as f:
+			json.dump(self, f, indent=1, cls=ZionProtocolEncoder)
+
+	def get_event_groups(self):
+		return self.EventGroups
+
+	def performEvent(self, event : ZionEvent, gpio_ctrl : 'ZionGPIO'):
 		#if not event[0] is None:
-		gpio_ctrl.enable_vsync_callback(event[0], event[1], event[2], event[4])
+		gpio_ctrl.enable_vsync_callback(event)
 			# ~ gpio_ctrl.enable_vsync_callback()
-		if event[3]>0:
-			time.sleep(event[3]/1000.)
+		if event.postdelay>0:
+			time.sleep(event.postdelay/1000.)
+
 
 #Check for well-formed timing arrays:
 def check_led_timings(LED_Blu_Timing, LED_Or_Timing, LED_UV_Timing, UV_duty_cycle=3.0):
@@ -87,7 +221,3 @@ def check_led_timings(LED_Blu_Timing, LED_Or_Timing, LED_UV_Timing, UV_duty_cycl
 				raise ValueError('UV timing must have a maximum duty cycle of 3%!')
 		#returns last t_on_dc so that we wait that long at the end of the event list (repeat or not)
 		# ~ return LED_UV_Timing[-1][1]-LED_UV_Timing[-1][0]
-
-def print_eventList(eventList): #for testing
-	for event in eventList:
-		print(event)

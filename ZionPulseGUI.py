@@ -1,9 +1,10 @@
+from typing import List
+
 import gi
 gi.require_version('Gtk', '3.0')
 gi.require_version('Gst', '1.0')
 from gi.repository import Gtk, GObject, Gst
-
-colors = ['None', 'UV', 'Blue', 'Orange']
+from ZionEvents import ZionEvent, ZionLED, ZionLEDColor
 
 class TrashButton(Gtk.Button):
     def __init__(self, *args):
@@ -19,7 +20,7 @@ class ColorEntry(Gtk.HBox):
         self.DutyCycleEntry.set_width_chars(3)
         self.pack_start( Gtk.Label(label), True, False, 0 )
         self.pack_start( self.DutyCycleEntry, False, False, 0 )
-        
+
     def get_duty_cycle(self):
         dc = self.DutyCycleEntry.get_text()
         if not dc =='':
@@ -38,47 +39,31 @@ class ColorEntry(Gtk.HBox):
         else:
             return
 
-# ~ class LEDColorComboBox(Gtk.ComboBoxText):
-    # ~ def __init__(self, *args):
-        # ~ super(LEDColorComboBox,self).__init__(*args)
-        # ~ for color in colors:
-            # ~ self.append(None, color)
-        # ~ super(LEDColorComboBox,self).set_active(0)
 
 class LEDColorComboBox(Gtk.Grid):
     def __init__(self, *args):
         super(LEDColorComboBox,self).__init__(*args)
-        self.ColorEntries = []
-        color = 0
-        for i in range(len(colors)-1):
-            color +=1 
-            self.ColorEntries.append( ColorEntry(colors[color]) )
+        self.ColorEntries = {}
+        for i, c in enumerate(ZionLEDColor):
+            self.ColorEntries[c.name] = ColorEntry(c.name)
             # ~ self.ColorButtons[-1].button.connect("toggled", self.get_active_colors)
-            self.attach(self.ColorEntries[-1], 0, i, 1, 1)
-        #TODO: bring back for rainbow board
-        # ~ for i in range(2):
-            # ~ for j in range(4):
-                # ~ color += 1
-                # ~ self.ColorButtons.append( ColorCheckButton(colors[color]) )
-                # ~ self.attach(self.ColorButtons[-1], i, j, 1, 1)
-            
+            self.attach(self.ColorEntries[c.name], 0, i, 1, 1)
+
     def get_active(self):
         colors_selected = dict()
-        for color_entry in self.ColorEntries:
+        for color_entry in self.ColorEntries.values():
             color_dc = color_entry.get_duty_cycle()
             if not color_dc is None:
                 colors_selected[color_entry.Label]=color_dc
-        if bool(colors_selected):
-            return colors_selected
-        else:
-            return
-            
-    def set_active(self, dDutyCycles):
-        if dDutyCycles:
-            for key in dDutyCycles.keys():
-                self.ColorEntries[colors.index(key)-1].DutyCycleEntry.set_text(str(dDutyCycles[key]))
-                
-class EventEntry(Gtk.HBox): 
+
+        return colors_selected
+
+    def set_active(self, leds : List[ZionLED]):
+        for l in leds:
+            self.ColorEntries[l.color.name].DutyCycleEntry.set_text(str(l.intensity))
+
+
+class EventEntry(Gtk.HBox):
     def __init__(self, parent, *args):
         super(EventEntry,self).__init__(*args)
         self.parent = parent
@@ -111,19 +96,18 @@ class EventEntry(Gtk.HBox):
     def on_event_delete_button(self, button):
         idx = self.parent.EventEntries.index(self)
         self.destroy()
-        # ~ print('idx to remove = '+str(idx))
         del(self.parent.EventEntries[idx])
-        
-    def on_capture_toggle_toggled(self, switch):
-            self.CaptureGroupEntry.set_sensitive(switch.get_active())
 
-    def exportEvent(self):
-        colorList = self.ColorComboBox.get_active()
+    def on_capture_toggle_toggled(self, switch):
+        self.CaptureGroupEntry.set_sensitive(switch.get_active())
+
+    def exportEvent(self) -> ZionEvent:
+        colorDict = self.ColorComboBox.get_active()
         pulsetime = self.PulseTimeEntry.get_text()
         postdelay = self.PostDelayEntry.get_text()
         bCapture = self.CaptureToggleButton.get_active()
 
-        if postdelay == '':
+        if not postdelay.strip():
             postdelay = 0
         else:
             try:
@@ -132,17 +116,27 @@ class EventEntry(Gtk.HBox):
                 print('Post-Delay must be empty or a floating point number of seconds!')
                 return
 
-        if colorList is None:
-            colorList = {}
-            if not pulsetime:
-                pulsetime = 0
-            # pulsetime = 0
-            # ~ bCapture = False
+        if not colorDict and not pulsetime.strip():
+            pulsetime = 0
 
         try:
             pulsetime = float(pulsetime)
         except ValueError:
             print('Invalid Time Entry!')
             return False
-        capture_grp = self.CaptureGroupEntry.get_text() if bCapture else None
-        return (colorList, pulsetime, bCapture, postdelay, capture_grp)
+
+        capture_grp = self.CaptureGroupEntry.get_text() if bCapture else ""
+        leds = [ ZionLED(ZionLEDColor[c], dc, pulsetime) for c, dc in colorDict.items() ]
+        return ZionEvent(bCapture, capture_grp, postdelay, leds)
+        # return (colorList, pulsetime, bCapture, postdelay, capture_grp)
+
+    def import_event(self, event : ZionEvent):
+        if event.leds:
+            self.PulseTimeEntry.set_text(str(int(event.leds[0].pulsetime)))
+            self.ColorComboBox.set_active(event.leds)
+        else:
+            self.ColorComboBox.set_active([])
+
+        self.CaptureGroupEntry.set_text(event.group)
+        self.CaptureToggleButton.set_active(event.capture)
+        self.PostDelayEntry.set_text(str(int(event.postdelay)))
