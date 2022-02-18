@@ -122,7 +122,7 @@ class EventEntry(Gtk.HBox):
         pulsetime = self.PulseTimeEntry.get_text()
         postdelay = self.PostDelayEntry.get_text()
         bCapture = self.CaptureToggleButton.get_active()
-        
+
         if postdelay == '':
             postdelay = 0
         else:
@@ -132,9 +132,11 @@ class EventEntry(Gtk.HBox):
                 print('Post-Delay must be empty or a floating point number of seconds!')
                 return
         if colorList is None:
-                pulsetime = 0
+                colorList = {}
+                # pulsetime = 0
                 # ~ bCapture = False
-        else:
+
+        if bCapture:
             try:
                 pulsetime = float(pulsetime)
             except ValueError:
