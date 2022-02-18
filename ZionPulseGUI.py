@@ -131,16 +131,18 @@ class EventEntry(Gtk.HBox):
             except ValueError:
                 print('Post-Delay must be empty or a floating point number of seconds!')
                 return
-        if colorList is None:
-                colorList = {}
-                # pulsetime = 0
-                # ~ bCapture = False
 
-        if bCapture:
-            try:
-                pulsetime = float(pulsetime)
-            except ValueError:
-                print('Invalid Time Entry!')
-                return False
+        if colorList is None:
+            colorList = {}
+            if not pulsetime:
+                pulsetime = 0
+            # pulsetime = 0
+            # ~ bCapture = False
+
+        try:
+            pulsetime = float(pulsetime)
+        except ValueError:
+            print('Invalid Time Entry!')
+            return False
         capture_grp = self.CaptureGroupEntry.get_text() if bCapture else None
         return (colorList, pulsetime, bCapture, postdelay, capture_grp)

@@ -280,7 +280,8 @@ class ZionSession():
             self.GPIO.enable_leds(colors)
         # ~ self.enable_led('Orange', 100)
             # time.sleep((pw-3)/1000)
-            time.sleep((pw-3)/1000)   #
+            if pw > 3:
+                time.sleep((pw-3)/1000)   #
             self.GPIO.disable_leds(colors)
         # ~ self.enable_led('Orange', 0)
 
