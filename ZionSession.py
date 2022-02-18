@@ -18,6 +18,8 @@ from types import SimpleNamespace
 import traceback
 from functools import partial
 
+mod_path = os.path.dirname(os.path.abspath(__file__))
+
 class ZionSession():
         
     captureCountDigits = 8
@@ -42,9 +44,9 @@ class ZionSession():
             lastHyphenIdx = f.rfind('_')
             newSuffix = int(f[(lastHyphenIdx+1):])
             lastSuffix = newSuffix if newSuffix>lastSuffix else lastSuffix
-        self.Dir = filename+"_{:04}".format(lastSuffix+1)
+        self.Dir = os.path.join(mod_path, "sessions", f"{filename}_{lastSuffix+1:04d}")
         print('Creating directory '+str(self.Dir))
-        os.mkdir(self.Dir)
+        os.makedirs(self.Dir)
         
         self.GPIO = ZionGPIO(PWM_freq, parent=self)
         
