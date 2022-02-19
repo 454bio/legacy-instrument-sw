@@ -36,6 +36,7 @@ class ZionEvent:
 	capture: bool = False
 	group: str = ""
 	postdelay: float = 0.0
+	cycles: int = 1
 	leds: List[ZionLED] = field(default_factory=list)
 
 	@classmethod
@@ -48,8 +49,7 @@ class ZionEvent:
 @dataclass
 class ZionEventGroup:
 	name: str = ""
-	num_repeats: int = 0
-	interrepeat_delay: float = 0.0
+	cycles: int = 1
 	events: List[ZionEvent] = field(default_factory=list)
 
 	@classmethod
@@ -71,7 +71,7 @@ class ZionEventGroup:
 	def flatten(self) -> List[ZionEvent]:
 		"""" Convert a ZionEventGroup to an equivalent list of ZionEvents """
 		flat_events = []
-		for _ in range(self.num_repeats + 1):
+		for _ in range(self.cycles):
 			for event in self.events:
 				if isinstance(event, ZionEvent):
 					flat_events.append(event)
@@ -79,10 +79,6 @@ class ZionEventGroup:
 					flat_events.extend(event.flatten())
 				else:
 					raise RuntimeError(f"Unrecognized type in the event list: {type(event)}")
-			# Don't use the interrepeat delay
-			# flat_events.append(ZionEvent(postdelay=self.interrepeat_delay * 1000))
-		# If we're flattening it, than zero out the delay
-		self.interrepeat_delay = 0.0
 
 		return flat_events
 
@@ -130,14 +126,8 @@ class ZionProtocol:
 				)
 			)
 
-		# event_group = ZionEventGroup(
-		# 	num_repeats=json_ns.N,
-		# 	interrepeat_delay=json_ns.Interrepeat_Delay,
-		# 	events=events
-		# )
 		event_group = ZionEventGroup(
-			num_repeats=json_ns.N,
-			interrepeat_delay=0.0,
+			cycles=json_ns.N + 1,
 			events=events
 		)
 		self.EventGroups.append(event_group)
@@ -195,10 +185,8 @@ class ZionProtocol:
 		return self.EventGroups
 
 	def performEvent(self, event : ZionEvent, gpio_ctrl : 'ZionGPIO'):
-		#if not event[0] is None:
 		gpio_ctrl.enable_vsync_callback(event)
-			# ~ gpio_ctrl.enable_vsync_callback()
-		if event.postdelay>0:
+		if event.postdelay > 0:
 			time.sleep(event.postdelay/1000.)
 
 

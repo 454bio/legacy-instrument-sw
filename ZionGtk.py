@@ -49,7 +49,7 @@ class Handlers:
         GObject.source_remove(self.source_id)
         # ~ GObject.source_remove(self.source_id2)
         Gtk.main_quit(*args)
-        
+
     def is_program_running(self):
         return self.run_thread and self.run_thread.is_alive()
 
@@ -69,11 +69,11 @@ class Handlers:
 
     def on_script_save_button_clicked(self, button):
         try:
-            (N, events, interrepeat) = self.save_eventList()
+            events = self.save_eventList()
         except TypeError:
             self.parent.printToLog('No Event List!')
             return
-        self.parent.parent.LoadProtocolFromGUI(N,events,interrepeat)
+        self.parent.parent.LoadProtocolFromGUI(events)
         self.parent.paramFileChooser.set_action(Gtk.FileChooserAction.SAVE)
 
         self.parent.set_file_chooser_for_protocol_files()
@@ -101,14 +101,8 @@ class Handlers:
             else:
                 self.parent.printToLog('Eventlist not saved!')
                 return
-        N = self.parent.RepeatNEntry.get_value_as_int()
-        interrepeat_delay = self.parent.InterleafTimeEntry.get_text()
-        try:
-            interrepeat_delay = float(interrepeat_delay)
-        except ValueError:
-            self.parent.printToLog('Invalid inter-repeat time!')
-            return
-        return (N, eventList, interrepeat_delay)
+
+        return eventList
 
     # TODO: Make the naming consistent
     def on_script_load_button_clicked(self, button):
@@ -135,8 +129,6 @@ class Handlers:
             # Temporary to make old GUI work...
             event_group = protocol.get_event_groups()[0]
 
-            self.parent.RepeatNEntry.set_value(event_group.num_repeats)
-            self.parent.InterleafTimeEntry.set_text(str(event_group.interrepeat_delay))
             #clear out current gui list:
             for entry in self.parent.EventEntries:
                 entry.destroy()
@@ -542,8 +534,7 @@ class Handlers:
         else:
             self.parent.printToLog('Blue Gain must be between 0 and 8.0!')
             return
-            
-            
+
     #Capturing, Running, Etc.
     def on_capture_button_clicked(self, button):
         #TODO: get cropping from some self object here
@@ -563,12 +554,12 @@ class Handlers:
         comment = self.parent.commentBox.get_text()
         self.parent.parent.SaveParameterFile(comment, True)
         try:
-            (N, events, interrepeat) = self.save_eventList()
+            events = self.save_eventList()
         except TypeError:
             self.parent.printToLog('No event list!')
             button.set_sensitive(True)
             return
-        self.parent.parent.LoadProtocolFromGUI(N,events, interrepeat)
+        self.parent.parent.LoadProtocolFromGUI(events)
         self.parent.parent.SaveProtocolFile()
 
         self.stop_run_thread.clear()
@@ -960,25 +951,18 @@ class ZionGUI():
         self.EventListGtk.pack_start(self.EventEntries[0], False, True, 0)
         self.EventListGtk.show_all()
         self.EventListScroll = self.builder.get_object("eventlist_scroll")
-        
+
         self.runProgramButton = self.builder.get_object("run_program_button")
-        
-        self.RepeatNEntry = self.builder.get_object("repeat_n_spin_button")
-        self.InterleafTimeEntry = self.builder.get_object("interleaf_time_entry")
-        self.IntraleafTimeEntry = self.builder.get_object("intraleaf_time_entry")
-        
+
         self.test_led_pulse_width_entry = self.builder.get_object("test_pulse_width_entry")
         self.test_led_delay_entry = self.builder.get_object("test_delay_entry")
-        
+
         self.cameraPreview = self.builder.get_object("camera_preview")
         self.cameraPreviewWrapper = PictureView(self.cameraPreview, os.path.join(mod_path, "Detect_Logo.png"))
 
         self.handlers = Handlers(self)
         self.builder.connect_signals(self.handlers)
-        
-        # ~ self.printToLog('Center Pixel Value = '+str(self.parent.Camera.center_pixel_value))
-        
-        
+
     def printToLog(self, text):
         text_iter_end = self.logBuffer.get_end_iter()
 
