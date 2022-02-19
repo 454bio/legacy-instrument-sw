@@ -34,7 +34,7 @@ class ZionLED:
 class ZionEvent:
     capture: bool = False
     group: str = ""
-    postdelay: float = 0.0
+    postdelay: int = 0.0
     cycles: int = 1
     leds: List[ZionLED] = field(default_factory=list)
 

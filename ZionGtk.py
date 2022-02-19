@@ -957,11 +957,23 @@ class ZionGUI():
         self.paramFileChooser.add_filter(self.filter_parameter)
         self.paramFileChooser.set_filter(self.filter_protocol)
 
-        self.EventListGtk = self.builder.get_object("event_list")
-        self.EventEntries = [EventEntry(self)]
-        self.EventListGtk.pack_start(self.EventEntries[0], False, True, 0)
-        self.EventListGtk.show_all()
-        self.EventListScroll = self.builder.get_object("eventlist_scroll")
+
+        self.EventTreeGtk = self.builder.get_object("event_tree")
+        # name : str
+        # cycles : int
+        # capture : bool
+        # postdelay: int
+        
+        self.EventTreestore = Gtk.TreeStore(str, int, str)
+        # self.EventEntries = [EventEntry(self)]
+        # self.EventTreeGtk.pack_start(self.EventEntries[0], False, True, 0)
+        self.EventTreeGtk.show_all()
+
+        # self.EventListGtk = self.builder.get_object("event_list")
+        # self.EventEntries = [EventEntry(self)]
+        # self.EventListGtk.pack_start(self.EventEntries[0], False, True, 0)
+        # self.EventListGtk.show_all()
+        # self.EventListScroll = self.builder.get_object("eventlist_scroll")
 
         self.runProgramButton = self.builder.get_object("run_program_button")
 

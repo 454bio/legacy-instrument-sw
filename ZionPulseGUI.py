@@ -111,7 +111,7 @@ class EventEntry(Gtk.HBox):
             postdelay = 0
         else:
             try:
-                postdelay=float(postdelay)
+                postdelay=int(postdelay)
             except ValueError:
                 print('Post-Delay must be empty or a floating point number of seconds!')
                 return
