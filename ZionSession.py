@@ -161,12 +161,11 @@ class ZionSession():
 
         return self.Protocol
 
-    def LoadProtocolFromGUI(self, N, events, interrepeat):
+    def LoadProtocolFromGUI(self, events):
         # Temporary to be compatible with old GUI
-        print(f"N: {N}, events: {events}, interrepeat: {interrepeat}")
+        print(f"events: {events}")
         self.Protocol.EventGroups[0] = ZionEventGroup(
-            num_repeats=N,
-            interrepeat_delay=interrepeat,
+            cycles=1,
             events=events
             )
 
@@ -189,12 +188,10 @@ class ZionSession():
                     self.gui.printToLog,
                     f"Starting event group {eg_ind}..."
                     f"   # Events: {len(eg.events)}"
-                    f"   N: {eg.num_repeats}"
+                    f"   # Cycles: {eg.cycles}"
                 )
-                final_group = eg is event_groups[-1]
-                for i in range(eg.num_repeats + 1):
-                    GLib.idle_add(self.gui.printToLog, f"Starting iteration {i}...")
-                    final_repeat = (i == eg.num_repeats)
+                for i in range(eg.cycles):
+                    GLib.idle_add(self.gui.printToLog, f"Starting cycle {i}...")
                     if stop.is_set():
                         break
                     for event in eg.events:
@@ -203,10 +200,6 @@ class ZionSession():
                         if stop.is_set():
                             break
                         time.sleep(self.frame_period/250)
-                    # No need to sleep on the very last event of a protocol
-                    if not stop.is_set() and not (final_repeat and final_group):
-                        GLib.idle_add(self.gui.printToLog, f"Sleeping for {eg.interrepeat_delay} seconds before starting next iteration!")
-                        time.sleep(eg.interrepeat_delay)
 
         except Exception as e:
             tb = "".join(traceback.format_exception(type(e), e, e.__traceback__))
