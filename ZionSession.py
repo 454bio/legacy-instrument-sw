@@ -270,12 +270,9 @@ class ZionSession():
         time.sleep(max([time1, time2]))
         if colors:
             self.GPIO.enable_leds(colors)
-        # ~ self.enable_led('Orange', 100)
-            # time.sleep((pw-3)/1000)
             if pt > 3:
                 time.sleep((pt-3)/1000)   #
             self.GPIO.disable_leds(colors)
-        # ~ self.enable_led('Orange', 0)
 
     def update_last_capture(self, last_capture_file):
         print(f"Updating capture with {last_capture_file}...")
