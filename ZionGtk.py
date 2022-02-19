@@ -5,12 +5,13 @@ from typing import List
 import gi
 gi.require_version('Gtk', '3.0')
 gi.require_version('Gst', '1.0')
-from gi.repository import Gtk, GObject
+from gi.repository import Gtk, GObject, GLib
 import threading
 from operator import itemgetter
 from ZionPulseGUI import EventEntry
 from ZionGtkHelpers import PictureView
 from ZionEvents import ZionProtocol, ZionLEDColor
+from ZionCamera import ZionCameraParameters
 
 mod_path = os.path.dirname(os.path.abspath(__file__))
 
@@ -616,11 +617,11 @@ class Handlers:
         # ~ mark = self.logBuffer.create_mark(None, self.logBuffer.get_end_iter(), False)
         # ~ self.logView.scroll_to_mark(mark, 0, False, 0,0)
         return
-        
+
     #File chooser:
     def on_param_file_chooser_dialog_realize(self, widget):
         Gtk.Window.maximize(self.parent.paramFileChooser)
-        
+
     def on_load_params_button(self,button):
         self.parent.paramFileChooser.set_action(Gtk.FileChooserAction.OPEN)
 
@@ -646,37 +647,35 @@ class Handlers:
             self.parent.analogGainEntry.set_text('')
             self.parent.digitalGainEntry.set_text('')
             self.parent.expTimeBox.set_text('')
-            
-            
-            
+
             handler_id = get_handler_id(self.parent.BrightnessScale, "value-changed")
             self.parent.BrightnessScale.handler_block(handler_id)
-            self.parent.BrightnessScale.set_value(params['brightness'])
+            self.parent.BrightnessScale.set_value(params.brightness)
             self.parent.BrightnessScale.handler_unblock(handler_id)
-                
+
             handler_id = get_handler_id(self.parent.ContrastScale, "value-changed")
             self.parent.ContrastScale.handler_block(handler_id)
-            self.parent.ContrastScale.set_value(params['contrast'])
+            self.parent.ContrastScale.set_value(params.contrast)
             self.parent.ContrastScale.handler_unblock(handler_id)
 
             handler_id = get_handler_id(self.parent.SaturationScale, "value-changed")
             self.parent.SaturationScale.handler_block(handler_id)
-            self.parent.SaturationScale.set_value(params['saturation'])
+            self.parent.SaturationScale.set_value(params.saturation)
             self.parent.SaturationScale.handler_unblock(handler_id)
 
             handler_id = get_handler_id(self.parent.SharpnessScale, "value-changed")
             self.parent.SharpnessScale.handler_block(handler_id)
-            self.parent.SharpnessScale.set_value(params['sharpness'])
+            self.parent.SharpnessScale.set_value(params.sharpness)
             self.parent.SharpnessScale.handler_unblock(handler_id)
 
-            handler_id = get_handler_id(self.parent.expCompScale, "value-changed")                
+            handler_id = get_handler_id(self.parent.expCompScale, "value-changed")
             self.parent.expCompScale.handler_block(handler_id)
-            self.parent.expCompScale.set_value(params['exposure_comp'])
+            self.parent.expCompScale.set_value(params.exposure_compensation)
             self.parent.expCompScale.handler_unblock(handler_id)
 
             handler_id = get_handler_id(self.parent.imageDenoiseButton, "toggled")
             self.parent.imageDenoiseButton.handler_block(handler_id)
-            self.parent.imageDenoiseButton.set_active(params['denoise'])
+            self.parent.imageDenoiseButton.set_active(params.image_denoise)
             self.parent.imageDenoiseButton.handler_unblock(handler_id)
 
             handler_id_1 = get_handler_id(self.parent.isoButtonAuto, "toggled")
@@ -701,29 +700,23 @@ class Handlers:
             self.parent.expModeComboBox.handler_block(handler_id_9)
             self.parent.expModeLockButton.handler_block(handler_id_10)
             self.parent.expCompScale.handler_block(handler_id_11)
-                
-            if params['ISO']==0:
-                self.parent.isoButtonAuto.set_active(True)
-            elif params['ISO']==100:
-                self.parent.isoButton100.set_active(True)
-            elif params['ISO']==200:
-                self.parent.isoButton200.set_active(True)
-            elif params['ISO']==320:
-                self.parent.isoButton320.set_active(True)
-            elif params['ISO']==400:
-                self.parent.isoButton400.set_active(True)
-            elif params['ISO']==500:
-                self.parent.isoButton500.set_active(True)
-            elif params['ISO']==640:
-                self.parent.isoButton640.set_active(True)
-            elif params['ISO']==800:
-                self.parent.isoButton800.set_active(True)
-                  
-            self.parent.expCompScale.set_value(params['exposure_comp'])
-                
+
+            if params.iso == 0:
+                button_name = "isoButtonAuto"
+            else:
+                button_name = f"isoButton{params.iso}"
+
+            iso_button = getattr(self.parent, button_name, None)
+            if iso_button:
+                iso_button.set_active(True)
+            else:
+                self.parent.printToLog(f"WARNING: Unrecogonized ISO value ({params.iso})")
+
+            self.parent.expCompScale.set_value(params.exposure_compensation)
+
             listStore = self.parent.expModeComboBox.get_model()
             rowList = [row[0] for row in listStore]
-            row_idx = rowList.index(params['exposure_mode'])
+            row_idx = rowList.index(params.exposure_mode)
             self.parent.expModeComboBox.set_active(row_idx)
             if not row_idx:
                 self.parent.expModeLockButton.set_active(True)
@@ -733,7 +726,7 @@ class Handlers:
                 self.parent.expModeLockButton.set_active(False)
                 self.parent.expCompScale.set_sensitive(True)
                 self.parent.isoButtonBox.set_sensitive(True)
-                    
+
             self.parent.expModeComboBox.handler_unblock(handler_id_9)
             self.parent.expModeLockButton.handler_unblock(handler_id_10)
             self.parent.expCompScale.handler_unblock(handler_id_11)
@@ -745,34 +738,33 @@ class Handlers:
             self.parent.isoButton500.handler_unblock(handler_id_6)
             self.parent.isoButton640.handler_unblock(handler_id_7)
             self.parent.isoButton800.handler_unblock(handler_id_8)
-                
-                
+
             handler_id_1 = get_handler_id(self.parent.AutoAwbButton, "notify::active")
-            handler_id_2 = get_handler_id(self.parent.redGainScale, "value-changed")                
+            handler_id_2 = get_handler_id(self.parent.redGainScale, "value-changed")
             handler_id_3 = get_handler_id(self.parent.blueGainScale, "value-changed")
             self.parent.AutoAwbButton.handler_block(handler_id_1)
             self.parent.redGainScale.handler_block(handler_id_2)
             self.parent.blueGainScale.handler_block(handler_id_3)
-               
-            self.parent.redGainScale.set_value(params['red_gain'])
-            self.parent.blueGainScale.set_value(params['blue_gain'])
-            if params['awb']=='off':
+
+            self.parent.redGainScale.set_value(params.red_gain)
+            self.parent.blueGainScale.set_value(params.blue_gain)
+            if params.awb_mode == 'off':
                 self.parent.AutoAwbButton.set_active(False)
                 self.parent.redGainScale.set_sensitive(True)
                 self.parent.blueGainScale.set_sensitive(True)
-            elif params['awb']=='auto':
+            elif params.awb_mode == 'auto':
                 self.parent.AutoAwbButton.set_active(True)
                 self.parent.redGainScale.set_sensitive(False)
                 self.parent.blueGainScale.set_sensitive(True)
-                    
+
             self.parent.AutoAwbButton.handler_unblock(handler_id_1)
             self.parent.redGainScale.handler_unblock(handler_id_2)
             self.parent.blueGainScale.handler_unblock(handler_id_3)
-                
+
         elif response == Gtk.ResponseType.CANCEL:
             # ~ print('cancel')
             self.parent.paramFileChooser.hide()
-            
+
     def on_param_file_chooser_close(self, *args):
         self.parent.paramFileChooser.hide()
 
@@ -824,50 +816,68 @@ class Handlers:
             return
         self.parent.parent.GPIO.test_delay = val
 
+    def check_fixed_settings(self):
+        is_fixed_capture, bad_params = self.parent.parent.Camera.is_fixed_capture()
+        if not is_fixed_capture:
+            d = Gtk.MessageDialog(
+                transient_for=self.parent.mainWindow,
+                modal=True,
+                buttons=Gtk.ButtonsType.OK
+            )
+            bad_params_strs = "\n".join([f"{k}: {v}" for k,v in bad_params.items()])
+            d.props.text = "CAMERA SETTINGS WARNING!"
+            d.props.secondary_text = "\n\n".join([
+                "The camera is not set for fixed exposure & white-balance.",
+                "Inconsistent images may result due to following parameters:",
+                bad_params_strs]
+            )
+            d.run()
+            d.destroy()
+
 
 class ZionGUI():
 
     EventEntries : List[EventEntry]
 
-    def __init__(self, initial_values, parent, glade_file='zion_layout.glade'):
+    def __init__(self, initial_values : ZionCameraParameters, parent : 'ZionSession', glade_file : str = 'zion_layout.glade'):
         #Create Window and Maximize:
         self.builder = Gtk.Builder.new_from_file(glade_file)
         self.mainWindow = self.builder.get_object("window1")
-        
+
         # ~ Gtk.Window.maximize(self.mainWindow)
         self.mainWindow.move(633,36)
         # ~ self.mainWindow.resize(1287,712)
-        
+
         self.parent = parent
 
         #define default values
-        self.Default_Brightness = initial_values['brightness']
-        self.Default_Contrast = initial_values['contrast']
-        self.Default_Saturation = initial_values['saturation']
-        self.Default_Sharpness = initial_values['sharpness']
+        self.Default_Brightness = initial_values.brightness
+        self.Default_Contrast = initial_values.contrast
+        self.Default_Saturation = initial_values.saturation
+        self.Default_Sharpness = initial_values.sharpness
 
         self.BrightnessScale = self.builder.get_object("brightness_scale")
         self.BrightnessEntry = self.builder.get_object("brightness_entry")
-        self.BrightnessScale.set_value(initial_values['brightness'])
+        self.BrightnessScale.set_value(initial_values.brightness)
         self.ContrastScale = self.builder.get_object("contrast_scale")
         self.ContrastEntry = self.builder.get_object("contrast_entry")
-        self.ContrastScale.set_value(initial_values['contrast'])
+        self.ContrastScale.set_value(initial_values.contrast)
         self.SaturationScale = self.builder.get_object("saturation_scale")
         self.SaturationEntry = self.builder.get_object("saturation_entry")
-        self.SaturationScale.set_value(initial_values['saturation'])
+        self.SaturationScale.set_value(initial_values.saturation)
         self.SharpnessScale = self.builder.get_object("sharpness_scale")
         self.SharpnessEntry = self.builder.get_object("sharpness_entry")
-        self.SharpnessScale.set_value(initial_values['sharpness'])
+        self.SharpnessScale.set_value(initial_values.sharpness)
 
         self.AutoAwbButton = self.builder.get_object("auto_wb_switch")
         self.redGainEntry = self.builder.get_object("red_gain_entry")
         self.redGainScale = self.builder.get_object("red_gain_scale")
-        self.redGainScale.set_value(initial_values['red_gain'])
+        self.redGainScale.set_value(initial_values.red_gain)
         self.blueGainEntry = self.builder.get_object("blue_gain_entry")
         self.blueGainScale = self.builder.get_object("blue_gain_scale")
-        self.blueGainScale.set_value(initial_values['blue_gain'])
-        
-        if initial_values['awb']=='off':
+        self.blueGainScale.set_value(initial_values.blue_gain)
+
+        if initial_values.awb_mode == 'off':
             self.AutoAwbButton.set_active(False)
             self.redGainScale.set_sensitive(True)
             self.blueGainScale.set_sensitive(True)
@@ -888,7 +898,7 @@ class ZionGUI():
         self.digitalGainEntry = self.builder.get_object("digital_gain_entry")
         self.frBuffer = self.builder.get_object("framerate_buffer")
         self.frEntry = self.builder.get_object("framerate_entry")
-        
+
         self.pulseTextInput = self.builder.get_object("uv_led_entry")
         # ~ self.secretUVSwitchButton = self.builder.get_object("uv_led_switch")
         self.blueDCEntry = self.builder.get_object("blue_led_dc_entry")
@@ -897,15 +907,15 @@ class ZionGUI():
         self.blueSwitch = self.builder.get_object("blue_led_switch")
         self.orangeSwitch = self.builder.get_object("orange_led_switch")
         self.uvSwitch = self.builder.get_object("uv_led_switch")
-        
+
         self.logBuffer = self.builder.get_object("textbuffer_log")
         self.logView = self.builder.get_object("textview_log")
         self.logMarkEnd = self.logBuffer.create_mark("", self.logBuffer.get_end_iter(), False)
 
         self.temperatureBuffer = self.builder.get_object("temperature_buffer")
-        
+
         self.imageDenoiseButton = self.builder.get_object("denoise_button")
-        
+
         self.isoButtonAuto = self.builder.get_object("radiobutton0")
         self.isoButton100 = self.builder.get_object("radiobutton1")
         self.isoButton200 = self.builder.get_object("radiobutton2")
@@ -918,8 +928,8 @@ class ZionGUI():
         self.commentBox = self.builder.get_object("comment_entry")
         self.suffixBox = self.builder.get_object("suffix_entry")
 
-        
-        if initial_values['exposure_mode']=='off':
+
+        if initial_values.exposure_mode == 'off':
             self.expModeLockButton.set_active(True)
             self.isoButtonBox.set_sensitive(False)
             self.expCompScale.set_sensitive(False)
@@ -931,9 +941,9 @@ class ZionGUI():
             self.expCompScale.set_sensitive(True)
             listStore = self.expModeComboBox.get_model()
             rowList = [row[0] for row in listStore]
-            self.Def_row_idx = rowList.index(initial_values['exposure_mode'])
+            self.Def_row_idx = rowList.index(initial_values.exposure_mode)
             self.expModeComboBox.set_active(self.Def_row_idx)
-            
+
         self.paramFileChooser = self.builder.get_object('param_file_chooser_dialog')
         self.filter_protocol = Gtk.FileFilter()
         self.filter_protocol.set_name("Protocol Files")
@@ -962,6 +972,8 @@ class ZionGUI():
 
         self.handlers = Handlers(self)
         self.builder.connect_signals(self.handlers)
+
+        GLib.idle_add(self.handlers.check_fixed_settings)
 
     def printToLog(self, text):
         text_iter_end = self.logBuffer.get_end_iter()
