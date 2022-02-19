@@ -7,7 +7,7 @@ import gi
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk, GLib
 import keyboard
-from ZionCamera import ZionCamera
+from ZionCamera import ZionCamera, ZionCameraParameters
 from ZionGPIO import ZionGPIO
 from ZionEvents import ZionEventGroup, check_led_timings, ZionProtocol
 from ZionGtk import ZionGUI
@@ -36,7 +36,9 @@ class ZionSession():
         filename = now_date+'_'+now_time+'_'+self.Name
 
         lastSuffix = 0
-        for f in glob('*_'+session_name+"_*"):
+        sessions_dir = os.path.join(mod_path, "sessions")
+
+        for f in glob(os.path.join(sessions_dir, f"*_{session_name}_*")):
             lastHyphenIdx = f.rfind('_')
             newSuffix = int(f[(lastHyphenIdx+1):])
             lastSuffix = newSuffix if newSuffix>lastSuffix else lastSuffix
@@ -103,7 +105,7 @@ class ZionSession():
         
     def SaveParameterFile(self, comment, bSession, timestamp=0):
         params = self.Camera.get_all_params()
-        params['comment'] = comment
+        params.comment = comment
         if bSession:
             filename = filename = os.path.join(self.Dir, str(self.CaptureCount).zfill(ZionSession.captureCountDigits)+'_'+str(self.ProtocolCount+1).zfill(ZionSession.protocolCountDigits)+'A_Params')
         else:
@@ -111,39 +113,12 @@ class ZionSession():
             if timestamp > 0:
                     filename += '_'+str(timestamp)
 
-        if not filename.endswith('.txt'):
-            filename += ".txt"
+        params.save_to_file(filename)
 
-        with open(filename, 'w') as f:
-            for key in params.keys():
-                f.write(key + ': '+str(params[key])+'\n')
         return filename
 
-    def LoadParameterFile(self, filename):
-        params = dict()
-        with open(filename) as f:
-            for line in f:
-                linesplit = line.split(':')
-                parameter_key = linesplit[0]
-                parameter_value = linesplit[1][1:].strip()
-                if not parameter_key=='comment': 
-                    if parameter_value[0]=='-':
-                        if parameter_value[1:].isdecimal():
-                            params[parameter_key] = int(parameter_value)
-                        else:
-                            try:
-                                params[parameter_key] = float(parameter_value)
-                            except ValueError:
-                                params[parameter_key] = parameter_value
-                    else:
-                        if parameter_value.isdecimal():
-                            params[parameter_key] = int(parameter_value)
-                        else:
-                            try:
-                                params[parameter_key] = float(parameter_value)
-                            except ValueError:
-                            #therefore it must be a string:
-                                params[parameter_key] = parameter_value
+    def LoadParameterFile(self, filename : str) -> ZionCameraParameters:
+        params = ZionCameraParameters.load_from_file(filename)
         self.Camera.load_params(params)
         return params
 
