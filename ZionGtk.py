@@ -10,7 +10,7 @@ import threading
 from operator import itemgetter
 from ZionPulseGUI import EventEntry
 from ZionGtkHelpers import PictureView
-from ZionEvents import ZionProtocol
+from ZionEvents import ZionProtocol, ZionLEDColor
 
 mod_path = os.path.dirname(os.path.abspath(__file__))
 
@@ -288,10 +288,10 @@ class Handlers:
                 self.parent.printToLog('Duty Cycle must be an integer from 0-100!')
                 return
             self.parent.printToLog('Blue LED on, set to '+str(dc)+'% duty cycle')
-            self.parent.parent.GPIO.enable_led('Blue',float(dc/100.))
+            self.parent.parent.GPIO.enable_led(ZionLEDColor.BLUE,float(dc/100.))
         else:
             self.parent.printToLog('Blue LED off')
-            self.parent.parent.GPIO.enable_led('Blue',0)
+            self.parent.parent.GPIO.enable_led(ZionLEDColor.BLUE,0)
             
     def on_orange_led_button_toggled(self, switch):
         if switch.get_active():
@@ -301,10 +301,10 @@ class Handlers:
                 self.parent.printToLog('Duty Cycle must be an integer from 0-100!')
                 return
             self.parent.printToLog('Orange LED on, set to '+str(dc)+'% duty cycle')
-            self.parent.parent.GPIO.enable_led('Orange',float(dc/100.))
+            self.parent.parent.GPIO.enable_led(ZionLEDColor.ORANGE,float(dc/100.))
         else:
             self.parent.printToLog('Orange LED off')
-            self.parent.parent.GPIO.enable_led('Orange',0)
+            self.parent.parent.GPIO.enable_led(ZionLEDColor.ORANGE,0)
             
     def on_uv_led_button_toggled(self, switch):
         if switch.get_active():
@@ -314,10 +314,10 @@ class Handlers:
                 self.parent.printToLog('Duty Cycle must be an integer from 0-100!')
                 return
             self.parent.printToLog('UV LED on, set to '+str(dc)+'% duty cycle')
-            self.parent.parent.GPIO.enable_led('UV',float(dc/100.))
+            self.parent.parent.GPIO.enable_led(ZionLEDColor.UV,float(dc/100.))
         else:
             self.parent.printToLog('UV LED off')
-            self.parent.parent.GPIO.enable_led('UV',0)
+            self.parent.parent.GPIO.enable_led(ZionLEDColor.UV,0)
             
     # ~ def on_uv_switch_safety_button(self, button):
         # ~ if button.get_active():
@@ -600,9 +600,9 @@ class Handlers:
                     self.parent.printToLog("WARNING: The thread running the protocol didn't stop!\n You might want to restart the program...")
 
                 self.run_thread = None
-                self.parent.parent.GPIO.enable_led('UV',0)
-                self.parent.parent.GPIO.enable_led('Blue',0)
-                self.parent.parent.GPIO.enable_led('Orange',0)
+                self.parent.parent.GPIO.enable_led(ZionLEDColor.UV, 0)
+                self.parent.parent.GPIO.enable_led(ZionLEDColor.BLUE, 0)
+                self.parent.parent.GPIO.enable_led(ZionLEDColor.ORANGE, 0)
                 self.parent.runProgramButton.set_sensitive(True)
 
         
