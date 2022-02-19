@@ -5,12 +5,14 @@ import json
 from types import SimpleNamespace
 import traceback
 from typing import List
+from fractions import Fraction
 
 from ZionErrors import (
     ZionProtocolVersionError,
     ZionProtocolFileError,
 )
 
+from ZionCamera import ZionCameraParameters
 
 class ZionLEDColor(Enum):
     UV = auto()
@@ -98,12 +100,15 @@ class ZionProtocolEncoder(json.JSONEncoder):
             return obj.__dict__
         if isinstance(obj, ZionLEDColor):
             return obj.name
+        if isinstance(obj, Fraction):
+            return float(obj)
         return json.JSONEncoder.default(self, obj)
 
 
 class ZionProtocol:
     def __init__(self, filename: str = None):
         self.Version: int = 2
+        self.Parameters: ZionCameraParameters = ZionCameraParameters()
         self.EventGroups: List[ZionEventGroup] = [ZionEventGroup()]
 
         if filename:
@@ -139,6 +144,9 @@ class ZionProtocol:
                 )
 
             self.EventGroups.append(ZionEventGroup.from_json(eg))
+
+        parameters_dict = getattr(json_ns, 'Parameters', {})
+        self.Parameters = ZionCameraParameters(**parameters_dict)
 
     def load_from_file(self, filename: str, flatten: bool = True):
         try:

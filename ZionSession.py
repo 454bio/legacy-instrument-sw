@@ -102,10 +102,9 @@ class ZionSession():
                 # ~ self.gui.printToLog('Camera Busy! '+filename+' not written!')
             # ~ ret = 1
         return ret
-        
+
     def SaveParameterFile(self, comment, bSession, timestamp=0):
-        params = self.Camera.get_all_params()
-        params.comment = comment
+        params = self.Camera.get_all_params(comment=comment)
         if bSession:
             filename = filename = os.path.join(self.Dir, str(self.CaptureCount).zfill(ZionSession.captureCountDigits)+'_'+str(self.ProtocolCount+1).zfill(ZionSession.protocolCountDigits)+'A_Params')
         else:
@@ -122,12 +121,13 @@ class ZionSession():
         self.Camera.load_params(params)
         return params
 
-    def SaveProtocolFile(self, filename=None):
+    def SaveProtocolFile(self, filename : str = None, comment : str = ""):
         if not filename:
             self.ProtocolCount += 1
             self.captureCountThisProtocol = 0
             filename = os.path.join(self.Dir, str(self.CaptureCount).zfill(ZionSession.captureCountDigits)+'_'+str(self.ProtocolCount).zfill(ZionSession.protocolCountDigits)+'A_Protocol')
 
+        self.Protocol.Parameters = self.Camera.get_all_params(comment=comment)
         self.Protocol.save_to_file(filename)
 
     def LoadProtocolFromFile(self, filename):
