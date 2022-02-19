@@ -82,15 +82,15 @@ class ZionCameraParameters:
 		)
 
 	@classmethod
-	def load_from_camera(cls, camera : 'ZionCamera') -> 'ZionCameraParameters':
+	def load_from_camera(cls, camera : 'ZionCamera', comment : str = "") -> 'ZionCameraParameters':
 		p = cls()
 		for field in fields(p):
 			if field.name == "red_gain":
 				p.red_gain = camera.awb_gains[0]
 			elif field.name == "blue_gain":
 				p.blue_gain = camera.awb_gains[1]
-			elif field.name == "comment":
-				pass
+			elif field.name == "comment" and comment:
+				p.comment = str(comment)
 			else:
 				setattr(p, field.name, field.type(getattr(camera, field.name)))
 
@@ -172,8 +172,8 @@ class ZionCamera(PiCamera):
 		self.close()
 		print('\nCamera Closed')
 
-	def get_all_params(self) -> ZionCameraParameters:
-		return ZionCameraParameters.load_from_camera(self)
+	def get_all_params(self, comment : str = "") -> ZionCameraParameters:
+		return ZionCameraParameters.load_from_camera(self, comment=comment)
 
 	def load_params(self, params_in : ZionCameraParameters):
 		for param in PARAMS_LOAD_ORDER:

@@ -87,9 +87,10 @@ class Handlers:
 
         if response == Gtk.ResponseType.OK:
             filename = self.parent.paramFileChooser.get_filename()
+            comment = self.parent.commentBox.get_text()
             self.recent_protocol_file = filename
             self.parent.paramFileChooser.hide()
-            self.parent.parent.SaveProtocolFile(filename)
+            self.parent.parent.SaveProtocolFile(filename=filename, comment=comment)
         elif response == Gtk.ResponseType.CANCEL:
             self.parent.paramFileChooser.hide()
 
@@ -561,7 +562,7 @@ class Handlers:
             button.set_sensitive(True)
             return
         self.parent.parent.LoadProtocolFromGUI(events)
-        self.parent.parent.SaveProtocolFile()
+        self.parent.parent.SaveProtocolFile(comment=comment)
 
         self.stop_run_thread.clear()
         self.parent.parent.Camera.stop_preview()
