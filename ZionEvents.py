@@ -448,25 +448,3 @@ class ZionProtocol:
     def gtk_new_event(self):
         print("gtk_new_event")
 
-
-# Check for well-formed timing arrays:
-def check_led_timings(LED_Blu_Timing, LED_Or_Timing, LED_UV_Timing, UV_duty_cycle=3.0):
-    for led_array in [LED_Blu_Timing, LED_Or_Timing, LED_UV_Timing]:
-        for onOffPair in led_array:
-            if len(onOffPair) != 2:
-                raise ValueError(
-                    "On-Off Pair " + str(onOffPair) + " must have length 2!"
-                )
-            elif onOffPair[1] <= onOffPair[0]:
-                raise ValueError("On-Off Pair must be in increasing order (ie time)!")
-    if not UV_duty_cycle is None:
-        for i in range(len(LED_UV_Timing) - 1):
-            t_on1 = LED_UV_Timing[i][0]
-            t_off1 = LED_UV_Timing[i][1]
-            t_dc_on = t_off1 - t_on1
-            t_on2 = LED_UV_Timing[i + 1][0]
-            t_dc_off = t_on2 - t_off1
-            if t_dc_off < t_dc_on * (100.0 - UV_duty_cycle) / UV_duty_cycle:
-                raise ValueError("UV timing must have a maximum duty cycle of 3%!")
-        # returns last t_on_dc so that we wait that long at the end of the event list (repeat or not)
-        # ~ return LED_UV_Timing[-1][1]-LED_UV_Timing[-1][0]

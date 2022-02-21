@@ -9,7 +9,7 @@ from gi.repository import Gtk, GLib
 import keyboard
 from ZionCamera import ZionCamera, ZionCameraParameters
 from ZionGPIO import ZionGPIO
-from ZionEvents import ZionEventGroup, check_led_timings, ZionProtocol
+from ZionEvents import ZionEventGroup, ZionProtocol
 from ZionGtk import ZionGUI
 from picamera.exc import PiCameraValueError, PiCameraAlreadyRecording, PiCameraMMALError
 import threading
