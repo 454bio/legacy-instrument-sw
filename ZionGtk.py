@@ -564,7 +564,8 @@ class Handlers:
     #Event List stuff
     def on_new_event_button_clicked(self, button):
         # Need to get selected event/group if there is one
-        self.parent.Protocol.gtk_new_event()
+        # self.parent.Protocol.gtk_new_event()
+        self.parent.parent.Protocol.load_from_treestore()
 
     #File chooser:
     def on_param_file_chooser_dialog_realize(self, widget):
@@ -922,7 +923,7 @@ class ZionGUI():
         self.parent.Protocol.add_event(name="Blue", group="B", capture=True, postdelay=250, leds=blue_led, parent=g_3)
         self.parent.Protocol.add_event(name="Orange", group="O", capture=True, postdelay=250, leds=orange_led, parent=g_3)
 
-        self.EventTreestore = self.parent.Protocol.load_treestore()
+        self.EventTreestore = self.parent.Protocol.init_treestore()
 
         def print_row(store, treepath, treeiter):
             print("\t" * (treepath.get_depth() - 1), store[treeiter][:], sep="")

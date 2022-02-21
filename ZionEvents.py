@@ -64,7 +64,7 @@ class ZionEvent(ZionProtocolEntry):
         return cls(**json_dict, leds=leds)
 
     def set_led_pulsetime(self, led : ZionLEDColor, pulsetime : int):
-        self._leds_dict[led] = pulsetime
+        self._leds_dict[led].pulsetime = pulsetime
 
     def update_leds(self, leds: Union[List[ZionLED], ZionLED]):
         """ Update the instance's LED settings """
@@ -123,6 +123,7 @@ class ZionEventGroup(ZionProtocolEntry):
         return cls(**json_dict, leds=leds)
 
 
+# Maybe I can just ultimately make this a Gtk.TreeView subclass??
 class ZionProtocolTreestore():
     """
     Helper class for converting the above dataclasses into
@@ -177,6 +178,7 @@ class ZionProtocolTreestore():
 
         self._types = tuple(map(type, default_entry))
         self._default_entry = tuple(default_entry)
+        self._led_start_ind = self.FIELDS.index("leds")
 
     @property
     def names(self):
@@ -190,7 +192,37 @@ class ZionProtocolTreestore():
     def types(self):
         return self._types
 
-    def get_entry(self, obj):
+    def get_event(self, entry: Tuple) -> Union[ZionEvent, ZionEventGroup]:
+        """
+        Convert a treemodel entry (tuple) into ZionEvent or ZionEventGroup
+        """
+
+        # Make a dict out of the fields, _except_ the leds entries which are a special case
+        # zip handles this gracefully for us since we can still pass in the full entry tuple
+        entry_dict = {f: v for f,v in zip(self.FIELDS[:-1], entry)}
+
+        print(entry_dict)
+
+        if entry_dict["is_event"]:
+            event = ZionEvent(**entry_dict)
+            # Now load the led params
+            led_pulsetimes = entry[self._led_start_ind:]
+            if len(led_pulsetimes) != len(event.leds):
+                raise RuntimeWarning("Problem converting treestore entry to ZionEvent... " \
+                                     "Entry has {len(led_pulsetimes)} led parameters, we were expecting {len(event.leds)}")
+            for ptime, led in zip(led_pulsetimes, event.leds):
+                led.pulsetime = ptime
+        else:
+            # Name & cycles are the only thing we care about right now
+            event = ZionEventGroup(name=entry_dict["name"], cycles=entry_dict["cycles"])
+
+        print(event)
+        return event
+
+    def get_entry(self, obj : Union[ZionEvent, ZionEventGroup]):
+        """
+        Convert a ZionEvent or ZionEventGroup into a treemodel entry (tuple)
+        """
         entry = []
 
         # FIELDS is shorter than _default_entry, but since leds is the last entry that's expanded
@@ -244,6 +276,28 @@ class ZionProtocolTreestore():
             # # thus rendering a different string in each row of the Gtk.TreeView
 
             # renderer.connect("edited", partial(self.text_edited, i))
+
+        select = treeview.get_selection()
+        select.connect("changed", self.on_tree_selection_changed)
+
+    def on_tree_selection_changed(self, selection):
+        print(f"selection: {selection}")
+        model, treeiter = selection.get_selected()
+        if treeiter is not None:
+            print(f"You selected {model[treeiter][1]}")
+            parent_iter = model.iter_parent(treeiter)
+            has_child = model.iter_has_child(treeiter)
+            if parent_iter is None:
+                print(f"Parent: Root")
+            else:
+                print(f"Parent: {model[parent_iter][1]}")
+
+            print(f"has_child: {has_child}\n")
+            if model[treeiter][0] or not has_child:
+                print(f"\t-->event: {self.get_event(model[treeiter])}")
+            else:
+                print(f"\t-->event_group: NEED TO IMPLEMENT")
+
 
 
 class ZionProtocolEncoder(json.JSONEncoder):
@@ -337,6 +391,25 @@ class ZionProtocol:
             tb = "".join(traceback.format_exception(type(e), e, e.__traceback__))
             print(f"ERROR Loading Protocol File: {filename}\n{tb}")
 
+    def _load_eventgroup_from_treestore(self, event_group : ZionEventGroup, iter):
+        entries = []
+        cur_iter = self._treestore.get_iter_first()
+        print(f"root_iter: {self._treestore[root_iter][1]}")
+
+    def load_from_treestore(self):
+        all_entries = []
+        cur_entries = all_entries
+        cur_iter = self._treestore.get_iter_first()
+        print(f"root_iter: {self._treestore[cur_iter][1]}")
+        while cur_iter is not None:
+            event_or_group = self._treestore_helper.get_event(self._treestore[cur_iter])
+            cur_entries.append(event_or_group)
+            if isinstance(event_or_group, ZionEventGroup) and self._treestore.iter_has_child(cur_iter):
+                # Recurse
+                pass
+            else:
+                cur_iter = self._treestore.iter_next(cur_iter)
+
     def save_to_file(self, filename: str):
         if not filename.endswith(".txt"):
             filename += ".txt"
@@ -344,12 +417,12 @@ class ZionProtocol:
         with open(filename, "w") as f:
             json.dump(self, f, indent=1, cls=ZionProtocolEncoder)
 
-    def load_treestore(self) -> Gtk.TreeStore:
+    def init_treestore(self) -> Gtk.TreeStore:
         self._treestore.clear()
-        self._load_treestore(None, self.Entries)
+        self._init_treestore(None, self.Entries)
         return self._treestore
 
-    def _load_treestore(
+    def _init_treestore(
         self,
         row_iter : Optional[Gtk.TreeIter],
         entries : List[Union[ZionEventGroup, ZionEvent]],
@@ -358,7 +431,7 @@ class ZionProtocol:
             new_row_iter = self._treestore.append(row_iter, self._entry_to_treestore(entry))
             if isinstance(entry, ZionEventGroup):
                 # Recurse into the events
-                self._load_treestore(new_row_iter, entry.events)
+                self._init_treestore(new_row_iter, entry.events)
 
     def _entry_to_treestore(self, entry):
         return self._treestore_helper.get_entry(entry)
@@ -368,6 +441,9 @@ class ZionProtocol:
 
     def get_entries(self):
         return self.Entries
+
+    # I wonder if I can put a hook into the treemodel that will get called
+    # anytime it's updated. So I can keep Entries up-to-date in real time...
 
     def performEvent(self, event: ZionEvent, gpio_ctrl: "ZionGPIO"):
         gpio_ctrl.enable_vsync_callback(event)
