@@ -55,10 +55,11 @@ class ZionSession():
         self.captureCountThisProtocol = 0
         self.SplitterCount = 0
 
+        self.Protocol = ZionProtocol()
+
         self.gui = ZionGUI(Initial_Values, self)
 
         self.TimeOfLife = time.time()
-        self.Protocol = ZionProtocol()
 
     def CaptureImageThread(self, cropping=(0,0,1,1), group=None, verbose=False, comment='', suffix='', protocol=True):
         """ This is running in a thread. It should not call any GTK functions """
@@ -139,7 +140,7 @@ class ZionSession():
     def LoadProtocolFromGUI(self, events):
         # Temporary to be compatible with old GUI
         print(f"events: {events}")
-        self.Protocol.EventGroups[0] = ZionEventGroup(
+        self.Protocol.Entries[0] = ZionEventGroup(
             cycles=1,
             events=events
             )

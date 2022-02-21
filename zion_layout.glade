@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- Generated with glade 3.22.1 -->
 <interface>
-  <requires lib="gtk+" version="3.0"/>
+  <requires lib="gtk+" version="3.20"/>
   <object class="GtkTextBuffer" id="analog_gain_buffer"/>
   <object class="GtkAdjustment" id="blue_gain_adjust">
     <property name="upper">8</property>
@@ -52,6 +52,11 @@
     <property name="icon_name">system-lock-screen-symbolic</property>
   </object>
   <object class="GtkImage" id="new_event_button_image">
+    <property name="visible">True</property>
+    <property name="can_focus">False</property>
+    <property name="icon_name">list-add-symbolic</property>
+  </object>
+  <object class="GtkImage" id="new_event_button_image1">
     <property name="visible">True</property>
     <property name="can_focus">False</property>
     <property name="icon_name">list-add-symbolic</property>
@@ -1576,8 +1581,9 @@
                       </object>
                       <packing>
                         <property name="expand">False</property>
-                        <property name="fill">True</property>
-                        <property name="position">3</property>
+                        <property name="fill">False</property>
+                        <property name="padding">5</property>
+                        <property name="position">0</property>
                       </packing>
                     </child>
                     <child>
@@ -1593,9 +1599,9 @@
                         <property name="accepts_tab">False</property>
                       </object>
                       <packing>
-                        <property name="expand">True</property>
-                        <property name="fill">True</property>
-                        <property name="position">4</property>
+                        <property name="expand">False</property>
+                        <property name="fill">False</property>
+                        <property name="position">1</property>
                       </packing>
                     </child>
                     <child>
@@ -1608,8 +1614,9 @@
                       </object>
                       <packing>
                         <property name="expand">False</property>
-                        <property name="fill">True</property>
-                        <property name="position">5</property>
+                        <property name="fill">False</property>
+                        <property name="padding">5</property>
+                        <property name="position">2</property>
                       </packing>
                     </child>
                     <child>
@@ -1621,8 +1628,8 @@
                       </object>
                       <packing>
                         <property name="expand">False</property>
-                        <property name="fill">True</property>
-                        <property name="position">6</property>
+                        <property name="fill">False</property>
+                        <property name="position">3</property>
                       </packing>
                     </child>
                     <child>
@@ -1635,8 +1642,9 @@
                       </object>
                       <packing>
                         <property name="expand">False</property>
-                        <property name="fill">True</property>
-                        <property name="position">7</property>
+                        <property name="fill">False</property>
+                        <property name="padding">5</property>
+                        <property name="position">4</property>
                       </packing>
                     </child>
                     <child>
@@ -1652,9 +1660,10 @@
                         <property name="accepts_tab">False</property>
                       </object>
                       <packing>
-                        <property name="expand">True</property>
-                        <property name="fill">True</property>
-                        <property name="position">8</property>
+                        <property name="expand">False</property>
+                        <property name="fill">False</property>
+                        <property name="padding">5</property>
+                        <property name="position">5</property>
                       </packing>
                     </child>
                     <child>
@@ -1667,9 +1676,19 @@
                       </object>
                       <packing>
                         <property name="expand">False</property>
-                        <property name="fill">True</property>
-                        <property name="position">9</property>
+                        <property name="fill">False</property>
+                        <property name="padding">5</property>
+                        <property name="position">6</property>
                       </packing>
+                    </child>
+                    <child>
+                      <placeholder/>
+                    </child>
+                    <child>
+                      <placeholder/>
+                    </child>
+                    <child>
+                      <placeholder/>
                     </child>
                   </object>
                   <packing>
@@ -1691,92 +1710,6 @@
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkBox">
-                    <property name="visible">True</property>
-                    <property name="can_focus">False</property>
-                    <child>
-                      <object class="GtkButton" id="new_event_button">
-                        <property name="visible">True</property>
-                        <property name="can_focus">True</property>
-                        <property name="receives_default">True</property>
-                        <property name="image">new_event_button_image</property>
-                        <signal name="clicked" handler="on_new_event_button_clicked" swapped="no"/>
-                      </object>
-                      <packing>
-                        <property name="expand">False</property>
-                        <property name="fill">False</property>
-                        <property name="padding">2</property>
-                        <property name="position">0</property>
-                      </packing>
-                    </child>
-                    <child>
-                      <object class="GtkLabel" id="eventlist_color_label">
-                        <property name="visible">True</property>
-                        <property name="can_focus">False</property>
-                        <property name="halign">center</property>
-                        <property name="label" translatable="yes">Color (DC):</property>
-                        <property name="justify">center</property>
-                        <property name="width_chars">10</property>
-                      </object>
-                      <packing>
-                        <property name="expand">False</property>
-                        <property name="fill">False</property>
-                        <property name="position">1</property>
-                      </packing>
-                    </child>
-                    <child>
-                      <object class="GtkLabel" id="eventlist_pulse_time_label">
-                        <property name="visible">True</property>
-                        <property name="can_focus">False</property>
-                        <property name="halign">center</property>
-                        <property name="label" translatable="yes">Pulse Time (ms)</property>
-                        <property name="justify">center</property>
-                        <property name="width_chars">17</property>
-                      </object>
-                      <packing>
-                        <property name="expand">False</property>
-                        <property name="fill">False</property>
-                        <property name="position">3</property>
-                      </packing>
-                    </child>
-                    <child>
-                      <object class="GtkLabel" id="eventlist_capture_label">
-                        <property name="visible">True</property>
-                        <property name="can_focus">False</property>
-                        <property name="halign">center</property>
-                        <property name="label" translatable="yes">Capture?</property>
-                        <property name="justify">center</property>
-                        <property name="width_chars">8</property>
-                      </object>
-                      <packing>
-                        <property name="expand">True</property>
-                        <property name="fill">False</property>
-                        <property name="position">3</property>
-                      </packing>
-                    </child>
-                    <child>
-                      <object class="GtkLabel" id="eventlist_dc_label">
-                        <property name="visible">True</property>
-                        <property name="can_focus">False</property>
-                        <property name="halign">center</property>
-                        <property name="label" translatable="yes">Post-Delay (ms)</property>
-                        <property name="justify">center</property>
-                        <property name="width_chars">6</property>
-                      </object>
-                      <packing>
-                        <property name="expand">True</property>
-                        <property name="fill">False</property>
-                        <property name="position">7</property>
-                      </packing>
-                    </child>
-                  </object>
-                  <packing>
-                    <property name="expand">False</property>
-                    <property name="fill">True</property>
-                    <property name="position">2</property>
-                  </packing>
-                </child>
-                <child>
                   <object class="GtkScrolledWindow">
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
@@ -1793,6 +1726,7 @@
                           <object class="GtkTreeView" id="event_tree">
                             <property name="visible">True</property>
                             <property name="can_focus">True</property>
+                            <property name="enable_grid_lines">vertical</property>
                             <property name="enable_tree_lines">True</property>
                             <child internal-child="selection">
                               <object class="GtkTreeSelection"/>
@@ -1813,10 +1747,37 @@
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
                     <child>
-                      <placeholder/>
+                      <object class="GtkButton" id="new_event_button">
+                        <property name="label" translatable="yes">Event</property>
+                        <property name="visible">True</property>
+                        <property name="can_focus">True</property>
+                        <property name="receives_default">True</property>
+                        <property name="image">new_event_button_image</property>
+                        <property name="always_show_image">True</property>
+                        <signal name="clicked" handler="on_new_event_button_clicked" swapped="no"/>
+                      </object>
+                      <packing>
+                        <property name="expand">False</property>
+                        <property name="fill">False</property>
+                        <property name="padding">2</property>
+                        <property name="position">0</property>
+                      </packing>
                     </child>
                     <child>
-                      <placeholder/>
+                      <object class="GtkButton" id="new_group_button">
+                        <property name="label" translatable="yes">Group</property>
+                        <property name="visible">True</property>
+                        <property name="can_focus">True</property>
+                        <property name="receives_default">True</property>
+                        <property name="image">new_event_button_image1</property>
+                        <property name="always_show_image">True</property>
+                      </object>
+                      <packing>
+                        <property name="expand">False</property>
+                        <property name="fill">False</property>
+                        <property name="padding">2</property>
+                        <property name="position">1</property>
+                      </packing>
                     </child>
                     <child>
                       <placeholder/>

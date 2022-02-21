@@ -10,8 +10,16 @@ import threading
 from operator import itemgetter
 from ZionPulseGUI import EventEntry
 from ZionGtkHelpers import PictureView
-from ZionEvents import ZionProtocol, ZionLEDColor
+from ZionEvents import (
+    ZionLED,
+    ZionProtocol,
+    ZionLEDColor,
+    ZionEvent,
+    ZionEventGroup,
+    ZionProtocolTreestore,
+)
 from ZionCamera import ZionCameraParameters
+from collections import namedtuple
 
 mod_path = os.path.dirname(os.path.abspath(__file__))
 
@@ -957,23 +965,47 @@ class ZionGUI():
         self.paramFileChooser.add_filter(self.filter_parameter)
         self.paramFileChooser.set_filter(self.filter_protocol)
 
+        self.EventTreeViewGtk = self.builder.get_object("event_tree")
 
-        self.EventTreeGtk = self.builder.get_object("event_tree")
-        # name : str
-        # cycles : int
-        # capture : bool
-        # postdelay: int
-        
-        self.EventTreestore = Gtk.TreeStore(str, int, str)
+        blue_led = ZionLED(ZionLEDColor.BLUE, 100)
+        orange_led = ZionLED(ZionLEDColor.ORANGE, 120)
+        uv_led = ZionLED(ZionLEDColor.UV, 100)
+
+        self.parent.Protocol.clear()
+        g_1 = self.parent.Protocol.add_event_group(name="All Steps", cycles=5)
+
+        g_2 = self.parent.Protocol.add_event_group(name="Extension", cycles=144, parent=g_1)
+        self.parent.Protocol.add_event(name="Dark", group="D", capture=True, postdelay=250, parent=g_2)
+        self.parent.Protocol.add_event(name="Blue", group="B", capture=True, postdelay=250, leds=blue_led, parent=g_2)
+        self.parent.Protocol.add_event(name="Orange", group="O", capture=True, postdelay=250, leds=orange_led, parent=g_2)
+
+        g_3 = self.parent.Protocol.add_event_group(name="Cleaving", cycles=4, parent=g_1)
+        self.parent.Protocol.add_event(name="UV", group="U", capture=True, postdelay=250, leds=uv_led, parent=g_3)
+        self.parent.Protocol.add_event(name="Dark", group="D", capture=True, postdelay=250, parent=g_3)
+        self.parent.Protocol.add_event(name="Blue", group="B", capture=True, postdelay=250, leds=blue_led, parent=g_3)
+        self.parent.Protocol.add_event(name="Orange", group="O", capture=True, postdelay=250, leds=orange_led, parent=g_3)
+
+        self.EventTreestore = self.parent.Protocol.load_treestore()
+
+        def print_row(store, treepath, treeiter):
+            print("\t" * (treepath.get_depth() - 1), store[treeiter][:], sep="")
+
+        self.EventTreestore.foreach(print_row)
+
+        self.EventTreeViewGtk.set_model(self.EventTreestore)
+
+        self.parent.Protocol.gtk_initialize_treeview(self.EventTreeViewGtk)
+
+        self.EventTreeViewGtk.get_selection().set_mode(Gtk.SelectionMode.SINGLE)
         # self.EventEntries = [EventEntry(self)]
         # self.EventTreeGtk.pack_start(self.EventEntries[0], False, True, 0)
-        self.EventTreeGtk.show_all()
+        self.EventTreeViewGtk.show_all()
 
         # self.EventListGtk = self.builder.get_object("event_list")
         # self.EventEntries = [EventEntry(self)]
         # self.EventListGtk.pack_start(self.EventEntries[0], False, True, 0)
         # self.EventListGtk.show_all()
-        # self.EventListScroll = self.builder.get_object("eventlist_scroll")
+        self.EventListScroll = self.builder.get_object("eventlist_scroll")
 
         self.runProgramButton = self.builder.get_object("run_program_button")
 
