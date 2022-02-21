@@ -1716,7 +1716,6 @@
                     <property name="hscrollbar_policy">never</property>
                     <property name="vscrollbar_policy">always</property>
                     <property name="shadow_type">in</property>
-                    <signal name="size-allocate" handler="on_event_scroll_size_allocate" swapped="no"/>
                     <child>
                       <object class="GtkViewport" id="eventlist_scroll">
                         <property name="visible">True</property>

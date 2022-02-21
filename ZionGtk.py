@@ -8,7 +8,6 @@ gi.require_version('Gst', '1.0')
 from gi.repository import Gtk, GObject, GLib
 import threading
 from operator import itemgetter
-from ZionPulseGUI import EventEntry
 from ZionGtkHelpers import PictureView
 from ZionEvents import (
     ZionLED,
@@ -103,16 +102,9 @@ class Handlers:
             self.parent.paramFileChooser.hide()
 
     def save_eventList(self):
-        eventList = []
-        for eventEntry in self.parent.EventEntries:
-            event = eventEntry.exportEvent()
-            if event:
-                eventList.append(event)
-            else:
-                self.parent.printToLog('Eventlist not saved!')
-                return
+        print("save_eventList: this is where we'd convert the Gtk tree to ZionProtol")
 
-        return eventList
+        return
 
     # TODO: Make the naming consistent
     def on_script_load_button_clicked(self, button):
@@ -130,46 +122,9 @@ class Handlers:
             filename = self.parent.paramFileChooser.get_filename()
             self.parent.paramFileChooser.hide()
             self.recent_protocol_file = filename
-            protocol = self.parent.parent.LoadProtocolFromFile(filename)
-            self.load_protocol(protocol)
+            self.parent.parent.LoadProtocolFromFile(filename)
         elif response == Gtk.ResponseType.CANCEL:
             self.parent.paramFileChooser.hide()
-
-    def load_protocol(self, protocol : ZionProtocol):
-            # Temporary to make old GUI work...
-            event_group = protocol.get_event_groups()[0]
-
-            #clear out current gui list:
-            for entry in self.parent.EventEntries:
-                entry.destroy()
-            del(self.parent.EventEntries[:])
-
-            #now fill it up:
-            for event in event_group.events:
-                eventEntry = EventEntry(self.parent)
-                eventEntry.import_event(event)
-                #event[0] is color dc dict
-                #event[1] is time
-                #event[2] is bCapture
-                #event[3] is postdelay
-                #event[4] is group
-
-                # if event[0]==None: #should this be {}?
-                #     eventEntry.ColorComboBox.set_active(None)
-                # else:
-                #     eventEntry.ColorComboBox.set_active(event[0])
-                #     if event[4]:
-                #         eventEntry.CaptureGroupEntry.set_text(event[4])
-                #     else:
-                #         eventEntry.CaptureGroupEntry.set_text('')
-                #     eventEntry.CaptureToggleButton.set_active(event[2])
-                #     if event[3]:
-                #         eventEntry.PostDelayEntry.set_text(str(int(event[3])))
-                #     else:
-                #         eventEntry.PostDelayEntry.set_text('')
-                self.parent.EventEntries.append( eventEntry )
-                self.parent.EventListGtk.pack_start( self.parent.EventEntries[-1], False, False, 0 )
-            self.parent.EventListGtk.show_all()
 
     def updateExpParams(self):
         a_gain = float(self.parent.parent.Camera.analog_gain)
@@ -606,26 +561,10 @@ class Handlers:
                 self.parent.parent.GPIO.enable_led(ZionLEDColor.ORANGE, 0)
                 self.parent.runProgramButton.set_sensitive(True)
 
-        
     #Event List stuff
     def on_new_event_button_clicked(self, button):
-        self.parent.EventEntries.append( EventEntry(self.parent) )
-        self.parent.EventListGtk.pack_start( self.parent.EventEntries[-1], False, False, 0 )
-        self.parent.EventListGtk.show_all()
-        adjustment = self.parent.EventListScroll.get_vadjustment()
-        adjustment.set_value(adjustment.get_upper())
-        Gtk.Widget.show(self.parent.EventListScroll)
-        
-    def on_event_scroll_size_allocate(self, scroll, rectangle):
-        #TODO scroll to bottom
-        # ~ adjustment = scroll.get_vadjustment()
-        # ~ adjustment.set_value(adjustment.get_upper())
-        # ~ adjustment = scroll.get_vadjustment()
-        # ~ adjustment.set_value(adjustment.get_upper())
-        # ~ Gtk.Widget.show(self.parent.EventListScroll)
-        # ~ mark = self.logBuffer.create_mark(None, self.logBuffer.get_end_iter(), False)
-        # ~ self.logView.scroll_to_mark(mark, 0, False, 0,0)
-        return
+        # Need to get selected event/group if there is one
+        self.parent.Protocol.gtk_new_event()
 
     #File chooser:
     def on_param_file_chooser_dialog_realize(self, widget):
@@ -846,8 +785,6 @@ class Handlers:
 
 class ZionGUI():
 
-    EventEntries : List[EventEntry]
-
     def __init__(self, initial_values : ZionCameraParameters, parent : 'ZionSession', glade_file : str = 'zion_layout.glade'):
         #Create Window and Maximize:
         self.builder = Gtk.Builder.new_from_file(glade_file)
@@ -997,14 +934,8 @@ class ZionGUI():
         self.parent.Protocol.gtk_initialize_treeview(self.EventTreeViewGtk)
 
         self.EventTreeViewGtk.get_selection().set_mode(Gtk.SelectionMode.SINGLE)
-        # self.EventEntries = [EventEntry(self)]
-        # self.EventTreeGtk.pack_start(self.EventEntries[0], False, True, 0)
         self.EventTreeViewGtk.show_all()
 
-        # self.EventListGtk = self.builder.get_object("event_list")
-        # self.EventEntries = [EventEntry(self)]
-        # self.EventListGtk.pack_start(self.EventEntries[0], False, True, 0)
-        # self.EventListGtk.show_all()
         self.EventListScroll = self.builder.get_object("eventlist_scroll")
 
         self.runProgramButton = self.builder.get_object("run_program_button")

@@ -345,6 +345,7 @@ class ZionProtocol:
             json.dump(self, f, indent=1, cls=ZionProtocolEncoder)
 
     def load_treestore(self) -> Gtk.TreeStore:
+        self._treestore.clear()
         self._load_treestore(None, self.Entries)
         return self._treestore
 
@@ -443,6 +444,10 @@ class ZionProtocol:
             self.Entries.append(event)
 
         return event
+
+    def gtk_new_event(self):
+        print("gtk_new_event")
+
 
 # Check for well-formed timing arrays:
 def check_led_timings(LED_Blu_Timing, LED_Or_Timing, LED_UV_Timing, UV_duty_cycle=3.0):

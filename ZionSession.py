@@ -134,8 +134,7 @@ class ZionSession():
     def LoadProtocolFromFile(self, filename):
         # TODO: Add error handling and notify user
         self.Protocol.load_from_file(filename)
-
-        return self.Protocol
+        self.Protocol.load_treestore()
 
     def LoadProtocolFromGUI(self, events):
         # Temporary to be compatible with old GUI
