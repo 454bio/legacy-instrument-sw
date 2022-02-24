@@ -36,7 +36,8 @@ class ZionSession():
         filename = now_date+'_'+now_time+'_'+self.Name
 
         lastSuffix = 0
-        for f in glob('*_'+session_name+"_*"):
+        sessions_dir = os.path.join(mod_path, "sessions")
+        for f in glob(os.path.join(sessions_dir, f"*_{session_name}_*")):
             lastHyphenIdx = f.rfind('_')
             newSuffix = int(f[(lastHyphenIdx+1):])
             lastSuffix = newSuffix if newSuffix>lastSuffix else lastSuffix
