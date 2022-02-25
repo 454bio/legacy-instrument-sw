@@ -471,7 +471,7 @@ class ZionProtocol:
         capture : bool  : Wheter to capture an image for the event (default: True)
         group : str     : Group string that's added to the image filename (default: "")
         postdelay : int : Number of milliseconds to wait after the event completers (default: 0)
-        leds : List[ZionLED] : Led settings for the new event (default: [])
+        leds : ZionLEDs : Led settings for the new event (default: ZionLEDs())
         """
 
         if event is None:

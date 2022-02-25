@@ -10,13 +10,12 @@ import threading
 from operator import itemgetter
 from ZionGtkHelpers import PictureView
 from ZionEvents import (
-    ZionLED,
     ZionProtocol,
-    ZionLEDColor,
     ZionEvent,
     ZionEventGroup,
     ZionProtocolTreestore,
 )
+from ZionLED import ZionLEDs, ZionLEDColor
 from ZionCamera import ZionCameraParameters
 from collections import namedtuple
 
@@ -905,9 +904,9 @@ class ZionGUI():
 
         self.EventTreeViewGtk = self.builder.get_object("event_tree")
 
-        blue_led = ZionLED(ZionLEDColor.BLUE, 100)
-        orange_led = ZionLED(ZionLEDColor.ORANGE, 120)
-        uv_led = ZionLED(ZionLEDColor.UV, 100)
+        blue_led = ZionLEDs({ZionLEDColor.BLUE: 100})
+        orange_led = ZionLEDs({ZionLEDColor.ORANGE: 120})
+        uv_led = ZionLEDs({ZionLEDColor.UV: 100})
 
         self.parent.Protocol.clear()
         g_1 = self.parent.Protocol.add_event_group(name="All Steps", cycles=5)

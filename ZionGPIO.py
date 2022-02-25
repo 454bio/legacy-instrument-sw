@@ -5,7 +5,8 @@ from functools import partial
 from typing import List, Dict
 import threading
 
-from ZionEvents import ZionEvent, ZionLED, ZionLEDColor
+from ZionEvents import ZionEvent
+from ZionLED import ZionLEDs, ZionLEDColor
 
 # Gpio Pin Lookup Table. Index is GPIO #, format is (pin #, enabled, alternate function)
 # (can remove/trim if memory is an issue)
@@ -202,14 +203,16 @@ class ZionGPIO(pigpio.pi):
 			self.set_duty_cycle(color, 0)
 		self.update_pwm_settings()
 
-	def enable_leds(self, leds : List[ZionLED], verbose=False):
-		for l in leds:
-			self.enable_led(l.color, l.intensity/100, verbose=verbose, update=False)
+	def enable_leds(self, leds : ZionLEDs, verbose=False):
+		for color, pulsetime in leds.items():
+			# Temporary until pulsewidth is fully implemented
+			self.enable_led(color, pulsetime/100, verbose=verbose, update=False)
 		self.update_pwm_settings()
 
-	def disable_leds(self, leds : List[ZionLED], verbose=False):
-		for l in leds:
-			self.enable_led(l.color, 0, verbose=verbose, update=False)
+	def disable_leds(self, leds : ZionLEDs, verbose=False):
+		for color, pulsetime in leds.items():
+			# Temporary until pulsewidth is fully implemented
+			self.enable_led(color, 0, verbose=verbose, update=False)
 		self.update_pwm_settings()
 
 	def enable_led(self, color : ZionLEDColor, amt : float, verbose : bool = False, update: bool =True):
