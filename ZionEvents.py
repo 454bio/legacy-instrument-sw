@@ -1,12 +1,21 @@
-from collections import namedtuple
+from argparse import ArgumentError
+from collections import UserDict
+from operator import attrgetter
 import time
 from dataclasses import dataclass, field, asdict, is_dataclass
 from enum import IntEnum
 import json
 from types import SimpleNamespace
 import traceback
-from typing import List, Tuple, Optional, Union
+from typing import List, Tuple, Optional, Union, TypeVar, Dict
 from fractions import Fraction
+
+from ZionLED import (
+    ZionLEDColor, 
+    ZionLEDs, 
+    ZionLEDsKT,
+    ZionLEDsVT,
+)
 
 from ZionErrors import (
     ZionProtocolVersionError,
@@ -18,22 +27,6 @@ from ZionCamera import ZionCameraParameters
 import gi
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk
-
-
-class ZionLEDColor(IntEnum):
-    UV = 0
-    BLUE = 1
-    ORANGE = 2
-
-
-@dataclass
-class ZionLED:
-    color: ZionLEDColor
-    pulsetime: int
-
-    @classmethod
-    def from_json(cls, json_dict: dict) -> "ZionLED":
-        return cls(ZionLEDColor[json_dict["color"]], json_dict["pulsetime"])
 
 
 @dataclass
@@ -50,29 +43,16 @@ class ZionEvent(ZionProtocolEntry):
     capture: bool = True
     group: str = ""
     postdelay: int = 0
-    leds: Tuple[ZionLED] = field(default_factory=lambda: tuple(ZionLED(color=color, pulsetime=0) for color in ZionLEDColor))
-
-    def __post_init__(self):
-        # Create a private mapping to more easily access the leds
-        self._leds_dict = {led.color: led for led in self.leds}
+    leds: ZionLEDs = field(default_factory=ZionLEDs)
 
     @classmethod
     def from_json(cls, json_dict: dict) -> "ZionEvent":
-        # Remove "leds" from the dictionary
-        leds_list = json_dict.pop("leds", [])
-        leds = tuple(ZionLED.from_json(led) for led in leds_list)
-        return cls(**json_dict, leds=leds)
-
-    def set_led_pulsetime(self, led : ZionLEDColor, pulsetime : int):
-        self._leds_dict[led].pulsetime = pulsetime
-
-    def update_leds(self, leds: Union[List[ZionLED], ZionLED]):
-        """ Update the instance's LED settings """
-        if not isinstance(leds, (list, tuple)):
-            leds = [leds,]
-
-        for l in leds:
-            self._leds_dict[l.color].pulsetime = l.pulsetime
+        # # Remove "leds" from the dictionary
+        # leds_list = json_dict.pop("leds", [])
+        # leds = tuple(ZionLED.from_json(led) for led in leds_list)
+        # return cls(**json_dict, leds=leds)
+        json_dict.update({"leds": ZionLEDs(**json_dict["leds"])})
+        return cls(**json_dict)
 
 
 @dataclass
@@ -114,13 +94,6 @@ class ZionEventGroup(ZionProtocolEntry):
                     )
 
         return flat_events
-
-    @classmethod
-    def from_json(cls, json_dict: dict) -> "ZionEvent":
-        # Remove "leds" from the dictionary
-        leds_list = json_dict.pop("leds", [])
-        leds = [ZionLED.from_json(led) for led in leds_list]
-        return cls(**json_dict, leds=leds)
 
 
 # Maybe I can just ultimately make this a Gtk.TreeView subclass??
@@ -310,6 +283,8 @@ class ZionProtocolEncoder(json.JSONEncoder):
             return obj.name
         if isinstance(obj, Fraction):
             return float(obj)
+        if isinstance(obj, ZionLEDs):
+            return {k.name: v for k,v in obj.data.items()}
         return json.JSONEncoder.default(self, obj)
 
 
@@ -393,7 +368,7 @@ class ZionProtocol:
 
     def _load_eventgroup_from_treestore(self, event_group : ZionEventGroup, iter):
         entries = []
-        cur_iter = self._treestore.get_iter_first()
+        cur_iter = root_iter = self._treestore.get_iter_first()
         print(f"root_iter: {self._treestore[root_iter][1]}")
 
     def load_from_treestore(self):
@@ -487,7 +462,7 @@ class ZionProtocol:
         capture : Optional[bool] = None,
         group : Optional[str] = None,
         postdelay : Optional[int] = None,
-        leds : Optional[Union[List[ZionLED], ZionLED]] = None,
+        leds : Optional[ZionLEDs] = None,
     ) -> ZionEvent:
         """
         Add a new event to the protocol.
