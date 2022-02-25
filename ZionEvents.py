@@ -1,4 +1,3 @@
-from argparse import ArgumentError
 from collections import UserDict
 from operator import attrgetter
 import time
@@ -45,13 +44,14 @@ class ZionEvent(ZionProtocolEntry):
     postdelay: int = 0
     leds: ZionLEDs = field(default_factory=ZionLEDs)
 
+    def __post_init__(self):
+        if isinstance(self.leds, dict):
+            self.leds = ZionLEDs(**self.leds)
+
     @classmethod
     def from_json(cls, json_dict: dict) -> "ZionEvent":
-        # # Remove "leds" from the dictionary
-        # leds_list = json_dict.pop("leds", [])
-        # leds = tuple(ZionLED.from_json(led) for led in leds_list)
-        # return cls(**json_dict, leds=leds)
-        json_dict.update({"leds": ZionLEDs(**json_dict["leds"])})
+        # Convert "leds" from a dictionary to ZionLEDs
+        json_dict.update({"leds": ZionLEDs(**json_dict.get("leds", {}))})
         return cls(**json_dict)
 
 
@@ -64,7 +64,7 @@ class ZionEventGroup(ZionProtocolEntry):
     def from_json(cls, json_dict: dict) -> "ZionEventGroup":
         # Remove "event" from the dictionary
         events_list = json_dict.pop("events", [])
-        events = []
+        events : Union[List[ZionEvent], List["ZionEventGroup"], List] = []
         for event_or_group in events_list:
             # This is not a robust way to go from json <-> python...
             # But for now it allows people to edit the JSON directly without crazy class names
@@ -455,21 +455,16 @@ class ZionProtocol:
 
     def add_event(
         self,
-        event : ZionEvent = None,
-        parent : Optional[ZionEventGroup] = None,
-        name : Optional[str] = None,
-        cycles : Optional[int] = None,
-        capture : Optional[bool] = None,
-        group : Optional[str] = None,
-        postdelay : Optional[int] = None,
-        leds : Optional[ZionLEDs] = None,
+        event : Optional[ZionEvent] = None,
+        parent: Optional[ZionEventGroup] = None,
+        **kwargs
     ) -> ZionEvent:
         """
         Add a new event to the protocol.
         event:      If None, then create a new event.
         parent:     Parent the event. If None then the event is added to the root Entries.
 
-        The `event` is None then the following optional keyword arguments are used to initalize the new event.
+        The `event` is None then the following optional keyword arguments are available initalize the new event.
 
         name : str      : Descriptive name for the event (default: "")
         cycles : int    : Number of cycles for the event (default: 1)
@@ -480,14 +475,9 @@ class ZionProtocol:
         """
 
         if event is None:
-            event = ZionEvent()
-            if parent is not None: event.parent = parent
-            if name is not None : event.name = name
-            if cycles is not None : event.cycles = cycles
-            if capture is not None : event.capture = capture
-            if group is not None : event.group = group
-            if postdelay is not None : event.postdelay = postdelay
-            if leds is not None: event.update_leds(leds)
+            if parent is not None:
+                kwargs["parent"] = parent
+            event = ZionEvent(**kwargs)
 
         if parent:
             parent.events.append(event)
