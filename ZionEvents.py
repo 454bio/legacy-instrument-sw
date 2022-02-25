@@ -1,19 +1,14 @@
-from collections import UserDict
-from operator import attrgetter
 import time
-from dataclasses import dataclass, field, asdict, is_dataclass
-from enum import IntEnum
+from dataclasses import dataclass, field, asdict, is_dataclass, fields
 import json
 from types import SimpleNamespace
 import traceback
-from typing import List, Tuple, Optional, Union, TypeVar, Dict
+from typing import List, Optional, Union, Dict
 from fractions import Fraction
 
 from ZionLED import (
-    ZionLEDColor, 
-    ZionLEDs, 
-    ZionLEDsKT,
-    ZionLEDsVT,
+    ZionLEDColor,
+    ZionLEDs,
 )
 
 from ZionErrors import (
@@ -25,7 +20,7 @@ from ZionCamera import ZionCameraParameters
 
 import gi
 gi.require_version('Gtk', '3.0')
-from gi.repository import Gtk
+from gi.repository import Gtk, GObject
 
 
 @dataclass
@@ -96,183 +91,6 @@ class ZionEventGroup(ZionProtocolEntry):
         return flat_events
 
 
-# Maybe I can just ultimately make this a Gtk.TreeView subclass??
-class ZionProtocolTreestore():
-    """
-    Helper class for converting the above dataclasses into
-    treestore entries
-    """
-
-    FIELDS : Tuple[str] = (
-        'is_event',
-        'name',
-        'cycles',
-        'capture',
-        'group',
-        'postdelay',
-        'leds',  # Special field that gets expanded to the number of LEDs
-    )
-
-    _names : Tuple[str] = (
-        "Is Event?",
-        "Name",
-        "Cycles",
-        "Capture?",
-        "Group",
-        "Post Delay\n(ms)",
-        *list(f"{l.name} Pulse\n(ms)" for l in ZionLEDColor),
-    )
-
-    _visible : Tuple[bool] = (
-        False,
-        True,
-        True,
-        True,
-        True,
-        True,
-        *list([True] * len(ZionLEDColor)),
-    )
-
-    _led_field = "pulsetime"        # This is the field to use for the LED
-
-    def __init__(self, default_event : ZionEvent = ZionEvent()):
-        # Right now the ZionEvent has all of the types that are used in the treestore
-        default_entry = []
-
-        default_event = ZionEvent()
-        for f in self.FIELDS:
-            if f == "leds":
-                for led in getattr(default_event, f):
-                    val = getattr(led, self._led_field)
-                    default_entry.append(val)
-            else:
-                val = getattr(default_event, f)
-                default_entry.append(val)
-
-        self._types = tuple(map(type, default_entry))
-        self._default_entry = tuple(default_entry)
-        self._led_start_ind = self.FIELDS.index("leds")
-
-    @property
-    def names(self):
-        return self._names
-
-    @property
-    def visible(self):
-        return self._visible
-
-    @property
-    def types(self):
-        return self._types
-
-    def get_event(self, entry: Tuple) -> Union[ZionEvent, ZionEventGroup]:
-        """
-        Convert a treemodel entry (tuple) into ZionEvent or ZionEventGroup
-        """
-
-        # Make a dict out of the fields, _except_ the leds entries which are a special case
-        # zip handles this gracefully for us since we can still pass in the full entry tuple
-        entry_dict = {f: v for f,v in zip(self.FIELDS[:-1], entry)}
-
-        print(entry_dict)
-
-        if entry_dict["is_event"]:
-            event = ZionEvent(**entry_dict)
-            # Now load the led params
-            led_pulsetimes = entry[self._led_start_ind:]
-            if len(led_pulsetimes) != len(event.leds):
-                raise RuntimeWarning("Problem converting treestore entry to ZionEvent... " \
-                                     "Entry has {len(led_pulsetimes)} led parameters, we were expecting {len(event.leds)}")
-            for ptime, led in zip(led_pulsetimes, event.leds):
-                led.pulsetime = ptime
-        else:
-            # Name & cycles are the only thing we care about right now
-            event = ZionEventGroup(name=entry_dict["name"], cycles=entry_dict["cycles"])
-
-        print(event)
-        return event
-
-    def get_entry(self, obj : Union[ZionEvent, ZionEventGroup]):
-        """
-        Convert a ZionEvent or ZionEventGroup into a treemodel entry (tuple)
-        """
-        entry = []
-
-        # FIELDS is shorter than _default_entry, but since leds is the last entry that's expanded
-        # it all works out
-        for ind, (f, default_val) in enumerate(zip(self.FIELDS, self._default_entry)):
-            if hasattr(obj, f):
-                if f == "leds":
-                    for led in getattr(obj, f):
-                        entry.append(getattr(led, self._led_field))
-                else:
-                    entry.append(getattr(obj, f))
-            elif f == "leds":
-                entry.extend(self._default_entry[ind:])
-            else:
-                entry.append(default_val)
-
-        return tuple(entry)
-
-    def gtk_initialize_treeview(self, treeview : Gtk.TreeView):
-        """ Helper function to intiailize a treeview to support this model """
-
-        for col_ind, (name, typ, vis) in enumerate(zip(self.names, self.types, self.visible)):
-            if typ is bool:
-                renderer = Gtk.CellRendererToggle()
-                column = Gtk.TreeViewColumn(name, renderer, active=col_ind)
-            else:
-                renderer = Gtk.CellRendererText()
-
-                # renderer.set_property("editable", True)
-                # Center Align text (not the name though)
-                column = Gtk.TreeViewColumn(name, renderer, text=col_ind)
-
-                if col_ind > 0:
-                    renderer.set_property("xalign", 0.5)
-
-            column.set_visible(vis)
-
-            # After the "capture" columns ZionEvents should display a value.
-            # We can use the value of the first column (is_event) to control the visibility
-            if col_ind > 2:
-                column.add_attribute(renderer, 'visible', 0)
-
-            treeview.append_column(column)
-
-            # column = Gtk.TreeViewColumn(column_title, renderer, text=i)
-            # # Not sure what the text argument is used for....
-            # # FOUND IT: Also, with Gtk.TreeViewColumn,
-            # # you can bind a property to a value in a Gtk.TreeModel.
-            # # For example, you can bind the “text” property on the cell renderer
-            # # to a string value in the model,
-            # # thus rendering a different string in each row of the Gtk.TreeView
-
-            # renderer.connect("edited", partial(self.text_edited, i))
-
-        select = treeview.get_selection()
-        select.connect("changed", self.on_tree_selection_changed)
-
-    def on_tree_selection_changed(self, selection):
-        print(f"selection: {selection}")
-        model, treeiter = selection.get_selected()
-        if treeiter is not None:
-            print(f"You selected {model[treeiter][1]}")
-            parent_iter = model.iter_parent(treeiter)
-            has_child = model.iter_has_child(treeiter)
-            if parent_iter is None:
-                print(f"Parent: Root")
-            else:
-                print(f"Parent: {model[parent_iter][1]}")
-
-            print(f"has_child: {has_child}\n")
-            if model[treeiter][0] or not has_child:
-                print(f"\t-->event: {self.get_event(model[treeiter])}")
-            else:
-                print(f"\t-->event_group: NEED TO IMPLEMENT")
-
-
-
 class ZionProtocolEncoder(json.JSONEncoder):
     def default(self, obj):
         if is_dataclass(obj):
@@ -297,33 +115,18 @@ class ZionProtocol:
         self.Version: int = 2
         self.Parameters: ZionCameraParameters = ZionCameraParameters()
         self.Entries: List[Union[ZionEvent, ZionEventGroup]] = [ZionEvent()]
-
-        self._treestore_helper = ZionProtocolTreestore(default_event=self.Entries[0])
-        self._treestore = Gtk.TreeStore(*self._treestore_helper.types)
+        self._protocoltree = None
 
         if filename:
             self.load_from_file(filename, flatten=False)
 
     def clear(self):
         self.Entries = []
-        self._treestore.clear()
+        if self._protocoltree:
+            self._protocoltree.clear()
 
     def _load_v1(self, json_ns: dict):
         print(f"ERROR: Loading a Version 1 protocol not supported!")
-        # self.Entries = []
-
-        # events = []
-        # for e in json_ns.Events:
-        #     leds = []
-        #     if e[0]:
-        #         for color, intensity in e[0].items():
-        #             leds.append(ZionLED(ZionLEDColor[color.upper()], intensity, e[1]))
-        #     events.append(
-        #         ZionEvent(capture=e[2], group=e[4], postdelay=e[3], leds=leds)
-        #     )
-
-        # event_group = ZionEventGroup(cycles=json_ns.N + 1, events=events)
-        # self.Entries.append(event_group)
 
     def _load_v2(self, json_ns: dict):
         print(f"Loading a Version 2 protocol...")
@@ -366,25 +169,6 @@ class ZionProtocol:
             tb = "".join(traceback.format_exception(type(e), e, e.__traceback__))
             print(f"ERROR Loading Protocol File: {filename}\n{tb}")
 
-    def _load_eventgroup_from_treestore(self, event_group : ZionEventGroup, iter):
-        entries = []
-        cur_iter = root_iter = self._treestore.get_iter_first()
-        print(f"root_iter: {self._treestore[root_iter][1]}")
-
-    def load_from_treestore(self):
-        all_entries = []
-        cur_entries = all_entries
-        cur_iter = self._treestore.get_iter_first()
-        print(f"root_iter: {self._treestore[cur_iter][1]}")
-        while cur_iter is not None:
-            event_or_group = self._treestore_helper.get_event(self._treestore[cur_iter])
-            cur_entries.append(event_or_group)
-            if isinstance(event_or_group, ZionEventGroup) and self._treestore.iter_has_child(cur_iter):
-                # Recurse
-                pass
-            else:
-                cur_iter = self._treestore.iter_next(cur_iter)
-
     def save_to_file(self, filename: str):
         if not filename.endswith(".txt"):
             filename += ".txt"
@@ -392,27 +176,8 @@ class ZionProtocol:
         with open(filename, "w") as f:
             json.dump(self, f, indent=1, cls=ZionProtocolEncoder)
 
-    def init_treestore(self) -> Gtk.TreeStore:
-        self._treestore.clear()
-        self._init_treestore(None, self.Entries)
-        return self._treestore
-
-    def _init_treestore(
-        self,
-        row_iter : Optional[Gtk.TreeIter],
-        entries : List[Union[ZionEventGroup, ZionEvent]],
-    ):
-        for entry in entries:
-            new_row_iter = self._treestore.append(row_iter, self._entry_to_treestore(entry))
-            if isinstance(entry, ZionEventGroup):
-                # Recurse into the events
-                self._init_treestore(new_row_iter, entry.events)
-
-    def _entry_to_treestore(self, entry):
-        return self._treestore_helper.get_entry(entry)
-
     def gtk_initialize_treeview(self, treeview : Gtk.TreeView):
-        self._treestore_helper.gtk_initialize_treeview(treeview)
+        self._protocoltree = ZionProtocolTree(treeview, self)
 
     def get_entries(self):
         return self.Entries
@@ -489,3 +254,136 @@ class ZionProtocol:
     def gtk_new_event(self):
         print("gtk_new_event")
 
+
+class ZionProtocolTree():
+    """
+    Helper class for converting the above class into
+    treeview with an associated treestore model
+    """
+
+    # Mapping of visible fields to display names.
+    FIELDS : Dict[str, str] = {
+        'name': "Name",
+        'cycles': "Cycles",
+        'capture': "Capture?",
+        'group': "Group",
+        'postdelay': "Post Delay\n(ms)",
+        'leds': "$LED_NAME$ Pulse\n(ms)",  # Special field that gets formatted
+    }
+
+    def __init__(self, gtktreeview : Gtk.TreeView, protocol : ZionProtocol):
+        self._protocol = protocol
+        self._treeview = gtktreeview
+        self._treestore = Gtk.TreeStore(GObject.TYPE_PYOBJECT)
+
+        self.init_treestore()
+
+        self._treeview.set_model(self._treestore)
+
+        _field_to_type = {f.name: f.type for f in fields(ZionEvent)}
+        _type_to_func = {str: self.get_event_entry_str, int: self.get_event_entry_str, bool: self.get_event_entry_bool}
+
+        for field, column_title in self.FIELDS.items():
+            ftype = _field_to_type[field]
+            if ftype in (str, int, bool):
+                cell_data_func = _type_to_func[ftype]
+
+                if ftype is bool:
+                    renderer = Gtk.CellRendererToggle()
+                else:
+                    renderer = Gtk.CellRendererText()
+                    # Center Align text (not the name though)
+                    renderer.set_property("xalign", 0.5)
+
+                column = Gtk.TreeViewColumn(column_title, renderer)
+
+                column.set_cell_data_func(renderer, cell_data_func, field)
+                self._treeview.append_column(column)
+                # renderer.set_property("editable", True)
+
+            elif ftype is ZionLEDs:
+                for led_color in ZionLEDColor:  # Actually a dict of led name to title of strings
+                    renderer = Gtk.CellRendererText()
+                    column = Gtk.TreeViewColumn(column_title.replace("$LED_NAME$", led_color.name), renderer)
+                    column.set_cell_data_func(renderer, self.get_event_entry_led, led_color)
+                    self._treeview.append_column(column)
+            else:
+                raise RuntimeError(f"Unrecognized field type for field {field}: {ftype}")
+
+            # # Not sure what the text argument is used for....
+            # # FOUND IT: Also, with Gtk.TreeViewColumn,
+            # # you can bind a property to a value in a Gtk.TreeModel.
+            # # For example, you can bind the “text” property on the cell renderer
+            # # to a string value in the model,
+            # # thus rendering a different string in each row of the Gtk.TreeView
+
+            # renderer.connect("edited", partial(self.text_edited, i))
+        select = self._treeview.get_selection()
+        select.connect("changed", self.on_tree_selection_changed)
+
+    def init_treestore(self) -> Gtk.TreeStore:
+        self._treestore.clear()
+        self._init_treestore(None, self._protocol.get_entries())
+        return self._treestore
+
+    def _init_treestore(
+        self,
+        row_iter : Optional[Gtk.TreeIter],
+        entries : List[Union[ZionEventGroup, ZionEvent]],
+    ):
+        for entry in entries:
+            new_row_iter = self._treestore.append(row_iter, [entry,])
+            if isinstance(entry, ZionEventGroup):
+                # Recurse into the events
+                self._init_treestore(new_row_iter, entry.events)
+
+    def get_event_entry_str(self, treeviewcolumn, cell, model, iter_, event_field):
+        event = model.get_value(iter_, 0)
+
+        # Only update a field if it's present, otherwise don't show it
+        cell_value = getattr(event, event_field, None)
+
+        if cell_value is not None:
+            cell.set_property('text', str(cell_value))
+
+        cell.set_property('visible', (cell_value is not None))
+
+    def get_event_entry_bool(self, treeviewcolumn, cell, model, iter_, event_field):
+        event = model.get_value(iter_, 0)
+
+        # Only update a field if it's present, otherwise don't show it
+        cell_value = getattr(event, event_field, None)
+
+        if cell_value is not None:
+            cell.set_property('active', cell_value)
+
+        cell.set_property('visible', (cell_value is not None))
+
+    def get_event_entry_led(self, treeviewcolumn, cell, model, iter_, led_key):
+        event = model.get_value(iter_, 0)
+
+        # Only update a field if it's present, otherwise don't show it
+        cell_value = getattr(event, 'leds', {}).get(led_key, None)
+
+        if cell_value is not None:
+            cell.set_property('text', str(cell_value))
+
+        cell.set_property('visible', (cell_value is not None))
+
+    def on_tree_selection_changed(self, selection):
+        print(f"selection: {selection}")
+        model, treeiter = selection.get_selected()
+        if treeiter is not None:
+            print(f"You selected: '{model[treeiter][0].name}'")
+            parent_iter = model.iter_parent(treeiter)
+            has_child = model.iter_has_child(treeiter)
+            if parent_iter is None:
+                print(f"Parent: 'Root'")
+            else:
+                print(f"Parent: '{model[parent_iter][0].name}'")
+
+            print(f"has_child: {has_child}\n")
+            if model[treeiter][0].is_event or not has_child:
+                print(f"\t-->event: ")
+            else:
+                print(f"\t-->event_group: ")
