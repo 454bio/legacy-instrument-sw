@@ -7,7 +7,6 @@ from picamera import PiCamera, PiRenderer, mmal, mmalobj, exc
 from picamera.array import PiRGBArray
 from picamera.mmalobj import to_rational
 import pigpio
-import keyboard
 import numpy as np
 from io import BytesIO
 from PIL import Image

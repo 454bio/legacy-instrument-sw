@@ -6,7 +6,6 @@ from operator import itemgetter
 import gi
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk, GLib
-import keyboard
 from ZionCamera import ZionCamera, ZionCameraParameters
 from ZionGPIO import ZionGPIO
 from ZionEvents import ZionEventGroup, ZionProtocol
