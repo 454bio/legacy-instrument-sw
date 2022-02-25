@@ -1,23 +1,14 @@
 #!/usr/bin/python3
 import os
-from typing import List
 
 import gi
 gi.require_version('Gtk', '3.0')
 gi.require_version('Gst', '1.0')
 from gi.repository import Gtk, GObject, GLib
 import threading
-from operator import itemgetter
 from ZionGtkHelpers import PictureView
-from ZionEvents import (
-    ZionProtocol,
-    ZionEvent,
-    ZionEventGroup,
-    ZionProtocolTreestore,
-)
 from ZionLED import ZionLEDs, ZionLEDColor
 from ZionCamera import ZionCameraParameters
-from collections import namedtuple
 
 mod_path = os.path.dirname(os.path.abspath(__file__))
 
@@ -921,15 +912,6 @@ class ZionGUI():
         self.parent.Protocol.add_event(name="Dark", group="D", capture=True, postdelay=250, parent=g_3)
         self.parent.Protocol.add_event(name="Blue", group="B", capture=True, postdelay=250, leds=blue_led, parent=g_3)
         self.parent.Protocol.add_event(name="Orange", group="O", capture=True, postdelay=250, leds=orange_led, parent=g_3)
-
-        self.EventTreestore = self.parent.Protocol.init_treestore()
-
-        def print_row(store, treepath, treeiter):
-            print("\t" * (treepath.get_depth() - 1), store[treeiter][:], sep="")
-
-        self.EventTreestore.foreach(print_row)
-
-        self.EventTreeViewGtk.set_model(self.EventTreestore)
 
         self.parent.Protocol.gtk_initialize_treeview(self.EventTreeViewGtk)
 
