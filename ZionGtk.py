@@ -71,29 +71,31 @@ class Handlers:
         except TypeError:
             self.parent.printToLog('No Event List!')
             return
-        self.parent.parent.LoadProtocolFromGUI(events)
-        self.parent.paramFileChooser.set_action(Gtk.FileChooserAction.SAVE)
 
-        self.parent.set_file_chooser_for_protocol_files()
-        if self.recent_protocol_file:
-            self.parent.paramFileChooser.set_current_folder(os.path.dirname(self.recent_protocol_file))
-        else:
-            self.parent.paramFileChooser.set_current_folder(mod_path)
+        # self.parent.parent.LoadProtocolFromGUI(events)
+        # self.parent.paramFileChooser.set_action(Gtk.FileChooserAction.SAVE)
 
-        response = self.parent.paramFileChooser.run()
+        # self.parent.set_file_chooser_for_protocol_files()
+        # if self.recent_protocol_file:
+        #     self.parent.paramFileChooser.set_current_folder(os.path.dirname(self.recent_protocol_file))
+        # else:
+        #     self.parent.paramFileChooser.set_current_folder(mod_path)
 
-        if response == Gtk.ResponseType.OK:
-            filename = self.parent.paramFileChooser.get_filename()
-            comment = self.parent.commentBox.get_text()
-            self.recent_protocol_file = filename
-            self.parent.paramFileChooser.hide()
-            self.parent.parent.SaveProtocolFile(filename=filename, comment=comment)
-        elif response == Gtk.ResponseType.CANCEL:
-            self.parent.paramFileChooser.hide()
+        # response = self.parent.paramFileChooser.run()
+
+        # if response == Gtk.ResponseType.OK:
+        #     filename = self.parent.paramFileChooser.get_filename()
+        #     comment = self.parent.commentBox.get_text()
+        #     self.recent_protocol_file = filename
+        #     self.parent.paramFileChooser.hide()
+        #     self.parent.parent.SaveProtocolFile(filename=filename, comment=comment)
+        # elif response == Gtk.ResponseType.CANCEL:
+        #     self.parent.paramFileChooser.hide()
 
     def save_eventList(self):
         print("save_eventList: this is where we'd convert the Gtk tree to ZionProtol")
-
+        # from rich import inspect
+        # inspect(self.parent.parent.Protocol)
         return
 
     # TODO: Make the naming consistent
@@ -551,12 +553,6 @@ class Handlers:
                 self.parent.parent.GPIO.enable_led(ZionLEDColor.ORANGE, 0)
                 self.parent.runProgramButton.set_sensitive(True)
 
-    #Event List stuff
-    def on_new_event_button_clicked(self, button):
-        # Need to get selected event/group if there is one
-        # self.parent.Protocol.gtk_new_event()
-        self.parent.parent.Protocol.load_from_treestore()
-
     #File chooser:
     def on_param_file_chooser_dialog_realize(self, widget):
         Gtk.Window.maximize(self.parent.paramFileChooser)
@@ -745,7 +741,7 @@ class Handlers:
             print('width needs to be positive')
         else:
             self.parent.parent.GPIO.test_pulse_width = val
-    
+
     def on_test_delay_entry_activate(self, entry):
         val = entry.get_text()
         try:
@@ -772,6 +768,78 @@ class Handlers:
             )
             d.run()
             d.destroy()
+
+    def on_event_tree_selection_changed(self, selection):
+        # print(f"selection: {selection}")
+        model, treeiter = selection.get_selected()
+        if treeiter is not None:
+            print(f"\non_event_tree_selection_changed -- you selected: \'{getattr(model[treeiter][0], 'name', None)}\' ({model.get_path(treeiter)})")
+            self.parent.DeleteEntryButton.set_sensitive(True)
+        #     parent_iter = model.iter_parent(treeiter)
+        #     has_child = model.iter_has_child(treeiter)
+        #     if parent_iter is None:
+        #         print(f"Parent: 'Root'")
+        #     else:
+        #         print(f"Parent: '{model[parent_iter][0].name}'")
+
+        #     print(f"has_child: {has_child}\n")
+        #     if model[treeiter][0].is_event or not has_child:
+        #         print(f"\t-->event: ")
+        #     else:
+        #         print(f"\t-->event_group: ")
+        else:
+            # print("on_event_tree_selection_changed -- Nothing is selected")
+            self.parent.DeleteEntryButton.set_sensitive(False)
+
+        sel = self.parent.parent.Protocol.gtk_get_current_selection()
+        print(f"name: {getattr(sel.entry, 'name', None)}  num_children: {sel.num_children}  num_siblings: {sel.num_siblings}")
+
+    #Event List stuff
+    def on_new_event_button_clicked(self, button):
+        # Need to get selected event/group if there is one
+        self.parent.parent.Protocol.gtk_new_event()
+        # self.parent.parent.Protocol.load_from_treestore()
+
+    def on_new_group_button_clicked(self, button):
+        # Need to get selected event/group if there is one
+        self.parent.parent.Protocol.gtk_new_group()
+        # self.parent.parent.Protocol.load_from_treestore()
+
+    def on_delete_entry_button_clicked(self, _):
+
+        # Prompt the user to make sure they want to delete the event or eventgroup
+        selection = self.parent.parent.Protocol.gtk_get_current_selection()
+        d = Gtk.MessageDialog(
+            transient_for=self.parent.mainWindow,
+            modal=True,
+            buttons=Gtk.ButtonsType.OK_CANCEL
+        )
+        entry_name = selection.entry.name
+        if selection.entry.is_event:
+            d.props.text = f"Are you sure you want to delete the event '{entry_name}'?"
+        else:
+            d.props.text = f"Are you sure you want to delete the event group '{entry_name}' (contains X sub-events)?"
+
+        response = d.run()
+        d.destroy()
+
+        # We only terminate when the user presses the OK button
+        if response == Gtk.ResponseType.OK:
+            if self.parent.parent.Protocol.gtk_delete_selection(selection):
+                print(f"Deleted entry {entry_name}")
+            else:
+                print(f"ERROR: Problem deleting entry {entry_name}!")
+        else:
+            print(f"Not deleting {entry_name}")
+
+    def on_event_tree_row_activated(self, *args):
+        print(f"\non_event_tree_row_activated -- args: {args}")
+
+    def on_event_tree_selection_notify_event(self, *args):
+        print(f"\non_event_tree_selection_notify_event -- args: {args}")
+
+    def on_event_tree_selection_request_event(self, *args):
+        print(f"\non_event_tree_selection_request_event -- args: {args}")
 
 
 class ZionGUI():
@@ -894,6 +962,7 @@ class ZionGUI():
         self.paramFileChooser.set_filter(self.filter_protocol)
 
         self.EventTreeViewGtk = self.builder.get_object("event_tree")
+        self.DeleteEntryButton = self.builder.get_object("delete_entry_button")
 
         blue_led = ZionLEDs({ZionLEDColor.BLUE: 100})
         orange_led = ZionLEDs({ZionLEDColor.ORANGE: 120})
@@ -915,8 +984,9 @@ class ZionGUI():
 
         self.parent.Protocol.gtk_initialize_treeview(self.EventTreeViewGtk)
 
-        self.EventTreeViewGtk.get_selection().set_mode(Gtk.SelectionMode.SINGLE)
+        # self.EventTreeViewGtk.get_selection().set_mode(Gtk.SelectionMode.SINGLE)
         self.EventTreeViewGtk.show_all()
+        self.EventTreeViewGtk.expand_all()
 
         self.EventListScroll = self.builder.get_object("eventlist_scroll")
 
