@@ -2,6 +2,7 @@
 <!-- Generated with glade 3.22.1 -->
 <interface>
   <requires lib="gtk+" version="3.20"/>
+  <object class="GtkTreeStore"/>
   <object class="GtkTextBuffer" id="analog_gain_buffer"/>
   <object class="GtkAdjustment" id="blue_gain_adjust">
     <property name="upper">8</property>
@@ -32,6 +33,11 @@
     <property name="can_focus">False</property>
     <property name="icon_name">zoom-fit-best-symbolic</property>
   </object>
+  <object class="GtkImage" id="delete_entry_button_image">
+    <property name="visible">True</property>
+    <property name="can_focus">False</property>
+    <property name="icon_name">edit-delete-symbolic</property>
+  </object>
   <object class="GtkTextBuffer" id="digital_gain_buffer"/>
   <object class="GtkAdjustment" id="exp_comp_adjust">
     <property name="lower">-25</property>
@@ -56,7 +62,7 @@
     <property name="can_focus">False</property>
     <property name="icon_name">list-add-symbolic</property>
   </object>
-  <object class="GtkImage" id="new_event_button_image1">
+  <object class="GtkImage" id="new_event_group_button_image">
     <property name="visible">True</property>
     <property name="can_focus">False</property>
     <property name="icon_name">list-add-symbolic</property>
@@ -1725,10 +1731,14 @@
                           <object class="GtkTreeView" id="event_tree">
                             <property name="visible">True</property>
                             <property name="can_focus">True</property>
+                            <property name="headers_clickable">False</property>
+                            <property name="reorderable">True</property>
                             <property name="enable_grid_lines">vertical</property>
                             <property name="enable_tree_lines">True</property>
                             <child internal-child="selection">
-                              <object class="GtkTreeSelection"/>
+                              <object class="GtkTreeSelection" id="event_tree_selection">
+                                <signal name="changed" handler="on_event_tree_selection_changed" swapped="no"/>
+                              </object>
                             </child>
                           </object>
                         </child>
@@ -1768,14 +1778,33 @@
                         <property name="visible">True</property>
                         <property name="can_focus">True</property>
                         <property name="receives_default">True</property>
-                        <property name="image">new_event_button_image1</property>
+                        <property name="image">new_event_group_button_image</property>
                         <property name="always_show_image">True</property>
+                        <signal name="clicked" handler="on_new_group_button_clicked" swapped="no"/>
                       </object>
                       <packing>
                         <property name="expand">False</property>
                         <property name="fill">False</property>
                         <property name="padding">2</property>
                         <property name="position">1</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <object class="GtkButton" id="delete_entry_button">
+                        <property name="label" translatable="yes">Delete</property>
+                        <property name="visible">True</property>
+                        <property name="sensitive">False</property>
+                        <property name="can_focus">True</property>
+                        <property name="receives_default">True</property>
+                        <property name="image">delete_entry_button_image</property>
+                        <property name="always_show_image">True</property>
+                        <signal name="clicked" handler="on_delete_entry_button_clicked" swapped="no"/>
+                      </object>
+                      <packing>
+                        <property name="expand">False</property>
+                        <property name="fill">False</property>
+                        <property name="padding">2</property>
+                        <property name="position">2</property>
                       </packing>
                     </child>
                     <child>
@@ -2170,6 +2199,17 @@
               </packing>
             </child>
             <child>
+              <object class="GtkSeparator">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+                <property name="fill">True</property>
+                <property name="position">2</property>
+              </packing>
+            </child>
+            <child>
               <object class="GtkBox">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
@@ -2525,17 +2565,6 @@
                     <property name="position">5</property>
                   </packing>
                 </child>
-              </object>
-              <packing>
-                <property name="expand">False</property>
-                <property name="fill">True</property>
-                <property name="position">2</property>
-              </packing>
-            </child>
-            <child>
-              <object class="GtkSeparator">
-                <property name="visible">True</property>
-                <property name="can_focus">False</property>
               </object>
               <packing>
                 <property name="expand">False</property>
