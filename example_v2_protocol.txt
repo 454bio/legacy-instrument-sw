@@ -1,64 +1,153 @@
 {
  "Version": 2,
- "EventGroups": [
+ "Parameters": {
+  "brightness": 50,
+  "contrast": 0,
+  "saturation": 0,
+  "sharpness": 0,
+  "awb_mode": "off",
+  "red_gain": 1.0,
+  "blue_gain": 1.0,
+  "exposure_mode": "off",
+  "exposure_speed": 249353,
+  "shutter_speed": 249353,
+  "exposure_compensation": 0,
+  "iso": 0,
+  "image_denoise": false,
+  "video_denoise": false,
+  "analog_gain": 8.0,
+  "digital_gain": 1.0,
+  "framerate": 4.0,
+  "vflip": true,
+  "hflip": false,
+  "comment": ""
+ },
+ "Entries": [
   {
-   "num_repeats": 1,
-   "interrepeat_delay": 0.0,
-   "events": [
+   "is_event": false,
+   "name": "All Steps",
+   "cycles": 5,
+   "requested_cycle_time": 0,
+   "entries": [
     {
-     "capture": true,
-     "group": "A",
-     "postdelay": 250.0,
-     "leds": [
+     "is_event": false,
+     "name": "Extension",
+     "cycles": 144,
+     "requested_cycle_time": 5000,
+     "entries": [
       {
-       "color": "BLUE",
-       "intensity": 10,
-       "pulsetime": 200.0
+       "is_event": true,
+       "name": "Dark",
+       "cycles": 1,
+       "requested_cycle_time": 0,
+       "capture": true,
+       "group": "D",
+       "leds": {
+        "UV": 0,
+        "BLUE": 0,
+        "ORANGE": 0
+       }
+      },
+      {
+       "is_event": true,
+       "name": "Blue",
+       "cycles": 1,
+       "requested_cycle_time": 0,
+       "capture": true,
+       "group": "B",
+       "leds": {
+        "UV": 0,
+        "BLUE": 100,
+        "ORANGE": 0
+       }
+      },
+      {
+       "is_event": true,
+       "name": "Orange",
+       "cycles": 1,
+       "requested_cycle_time": 0,
+       "capture": true,
+       "group": "O",
+       "leds": {
+        "UV": 0,
+        "BLUE": 0,
+        "ORANGE": 120
+       }
       }
      ]
     },
     {
-    "name": "nested group",
-    "num_repeats": 1,
-    "interrepeat_delay": 0.0,
-    "events": [
-        {
-        "capture": true,
-        "group": "AA",
-        "postdelay": 250.0,
-        "leds": [
-        {
-        "color": "BLUE",
-        "intensity": 10,
-        "pulsetime": 200.0
-        }
-        ]
-        },
-        {
-        "capture": true,
-        "group": "BB",
-        "postdelay": 250.0,
-        "leds": [
-        {
-        "color": "ORANGE",
-        "intensity": 10,
-        "pulsetime": 200.0
-        }
-        ]
-        }
-    ]
-    },
-    {
-     "capture": true,
-     "group": "B",
-     "postdelay": 250.0,
-     "leds": [
+     "is_event": false,
+     "name": "Cleaving",
+     "cycles": 4,
+     "requested_cycle_time": 0,
+     "entries": [
       {
-       "color": "UV",
-       "intensity": 10,
-       "pulsetime": 200.0
+       "is_event": true,
+       "name": "UV",
+       "cycles": 10,
+       "requested_cycle_time": 0,
+       "capture": true,
+       "group": "U",
+       "leds": {
+        "UV": 100,
+        "BLUE": 0,
+        "ORANGE": 0
+       }
+      },
+      {
+       "is_event": true,
+       "name": "Dark",
+       "cycles": 1,
+       "requested_cycle_time": 0,
+       "capture": true,
+       "group": "D",
+       "leds": {
+        "UV": 0,
+        "BLUE": 0,
+        "ORANGE": 0
+       }
+      },
+      {
+       "is_event": true,
+       "name": "Blue",
+       "cycles": 1,
+       "requested_cycle_time": 0,
+       "capture": true,
+       "group": "B",
+       "leds": {
+        "UV": 0,
+        "BLUE": 100,
+        "ORANGE": 0
+       }
+      },
+      {
+       "is_event": true,
+       "name": "Orange",
+       "cycles": 1,
+       "requested_cycle_time": 0,
+       "capture": true,
+       "group": "O",
+       "leds": {
+        "UV": 0,
+        "BLUE": 0,
+        "ORANGE": 120
+       }
       }
      ]
+    },
+    {
+     "is_event": true,
+     "name": "Final Event",
+     "cycles": 1,
+     "requested_cycle_time": 0,
+     "capture": true,
+     "group": "F",
+     "leds": {
+      "UV": 0,
+      "BLUE": 0,
+      "ORANGE": 0
+     }
     }
    ]
   }

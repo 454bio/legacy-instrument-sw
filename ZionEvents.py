@@ -66,9 +66,10 @@ class ZionEvent(ZionProtocolEntry):
         # print(f"<--{self.name}:total_time = {tot_time}")
         return self.cycle_time * self.cycles
 
-    def set_minimum_cycle_time(self, minimum_cycle_time : int):
+    @classmethod
+    def set_minimum_cycle_time(cls, minimum_cycle_time : int):
         """ minimum_cycle_time is a class property """
-        ZionEvent._minimum_cycle_time = minimum_cycle_time
+        cls._minimum_cycle_time = minimum_cycle_time
 
     @property
     def cycle_time(self) -> int:
