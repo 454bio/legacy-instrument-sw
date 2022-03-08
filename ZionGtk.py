@@ -951,7 +951,7 @@ class Handlers:
             self.parent.DeleteEntryButton.set_sensitive(False)
 
         sel = self.parent.parent.Protocol.gtk_get_current_selection()
-        print(f"name: {getattr(sel.entry, 'name', None)}  num_children: {sel.num_children}  num_siblings: {sel.num_siblings}")
+        print(f"name: {getattr(sel.entry, 'name', None)}  parent: {getattr(sel.parent, 'name', None)}  num_children: {sel.num_children}  num_siblings: {sel.num_siblings}")
 
     #Event List stuff
     def on_new_event_button_clicked(self, button):

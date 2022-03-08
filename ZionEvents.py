@@ -1,6 +1,7 @@
 from dataclasses import (
     dataclass,
     field,
+    asdict
 )
 
 from typing import (
@@ -21,21 +22,20 @@ class ZionProtocolEntry():
     is_event: bool
     name: str = ""
     cycles: int = 1
-    _cycle_time: int = 0
-    _total_time: int = 0
-    _parent: Optional['ZionEventGroup'] = None
+    requested_cycle_time: int = 0
+    _cycle_time: int = 0  # Not actually used as a private variable. Just used for property decleration
+    _total_time: int = 0  # Not actually used as a private variable. Just used for property decleration
 
-    @property
-    def total_time(self) -> int:
-        return self._cycle_time * self.cycles
+    @staticmethod
+    def dict_factory(*args, **kwargs):
+        d = dict(*args, **kwargs)
+        return {k:v for k,v in d.items() if not k.startswith('_')}
 
-    @property
-    def cycle_time(self) -> int:
-        return self._cycle_time
+    def to_dict(self):
+        d = {k:v for k,v in asdict(self, dict_factory=self.dict_factory).items() if not k.startswith('_')}
+        print(f"{self.name}:to_dict -- {list(d.keys())}")
+        return d
 
-    @cycle_time.setter
-    def cycle_time(self, cycle_time_in : int):
-        self._cycle_time = cycle_time_in
 
 @dataclass
 class ZionEvent(ZionProtocolEntry):
@@ -43,48 +43,61 @@ class ZionEvent(ZionProtocolEntry):
     capture: bool = True
     group: str = ""
     leds: ZionLEDs = field(default_factory=ZionLEDs)
-    minimum_cycle_time: ClassVar[int] = 0
+    _minimum_cycle_time: ClassVar[int] = 0
 
     def __post_init__(self):
         if isinstance(self.leds, dict):
             self.leds = ZionLEDs(**self.leds)
 
+        self.cycle_time = self.requested_cycle_time
+
     @classmethod
     def from_json(cls, json_dict: dict) -> "ZionEvent":
         # Convert "leds" from a dictionary to ZionLEDs
-        json_dict.update({"leds": ZionLEDs(**json_dict.get("leds", {}))})
+        json_dict.update({
+            "leds": ZionLEDs(**json_dict.get("leds", {})),
+        })
         return cls(**json_dict)
 
     @property
     def total_time(self) -> int:
-        return self._cycle_time * self.cycles
+        # print(f"-->{self.name}:total_time")
+        # tot_time = self._cycle_time * self.cycles
+        # print(f"<--{self.name}:total_time = {tot_time}")
+        return self.cycle_time * self.cycles
 
-    def set_minimum_cycle_time(minimum_cycle_time : int):
+    def set_minimum_cycle_time(self, minimum_cycle_time : int):
         """ minimum_cycle_time is a class property """
-        ZionEvent.minimum_cycle_time = minimum_cycle_time
+        ZionEvent._minimum_cycle_time = minimum_cycle_time
 
     @property
     def cycle_time(self) -> int:
-        if self._cycle_time < ZionEvent.minimum_cycle_time:
-            self._cycle_time = ZionEvent.minimum_cycle_time
-
-        return self._cycle_time
+        if self.requested_cycle_time < ZionEvent._minimum_cycle_time:
+            return ZionEvent._minimum_cycle_time
+        else:
+            return self.requested_cycle_time
 
     @cycle_time.setter
     def cycle_time(self, cycle_time_in : int):
-        if cycle_time_in == 0:
-            cycle_time_in = ZionEvent.minimum_cycle_time
-        elif cycle_time_in < ZionEvent.minimum_cycle_time:
-            print(f"WARNING: Cannot set 'cycle_time' of '{cycle_time_in}' for the ZionEvent '{self.name}'!")
-            print(f"         Defaulting to minimum cycle time of '{ZionEvent.minimum_cycle_time}'.")
-            cycle_time_in = ZionEvent.minimum_cycle_time
+        if cycle_time_in < ZionEvent._minimum_cycle_time:
+            if cycle_time_in > 0:
+                print(f"WARNING: Cannot set 'cycle_time' of '{cycle_time_in}' for the ZionEvent '{self.name}'!")
+                print(f"         Defaulting to minimum cycle time of '{ZionEvent._minimum_cycle_time}'.")
+            cycle_time_in = ZionEvent._minimum_cycle_time
+            self.requested_cycle_time = 0
+        else:
+            self.requested_cycle_time = cycle_time_in
 
-        self._cycle_time = cycle_time_in
+    @property
+    def additional_cycle_time(self):
+        return self.cycle_time - ZionEvent._minimum_cycle_time
+
 
 @dataclass
 class ZionEventGroup(ZionProtocolEntry):
     is_event: bool = False
     entries: List[Union[ZionEvent, "ZionEventGroup"]] = field(default_factory=list)
+    _minimum_cycle_time: int = 0
 
     @classmethod
     def from_json(cls, json_dict: dict) -> "ZionEventGroup":
@@ -92,8 +105,7 @@ class ZionEventGroup(ZionProtocolEntry):
         entries_list = json_dict.pop("entries", [])
         entries : Union[List[ZionEvent], List["ZionEventGroup"], List] = []
         for event_or_group in entries_list:
-            # This is not a robust way to go from json <-> python...
-            # But for now it allows people to edit the JSON directly without crazy class names
+            # Use the "is_event" field to determine which type
             if event_or_group["is_event"]:
                 entries.append(ZionEvent.from_json(event_or_group))
             else:
@@ -102,11 +114,14 @@ class ZionEventGroup(ZionProtocolEntry):
 
         return cls(**json_dict, entries=entries)
 
+    def __post_init__(self):
+        self.refresh_minimum_cycle_time()
+        self.cycle_time = self.requested_cycle_time
+
     def flatten(self) -> List[ZionEvent]:
         """
         Convert a ZionEventGroup to an equivalent list of ZionEvents
         """
-
         flat_events = []
         for _ in range(self.cycles):
             for event in self.entries:
@@ -123,28 +138,35 @@ class ZionEventGroup(ZionProtocolEntry):
 
     @property
     def total_time(self) -> int:
+        # print(f"-->{self.name}:total_time")
+        # tot_time = self.cycle_time * self.cycles
+        # print(f"<--{self.name}:total_time = {tot_time}")
         return self.cycle_time * self.cycles
-
-    def minimum_cycle_time(self):
-        return reduce(add, map(attrgetter('total_time'), self.entries), 0)
 
     @property
     def cycle_time(self) -> int:
-        if self._cycle_time < self.minimum_cycle_time():
-            self._cycle_time = self.minimum_cycle_time()
-
-        return self._cycle_time
+        if self.requested_cycle_time < self._minimum_cycle_time:
+            return self._minimum_cycle_time
+        else:
+            return self.requested_cycle_time
 
     @cycle_time.setter
     def cycle_time(self, cycle_time_in : int):
-        min_cycle_time = self.minimum_cycle_time()
-        if cycle_time_in == 0:
-            # Reset the cycle time to the minimum allowed
-            cycle_time_in = min_cycle_time
-        elif cycle_time_in < min_cycle_time:
-            # Don't print the warning message if 0 passed in. Means we just want the minimum time.
-            print(f"WARNING: Cannot set 'cycle_time' of '{cycle_time_in}' for the EventGroup '{self.name}'!")
-            print(f"         Defaulting to minimum cycle_time of '{min_cycle_time}'.")
-            cycle_time_in = min_cycle_time
+        if cycle_time_in < self._minimum_cycle_time:
+            if cycle_time_in > 0:
+                print(f"WARNING: Cannot set 'cycle_time' of '{cycle_time_in}' for the ZionEvent '{self.name}'!")
+                print(f"         Defaulting to minimum cycle time of '{self._minimum_cycle_time}'.")
+            cycle_time_in = self._minimum_cycle_time
+            self.requested_cycle_time = 0
+        else:
+            self.requested_cycle_time = cycle_time_in
 
-        self._cycle_time = cycle_time_in
+    def refresh_minimum_cycle_time(self):
+        """
+        This will get called if one of the entries (or decendents of entries) updates their cycle time
+        """
+        print(f"'{self.name}' -- refresh_minimum_cycle_time()")
+        old_min_cycle_time = self._minimum_cycle_time
+        self._minimum_cycle_time = reduce(add, map(attrgetter('total_time'), self.entries), 0)
+        if self._minimum_cycle_time != old_min_cycle_time:
+            self.cycle_time = self.requested_cycle_time
