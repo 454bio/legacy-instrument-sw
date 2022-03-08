@@ -2,18 +2,15 @@ import os
 from glob import glob
 import time
 from datetime import datetime
-from operator import itemgetter
 import gi
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk, GLib
 from ZionCamera import ZionCamera, ZionCameraParameters
 from ZionGPIO import ZionGPIO
-from ZionEvents import ZionEventGroup, ZionProtocol
+from ZionProtocols import ZionProtocol
 from ZionGtk import ZionGUI
 from picamera.exc import PiCameraValueError, PiCameraAlreadyRecording, PiCameraMMALError
 import threading
-import json
-from types import SimpleNamespace
 import traceback
 from functools import partial
 from ZionEvents import ZionEvent
