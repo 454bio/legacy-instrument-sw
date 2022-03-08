@@ -158,7 +158,7 @@ class ZionGUI():
         # self.parent.Protocol.add_event(name="Orange", group="O", capture=True, leds=orange_led, parent=g_3)
 
         self.parent.Protocol.gtk_initialize_treeview(self.EventTreeViewGtk)
-        self.parent.Protocol.load_from_file(filename="test_protocol_2.txt")
+        self.parent.Protocol.load_from_file(filename="example_v2_protocol.txt")
         # self.EventTreeViewGtk.get_selection().set_mode(Gtk.SelectionMode.SINGLE)
         self.EventTreeViewGtk.show_all()
         self.EventTreeViewGtk.expand_all()
