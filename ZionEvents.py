@@ -5,7 +5,7 @@ from types import SimpleNamespace
 import traceback
 from typing import List, Optional, Union, Dict, NamedTuple, Tuple, ClassVar
 from fractions import Fraction
-from functools import  reduce
+from functools import reduce, partial
 from operator import add, attrgetter
 
 from ZionLED import (
@@ -411,6 +411,9 @@ class ZionProtocolTree():
         'leds': "$LED_NAME$ Pulse\n(ms)",  # Special field that gets formatted
     }
 
+    # Displayed fields that shouldn't be edited
+    NOT_EDITABLE_FIELDS = ('total_time',)
+
     assert set(FIELDS.keys()) <= set([f.name.lstrip('_') for f in fields(ZionEvent)]), \
             f"'{set(FIELDS.keys())}' not in '{set([f.name.lstrip('_') for f in fields(ZionEvent)])}'"
 
@@ -438,6 +441,8 @@ class ZionProtocolTree():
 
         _field_to_type = {f.name.lstrip('_'): f.type for f in fields(ZionEvent)}
         _type_to_func = {str: self.get_event_entry_str, int: self.get_event_entry_str, bool: self.get_event_entry_bool}
+        _type_to_edit_func = {str: self._text_edited, int: self._int_edited, bool: self._toggle_edited}
+        _type_to_edit_signal = {str: "edited", int: "edited", bool: "toggled"}
 
         for field, column_title in self.FIELDS.items():
             ftype = _field_to_type[field]
@@ -455,7 +460,10 @@ class ZionProtocolTree():
 
                 column.set_cell_data_func(renderer, cell_data_func, field)
                 self._treeview.append_column(column)
-                # renderer.set_property("editable", True)
+                if field not in self.NOT_EDITABLE_FIELDS:
+                    if ftype is not bool:
+                        renderer.set_property("editable", True)
+                    renderer.connect(_type_to_edit_signal[ftype], partial(_type_to_edit_func[ftype], field))
 
             elif ftype is ZionLEDs:
                 for led_color in ZionLEDColor:  # Actually a dict of led name to title of strings
@@ -463,6 +471,8 @@ class ZionProtocolTree():
                     column = Gtk.TreeViewColumn(column_title.replace("$LED_NAME$", led_color.name), renderer)
                     column.set_cell_data_func(renderer, self.get_event_entry_led, led_color)
                     self._treeview.append_column(column)
+                    renderer.set_property("editable", True)
+                    renderer.connect("edited", partial(self._led_cell_edited, field, led_color))
             else:
                 raise RuntimeError(f"Unrecognized field type for field {field}: {ftype}")
 
@@ -549,6 +559,22 @@ class ZionProtocolTree():
             cell.set_property(property, value)
 
         cell.set_property('visible', visible)
+
+    def _text_edited(self, field, widget, path, value):
+        print(f"_text_edited -- field: {field}  widget: {widget}  path: {path}  value: {value}")
+        setattr(self._treestore[path][0], field, value)
+
+    def _int_edited(self, field, widget, path, value):
+        print(f"_int_edited -- field: {field}  widget: {widget}  path: {path}  value: {value}")
+        setattr(self._treestore[path][0], field, int(value))
+
+    def _toggle_edited(self, field, widget, path):
+        print(f"_toggle_edited -- field: {field}  widget: {widget}  path: {path}")
+        setattr(self._treestore[path][0], field, not getattr(self._treestore[path][0], field))
+
+    def _led_cell_edited(self, field, led_color, widget, path, value):
+        print(f"field: {field}  led_color: {led_color}  widget: {widget}  path: {path}  value: {value}")
+        getattr(self._treestore[path][0], field)[led_color] = int(value)
 
     @staticmethod
     def get_treeview_dest_row_at_pos(treeview : Gtk.TreeView, drag_x : int, drag_y : int) -> Optional[Tuple[Optional[Gtk.TreePath], Gtk.TreeViewDropPosition]]:
