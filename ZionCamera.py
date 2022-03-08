@@ -88,8 +88,9 @@ class ZionCameraParameters:
 				p.red_gain = camera.awb_gains[0]
 			elif field.name == "blue_gain":
 				p.blue_gain = camera.awb_gains[1]
-			elif field.name == "comment" and comment:
-				p.comment = str(comment)
+			elif field.name == "comment":
+				if comment:
+					p.comment = str(comment)
 			else:
 				setattr(p, field.name, field.type(getattr(camera, field.name)))
 

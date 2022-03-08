@@ -16,9 +16,188 @@ def get_handler_id(obj, signal_name):
     signal_id, detail = GObject.signal_parse_name(signal_name, obj, True)
     return GObject.signal_handler_find(obj, GObject.SignalMatchType.ID, signal_id, detail, None, None, None)
 
+
+class ZionGUI():
+
+    def __init__(self, initial_values : ZionCameraParameters, parent : 'ZionSession', glade_file : str = 'zion_layout.glade'):
+        #Create Window and Maximize:
+        self.builder = Gtk.Builder.new_from_file(glade_file)
+        self.mainWindow = self.builder.get_object("window1")
+
+        # ~ Gtk.Window.maximize(self.mainWindow)
+        self.mainWindow.move(633,36)
+        # ~ self.mainWindow.resize(1287,712)
+
+        self.parent = parent        # type: 'ZionSession'
+
+        #define default values
+        self.Default_Brightness = initial_values.brightness
+        self.Default_Contrast = initial_values.contrast
+        self.Default_Saturation = initial_values.saturation
+        self.Default_Sharpness = initial_values.sharpness
+
+        self.BrightnessScale = self.builder.get_object("brightness_scale")
+        self.BrightnessEntry = self.builder.get_object("brightness_entry")
+        self.BrightnessScale.set_value(initial_values.brightness)
+        self.ContrastScale = self.builder.get_object("contrast_scale")
+        self.ContrastEntry = self.builder.get_object("contrast_entry")
+        self.ContrastScale.set_value(initial_values.contrast)
+        self.SaturationScale = self.builder.get_object("saturation_scale")
+        self.SaturationEntry = self.builder.get_object("saturation_entry")
+        self.SaturationScale.set_value(initial_values.saturation)
+        self.SharpnessScale = self.builder.get_object("sharpness_scale")
+        self.SharpnessEntry = self.builder.get_object("sharpness_entry")
+        self.SharpnessScale.set_value(initial_values.sharpness)
+
+        self.AutoAwbButton = self.builder.get_object("auto_wb_switch")
+        self.redGainEntry = self.builder.get_object("red_gain_entry")
+        self.redGainScale = self.builder.get_object("red_gain_scale")
+        self.redGainScale.set_value(initial_values.red_gain)
+        self.blueGainEntry = self.builder.get_object("blue_gain_entry")
+        self.blueGainScale = self.builder.get_object("blue_gain_scale")
+        self.blueGainScale.set_value(initial_values.blue_gain)
+
+        if initial_values.awb_mode == 'off':
+            self.AutoAwbButton.set_active(False)
+            self.redGainScale.set_sensitive(True)
+            self.blueGainScale.set_sensitive(True)
+        else:
+            self.AutoAwbButton.set_active(True)
+            self.redGainScale.set_sensitive(False)
+            self.blueGainScale.set_sensitive(False)
+
+        self.expModeLockButton = self.builder.get_object("exp_mode_lock_button")
+        self.expModeComboBox = self.builder.get_object("exposure_mode_combobox")
+        self.isoButtonBox = self.builder.get_object("iso_button_box")
+        self.expCompScale = self.builder.get_object("exposure_comp_scale")
+        self.expTimeBuffer = self.builder.get_object("exposure_time_buffer")
+        self.expTimeBox = self.builder.get_object("exposure_time_entry")
+        self.analogGainBuffer = self.builder.get_object("analog_gain_buffer")
+        self.digitalGainBuffer = self.builder.get_object("digital_gain_buffer")
+        self.analogGainEntry = self.builder.get_object("analog_gain_entry")
+        self.digitalGainEntry = self.builder.get_object("digital_gain_entry")
+        self.frBuffer = self.builder.get_object("framerate_buffer")
+        self.frEntry = self.builder.get_object("framerate_entry")
+
+        self.pulseTextInput = self.builder.get_object("uv_led_entry")
+        # ~ self.secretUVSwitchButton = self.builder.get_object("uv_led_switch")
+        self.blueDCEntry = self.builder.get_object("blue_led_dc_entry")
+        self.orangeDCEntry = self.builder.get_object("orange_led_dc_entry")
+        self.uvDCEntry = self.builder.get_object("uv_led_dc_entry")
+        self.blueSwitch = self.builder.get_object("blue_led_switch")
+        self.orangeSwitch = self.builder.get_object("orange_led_switch")
+        self.uvSwitch = self.builder.get_object("uv_led_switch")
+
+        self.logBuffer = self.builder.get_object("textbuffer_log")
+        self.logView = self.builder.get_object("textview_log")
+        self.logMarkEnd = self.logBuffer.create_mark("", self.logBuffer.get_end_iter(), False)
+
+        self.temperatureBuffer = self.builder.get_object("temperature_buffer")
+
+        self.imageDenoiseButton = self.builder.get_object("denoise_button")
+
+        self.isoButtonAuto = self.builder.get_object("radiobutton0")
+        self.isoButton100 = self.builder.get_object("radiobutton1")
+        self.isoButton200 = self.builder.get_object("radiobutton2")
+        self.isoButton320 = self.builder.get_object("radiobutton3")
+        self.isoButton400 = self.builder.get_object("radiobutton4")
+        self.isoButton500 = self.builder.get_object("radiobutton5")
+        self.isoButton640 = self.builder.get_object("radiobutton6")
+        self.isoButton800 = self.builder.get_object("radiobutton7")
+
+        self.commentBox = self.builder.get_object("comment_entry")
+        self.suffixBox = self.builder.get_object("suffix_entry")
+
+
+        if initial_values.exposure_mode == 'off':
+            self.expModeLockButton.set_active(True)
+            self.isoButtonBox.set_sensitive(False)
+            self.expCompScale.set_sensitive(False)
+            self.expModeComboBox.set_active(0)
+            self.Def_row_idx = 0
+        else:
+            self.expModeLockButton.set_active(False)
+            self.isoButtonBox.set_sensitive(True)
+            self.expCompScale.set_sensitive(True)
+            listStore = self.expModeComboBox.get_model()
+            rowList = [row[0] for row in listStore]
+            self.Def_row_idx = rowList.index(initial_values.exposure_mode)
+            self.expModeComboBox.set_active(self.Def_row_idx)
+
+        self.paramFileChooser = self.builder.get_object('param_file_chooser_dialog')
+        self.filter_protocol = Gtk.FileFilter()
+        self.filter_protocol.set_name("Protocol Files")
+        self.filter_protocol.add_mime_type("application/json")
+        self.filter_protocol.add_pattern("*.txt")
+        self.filter_parameter = Gtk.FileFilter()
+        self.filter_parameter.set_name("Parameter Files")
+        self.filter_parameter.add_pattern("*.txt")
+        self.paramFileChooser.add_filter(self.filter_protocol)
+        self.paramFileChooser.add_filter(self.filter_parameter)
+        self.paramFileChooser.set_filter(self.filter_protocol)
+
+        self.EventTreeViewGtk = self.builder.get_object("event_tree")
+        self.DeleteEntryButton = self.builder.get_object("delete_entry_button")
+
+        # blue_led = ZionLEDs({ZionLEDColor.BLUE: 100})
+        # orange_led = ZionLEDs({ZionLEDColor.ORANGE: 120})
+        # uv_led = ZionLEDs({ZionLEDColor.UV: 100})
+
+        # self.parent.Protocol.clear()
+        # g_1 = self.parent.Protocol.add_event_group(name="All Steps", cycles=5)
+
+        # g_2 = self.parent.Protocol.add_event_group(name="Extension", cycles=144, parent=g_1)
+        # self.parent.Protocol.add_event(name="Dark", group="D", capture=True, parent=g_2)
+        # self.parent.Protocol.add_event(name="Blue", group="B", capture=True, leds=blue_led, parent=g_2)
+        # self.parent.Protocol.add_event(name="Orange", group="O", capture=True, leds=orange_led, parent=g_2)
+
+        # g_3 = self.parent.Protocol.add_event_group(name="Cleaving", cycles=4, parent=g_1)
+        # self.parent.Protocol.add_event(name="UV", group="U", capture=True, leds=uv_led, parent=g_3)
+        # self.parent.Protocol.add_event(name="Dark", group="D", capture=True, parent=g_3)
+        # self.parent.Protocol.add_event(name="Blue", group="B", capture=True, leds=blue_led, parent=g_3)
+        # self.parent.Protocol.add_event(name="Orange", group="O", capture=True, leds=orange_led, parent=g_3)
+
+        self.parent.Protocol.gtk_initialize_treeview(self.EventTreeViewGtk)
+        self.parent.Protocol.load_from_file(filename="test_protocol_2.txt")
+        # self.EventTreeViewGtk.get_selection().set_mode(Gtk.SelectionMode.SINGLE)
+        self.EventTreeViewGtk.show_all()
+        self.EventTreeViewGtk.expand_all()
+
+        self.EventListScroll = self.builder.get_object("eventlist_scroll")
+
+        self.runProgramButton = self.builder.get_object("run_program_button")
+
+        self.test_led_pulse_width_entry = self.builder.get_object("test_pulse_width_entry")
+        self.test_led_delay_entry = self.builder.get_object("test_delay_entry")
+
+        self.cameraPreview = self.builder.get_object("camera_preview")
+        self.cameraPreviewWrapper = PictureView(self.cameraPreview, os.path.join(mod_path, "Detect_Logo.png"))
+
+        self.handlers = Handlers(self)
+        self.builder.connect_signals(self.handlers)
+
+        GLib.idle_add(self.handlers.check_fixed_settings)
+
+    def printToLog(self, text):
+        text_iter_end = self.logBuffer.get_end_iter()
+
+        self.logBuffer.insert(text_iter_end, f"{text}\n")
+        self.logView.scroll_to_mark(self.logMarkEnd, 0, False, 0, 0)
+
+        # self.logBuffer.insert_at_cursor(text+'\n')
+        # ~ mark = self.logBuffer.create_mark(None, self.logBuffer.get_end_iter(), False)
+        # ~ self.logView.scroll_to_mark(mark, 0, False, 0,0)
+
+    def set_file_chooser_for_protocol_files(self):
+        self.paramFileChooser.set_filter(self.filter_protocol)
+
+    def set_file_chooser_for_parameter_files(self):
+        self.paramFileChooser.set_filter(self.filter_parameter)
+
+
 class Handlers:
 
-    def __init__(self, gui):
+    def __init__(self, gui : ZionGUI):
         self.parent = gui
         self.ExpModeLastChoice = self.parent.Def_row_idx if self.parent.Def_row_idx else 1
         self.updateExpParams()
@@ -66,37 +245,24 @@ class Handlers:
         return False
 
     def on_script_save_button_clicked(self, button):
-        try:
-            events = self.save_eventList()
-        except TypeError:
-            self.parent.printToLog('No Event List!')
-            return
+        self.parent.paramFileChooser.set_action(Gtk.FileChooserAction.SAVE)
 
-        # self.parent.parent.LoadProtocolFromGUI(events)
-        # self.parent.paramFileChooser.set_action(Gtk.FileChooserAction.SAVE)
+        self.parent.set_file_chooser_for_protocol_files()
+        if self.recent_protocol_file:
+            self.parent.paramFileChooser.set_current_folder(os.path.dirname(self.recent_protocol_file))
+        else:
+            self.parent.paramFileChooser.set_current_folder(mod_path)
 
-        # self.parent.set_file_chooser_for_protocol_files()
-        # if self.recent_protocol_file:
-        #     self.parent.paramFileChooser.set_current_folder(os.path.dirname(self.recent_protocol_file))
-        # else:
-        #     self.parent.paramFileChooser.set_current_folder(mod_path)
+        response = self.parent.paramFileChooser.run()
 
-        # response = self.parent.paramFileChooser.run()
-
-        # if response == Gtk.ResponseType.OK:
-        #     filename = self.parent.paramFileChooser.get_filename()
-        #     comment = self.parent.commentBox.get_text()
-        #     self.recent_protocol_file = filename
-        #     self.parent.paramFileChooser.hide()
-        #     self.parent.parent.SaveProtocolFile(filename=filename, comment=comment)
-        # elif response == Gtk.ResponseType.CANCEL:
-        #     self.parent.paramFileChooser.hide()
-
-    def save_eventList(self):
-        print("save_eventList: this is where we'd convert the Gtk tree to ZionProtol")
-        # from rich import inspect
-        # inspect(self.parent.parent.Protocol)
-        return
+        if response == Gtk.ResponseType.OK:
+            filename = self.parent.paramFileChooser.get_filename()
+            comment = self.parent.commentBox.get_text()
+            self.recent_protocol_file = filename
+            self.parent.paramFileChooser.hide()
+            self.parent.parent.SaveProtocolFile(filename=filename, comment=comment)
+        elif response == Gtk.ResponseType.CANCEL:
+            self.parent.paramFileChooser.hide()
 
     # TODO: Make the naming consistent
     def on_script_load_button_clicked(self, button):
@@ -510,13 +676,6 @@ class Handlers:
         self.parent.expModeComboBox.set_active(0)
         comment = self.parent.commentBox.get_text()
         self.parent.parent.SaveParameterFile(comment, True)
-        try:
-            events = self.save_eventList()
-        except TypeError:
-            self.parent.printToLog('No event list!')
-            button.set_sensitive(True)
-            return
-        self.parent.parent.LoadProtocolFromGUI(events)
         self.parent.parent.SaveProtocolFile(comment=comment)
 
         self.stop_run_thread.clear()
@@ -825,10 +984,7 @@ class Handlers:
 
         # We only terminate when the user presses the OK button
         if response == Gtk.ResponseType.OK:
-            if self.parent.parent.Protocol.gtk_delete_selection(selection):
-                print(f"Deleted entry {entry_name}")
-            else:
-                print(f"ERROR: Problem deleting entry {entry_name}!")
+            self.parent.parent.Protocol.gtk_delete_selection(selection)
         else:
             print(f"Not deleting {entry_name}")
 
@@ -840,185 +996,6 @@ class Handlers:
 
     def on_event_tree_selection_request_event(self, *args):
         print(f"\non_event_tree_selection_request_event -- args: {args}")
-
-
-class ZionGUI():
-
-    def __init__(self, initial_values : ZionCameraParameters, parent : 'ZionSession', glade_file : str = 'zion_layout.glade'):
-        #Create Window and Maximize:
-        self.builder = Gtk.Builder.new_from_file(glade_file)
-        self.mainWindow = self.builder.get_object("window1")
-
-        # ~ Gtk.Window.maximize(self.mainWindow)
-        self.mainWindow.move(633,36)
-        # ~ self.mainWindow.resize(1287,712)
-
-        self.parent = parent
-
-        #define default values
-        self.Default_Brightness = initial_values.brightness
-        self.Default_Contrast = initial_values.contrast
-        self.Default_Saturation = initial_values.saturation
-        self.Default_Sharpness = initial_values.sharpness
-
-        self.BrightnessScale = self.builder.get_object("brightness_scale")
-        self.BrightnessEntry = self.builder.get_object("brightness_entry")
-        self.BrightnessScale.set_value(initial_values.brightness)
-        self.ContrastScale = self.builder.get_object("contrast_scale")
-        self.ContrastEntry = self.builder.get_object("contrast_entry")
-        self.ContrastScale.set_value(initial_values.contrast)
-        self.SaturationScale = self.builder.get_object("saturation_scale")
-        self.SaturationEntry = self.builder.get_object("saturation_entry")
-        self.SaturationScale.set_value(initial_values.saturation)
-        self.SharpnessScale = self.builder.get_object("sharpness_scale")
-        self.SharpnessEntry = self.builder.get_object("sharpness_entry")
-        self.SharpnessScale.set_value(initial_values.sharpness)
-
-        self.AutoAwbButton = self.builder.get_object("auto_wb_switch")
-        self.redGainEntry = self.builder.get_object("red_gain_entry")
-        self.redGainScale = self.builder.get_object("red_gain_scale")
-        self.redGainScale.set_value(initial_values.red_gain)
-        self.blueGainEntry = self.builder.get_object("blue_gain_entry")
-        self.blueGainScale = self.builder.get_object("blue_gain_scale")
-        self.blueGainScale.set_value(initial_values.blue_gain)
-
-        if initial_values.awb_mode == 'off':
-            self.AutoAwbButton.set_active(False)
-            self.redGainScale.set_sensitive(True)
-            self.blueGainScale.set_sensitive(True)
-        else:
-            self.AutoAwbButton.set_active(True)
-            self.redGainScale.set_sensitive(False)
-            self.blueGainScale.set_sensitive(False)
-
-        self.expModeLockButton = self.builder.get_object("exp_mode_lock_button")
-        self.expModeComboBox = self.builder.get_object("exposure_mode_combobox")
-        self.isoButtonBox = self.builder.get_object("iso_button_box")
-        self.expCompScale = self.builder.get_object("exposure_comp_scale")
-        self.expTimeBuffer = self.builder.get_object("exposure_time_buffer")
-        self.expTimeBox = self.builder.get_object("exposure_time_entry")
-        self.analogGainBuffer = self.builder.get_object("analog_gain_buffer")
-        self.digitalGainBuffer = self.builder.get_object("digital_gain_buffer")
-        self.analogGainEntry = self.builder.get_object("analog_gain_entry")
-        self.digitalGainEntry = self.builder.get_object("digital_gain_entry")
-        self.frBuffer = self.builder.get_object("framerate_buffer")
-        self.frEntry = self.builder.get_object("framerate_entry")
-
-        self.pulseTextInput = self.builder.get_object("uv_led_entry")
-        # ~ self.secretUVSwitchButton = self.builder.get_object("uv_led_switch")
-        self.blueDCEntry = self.builder.get_object("blue_led_dc_entry")
-        self.orangeDCEntry = self.builder.get_object("orange_led_dc_entry")
-        self.uvDCEntry = self.builder.get_object("uv_led_dc_entry")
-        self.blueSwitch = self.builder.get_object("blue_led_switch")
-        self.orangeSwitch = self.builder.get_object("orange_led_switch")
-        self.uvSwitch = self.builder.get_object("uv_led_switch")
-
-        self.logBuffer = self.builder.get_object("textbuffer_log")
-        self.logView = self.builder.get_object("textview_log")
-        self.logMarkEnd = self.logBuffer.create_mark("", self.logBuffer.get_end_iter(), False)
-
-        self.temperatureBuffer = self.builder.get_object("temperature_buffer")
-
-        self.imageDenoiseButton = self.builder.get_object("denoise_button")
-
-        self.isoButtonAuto = self.builder.get_object("radiobutton0")
-        self.isoButton100 = self.builder.get_object("radiobutton1")
-        self.isoButton200 = self.builder.get_object("radiobutton2")
-        self.isoButton320 = self.builder.get_object("radiobutton3")
-        self.isoButton400 = self.builder.get_object("radiobutton4")
-        self.isoButton500 = self.builder.get_object("radiobutton5")
-        self.isoButton640 = self.builder.get_object("radiobutton6")
-        self.isoButton800 = self.builder.get_object("radiobutton7")
-
-        self.commentBox = self.builder.get_object("comment_entry")
-        self.suffixBox = self.builder.get_object("suffix_entry")
-
-
-        if initial_values.exposure_mode == 'off':
-            self.expModeLockButton.set_active(True)
-            self.isoButtonBox.set_sensitive(False)
-            self.expCompScale.set_sensitive(False)
-            self.expModeComboBox.set_active(0)
-            self.Def_row_idx = 0
-        else:
-            self.expModeLockButton.set_active(False)
-            self.isoButtonBox.set_sensitive(True)
-            self.expCompScale.set_sensitive(True)
-            listStore = self.expModeComboBox.get_model()
-            rowList = [row[0] for row in listStore]
-            self.Def_row_idx = rowList.index(initial_values.exposure_mode)
-            self.expModeComboBox.set_active(self.Def_row_idx)
-
-        self.paramFileChooser = self.builder.get_object('param_file_chooser_dialog')
-        self.filter_protocol = Gtk.FileFilter()
-        self.filter_protocol.set_name("Protocol Files")
-        self.filter_protocol.add_mime_type("application/json")
-        self.filter_protocol.add_pattern("*.txt")
-        self.filter_parameter = Gtk.FileFilter()
-        self.filter_parameter.set_name("Parameter Files")
-        self.filter_parameter.add_pattern("*.txt")
-        self.paramFileChooser.add_filter(self.filter_protocol)
-        self.paramFileChooser.add_filter(self.filter_parameter)
-        self.paramFileChooser.set_filter(self.filter_protocol)
-
-        self.EventTreeViewGtk = self.builder.get_object("event_tree")
-        self.DeleteEntryButton = self.builder.get_object("delete_entry_button")
-
-        blue_led = ZionLEDs({ZionLEDColor.BLUE: 100})
-        orange_led = ZionLEDs({ZionLEDColor.ORANGE: 120})
-        uv_led = ZionLEDs({ZionLEDColor.UV: 100})
-
-        self.parent.Protocol.clear()
-        g_1 = self.parent.Protocol.add_event_group(name="All Steps", cycles=5)
-
-        g_2 = self.parent.Protocol.add_event_group(name="Extension", cycles=144, parent=g_1)
-        self.parent.Protocol.add_event(name="Dark", group="D", capture=True, postdelay=250, parent=g_2)
-        self.parent.Protocol.add_event(name="Blue", group="B", capture=True, postdelay=250, leds=blue_led, parent=g_2)
-        self.parent.Protocol.add_event(name="Orange", group="O", capture=True, postdelay=250, leds=orange_led, parent=g_2)
-
-        g_3 = self.parent.Protocol.add_event_group(name="Cleaving", cycles=4, parent=g_1)
-        self.parent.Protocol.add_event(name="UV", group="U", capture=True, postdelay=250, leds=uv_led, parent=g_3)
-        self.parent.Protocol.add_event(name="Dark", group="D", capture=True, postdelay=250, parent=g_3)
-        self.parent.Protocol.add_event(name="Blue", group="B", capture=True, postdelay=250, leds=blue_led, parent=g_3)
-        self.parent.Protocol.add_event(name="Orange", group="O", capture=True, postdelay=250, leds=orange_led, parent=g_3)
-
-        self.parent.Protocol.gtk_initialize_treeview(self.EventTreeViewGtk)
-
-        # self.EventTreeViewGtk.get_selection().set_mode(Gtk.SelectionMode.SINGLE)
-        self.EventTreeViewGtk.show_all()
-        self.EventTreeViewGtk.expand_all()
-
-        self.EventListScroll = self.builder.get_object("eventlist_scroll")
-
-        self.runProgramButton = self.builder.get_object("run_program_button")
-
-        self.test_led_pulse_width_entry = self.builder.get_object("test_pulse_width_entry")
-        self.test_led_delay_entry = self.builder.get_object("test_delay_entry")
-
-        self.cameraPreview = self.builder.get_object("camera_preview")
-        self.cameraPreviewWrapper = PictureView(self.cameraPreview, os.path.join(mod_path, "Detect_Logo.png"))
-
-        self.handlers = Handlers(self)
-        self.builder.connect_signals(self.handlers)
-
-        GLib.idle_add(self.handlers.check_fixed_settings)
-
-    def printToLog(self, text):
-        text_iter_end = self.logBuffer.get_end_iter()
-
-        self.logBuffer.insert(text_iter_end, f"{text}\n")
-        self.logView.scroll_to_mark(self.logMarkEnd, 0, False, 0, 0)
-
-        # self.logBuffer.insert_at_cursor(text+'\n')
-        # ~ mark = self.logBuffer.create_mark(None, self.logBuffer.get_end_iter(), False)
-        # ~ self.logView.scroll_to_mark(mark, 0, False, 0,0)
-
-    def set_file_chooser_for_protocol_files(self):
-        self.paramFileChooser.set_filter(self.filter_protocol)
-
-    def set_file_chooser_for_parameter_files(self):
-        self.paramFileChooser.set_filter(self.filter_parameter)
-
 
 # ~ builder.connect_signals(Handlers())
 
