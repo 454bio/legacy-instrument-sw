@@ -54,7 +54,7 @@ class ZionSession():
         self.captureCountThisProtocol = 0
         self.SplitterCount = 0
 
-        self.Protocol = ZionProtocol()
+        self.Protocol = ZionProtocol(camera_parameters=Initial_Values)
 
         self.gui = ZionGUI(Initial_Values, self)
 
@@ -133,17 +133,6 @@ class ZionSession():
     def LoadProtocolFromFile(self, filename):
         # TODO: Add error handling and notify user
         self.Protocol.load_from_file(filename)
-        self.Protocol.init_treestore()
-
-    def LoadProtocolFromGUI(self, events):
-        # Temporary to be compatible with old GUI
-        print(f"events: {events}")
-        self.Protocol.Entries[0] = ZionEventGroup(
-            cycles=1,
-            events=events
-            )
-
-        return self.Protocol
 
     def RunProgram(self, stop : threading.Event):
         try:
