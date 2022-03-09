@@ -23,7 +23,7 @@ class ZionSession():
     protocolCountDigits = 3
     captureCountPerProtocolDigits = 5
 
-    def __init__(self, session_name, Binning, Initial_Values, PWM_freq, overwrite=False):
+    def __init__(self, session_name, Binning, Initial_Values, overwrite=False):
 
         self.Name=session_name
         now = datetime.now()
@@ -42,7 +42,7 @@ class ZionSession():
         print('Creating directory '+str(self.Dir))
         os.makedirs(self.Dir)
 
-        self.GPIO = ZionGPIO(PWM_freq, parent=self)
+        self.GPIO = ZionGPIO(parent=self)
 
         self.Camera = ZionCamera(Binning, Initial_Values, parent=self)
         self.CaptureCount = 0
@@ -189,8 +189,8 @@ class ZionSession():
         self.Camera.stop_preview()
 
     def QuitSession(self):
-        # ~ self.GPIO.cancel_PWM()
         self.Camera.quit()
+        self.GPIO.quit()
 
         # Delete the session folder if it's empty
         if os.path.isdir(self.Dir) and not any(os.scandir(self.Dir)):

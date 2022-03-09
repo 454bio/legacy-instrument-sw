@@ -21,9 +21,6 @@ Binning = False
     # w/  binning: 0.1 < framerate < 42
     # w/o binning: 0.05 < framerate < 10 fps
 
-# LED Properties
-PWM_Frequency = 8000 #{8000, 4000, 2000, 1600, 1000, 800, 500, 400, 320, 250, 200, 160, 100, 80, 50, 40, 20, 10}
-
 #Default Values:
 Initial_Values = ZionCameraParameters(
     brightness=    50,
@@ -62,7 +59,7 @@ Initial_Values = ZionCameraParameters(
 ########################################################################
 
 # Initialization Block:
-mySession = ZionSession(Session_Name, Binning, Initial_Values, PWM_Frequency)
+mySession = ZionSession(Session_Name, Binning, Initial_Values)
 
 #Next line perform events defined above:
 # ~ mySession.RunProgram()

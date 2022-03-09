@@ -22,10 +22,10 @@ class ZionLEDs(UserDict):
     _colors = list(map(attrgetter('name'), ZionLEDColor))
     __max_pulsetime = 190
 
-    def __init__(self, *args, **kwargs):        
+    def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        # On the off chance we are expecting that iterating through the 
+        # On the off chance we are expecting that iterating through the
         # items will return them in the order as ZionLEDColor but we're
         # initializing it with out of order keywords/dict
         sorted_dict = {}
@@ -58,17 +58,17 @@ class ZionLEDs(UserDict):
             raise ZionInvalidLEDMaxPulsetime(f"Invalid maximum pulsetime: {max_pulsetime}\nMaximum pulsetime must be greater than or equal to 0")
 
         cls.__max_pulsetime = max_pulsetime
- 
+
     @property
     def max_pulsetime(self):
         return self.__max_pulsetime
 
     def set_pulsetime(
         self,
-        led : Optional[ZionLEDsKT] = None, 
-        pulsetime : Optional[ZionLEDsVT] = None, 
+        led : Optional[ZionLEDsKT] = None,
+        pulsetime : Optional[ZionLEDsVT] = None,
         led_dict : Optional[Dict[ZionLEDsKT, ZionLEDsVT]] = None):
-        
+
         # Check valid arguments
         if led is not None or pulsetime is not None:
             if led is None:

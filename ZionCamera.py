@@ -172,6 +172,10 @@ class ZionCamera(PiCamera):
 		self.close()
 		print('\nCamera Closed')
 
+	@property
+	def exposure_speed_ms(self):
+		return int(self.exposure_speed / 1000)
+
 	def get_all_params(self, comment : str = "") -> ZionCameraParameters:
 		return ZionCameraParameters.load_from_camera(self, comment=comment)
 
@@ -206,7 +210,7 @@ class ZionCamera(PiCamera):
 
 		return (not nonfixed_capture_params, nonfixed_capture_params)
 
-	def capture(self, filename, cropping=(0,0,1,1), bayer=False, splitter=0):
+	def capture(self, filename, cropping=(0,0,1,1), bayer=True, splitter=0):
 		self.zoom = cropping
 		fileToWrite = filename+'.jpg'
 		# ~ fileToWrite = filename+'.raw'

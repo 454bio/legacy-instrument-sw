@@ -79,11 +79,9 @@ class ZionGUI():
         self.frBuffer = self.builder.get_object("framerate_buffer")
         self.frEntry = self.builder.get_object("framerate_entry")
 
-        self.pulseTextInput = self.builder.get_object("uv_led_entry")
-        # ~ self.secretUVSwitchButton = self.builder.get_object("uv_led_switch")
-        self.blueDCEntry = self.builder.get_object("blue_led_dc_entry")
-        self.orangeDCEntry = self.builder.get_object("orange_led_dc_entry")
-        self.uvDCEntry = self.builder.get_object("uv_led_dc_entry")
+        self.blueManualEntry = self.builder.get_object("blue_led_manual_entry")
+        self.orangeManualEntry = self.builder.get_object("orange_led_manual_entry")
+        self.uvManualEntry = self.builder.get_object("uv_led_manual_entry")
         self.blueSwitch = self.builder.get_object("blue_led_switch")
         self.orangeSwitch = self.builder.get_object("orange_led_switch")
         self.uvSwitch = self.builder.get_object("uv_led_switch")
@@ -167,9 +165,6 @@ class ZionGUI():
 
         self.runProgramButton = self.builder.get_object("run_program_button")
 
-        self.test_led_pulse_width_entry = self.builder.get_object("test_pulse_width_entry")
-        self.test_led_delay_entry = self.builder.get_object("test_delay_entry")
-
         self.cameraPreview = self.builder.get_object("camera_preview")
         self.cameraPreviewWrapper = PictureView(self.cameraPreview, os.path.join(mod_path, "Detect_Logo.png"))
 
@@ -222,7 +217,7 @@ class Handlers:
                 self.parent.parent.Camera.start_preview(fullscreen=False, window=self.camera_preview_window)
 
     def on_window1_delete_event(self, *args):
-        self.parent.parent.GPIO.cancel_PWM()
+        self.parent.parent.GPIO.disable_all_leds()
         GObject.source_remove(self.source_id)
         # ~ GObject.source_remove(self.source_id2)
         Gtk.main_quit(*args)
@@ -398,42 +393,42 @@ class Handlers:
     def on_blue_led_button_toggled(self, switch):
         if switch.get_active():
             try:
-                dc = int(self.parent.blueDCEntry.get_text())
+                dc = int(self.parent.blueManualEntry.get_text())
             except ValueError:
-                self.parent.printToLog('Duty Cycle must be an integer from 0-100!')
+                self.parent.printToLog(f"Pulse width must be an integer from 0 - {self.parent.parent.Camera.exposure_speed_ms}!")
                 return
             self.parent.printToLog('Blue LED on, set to '+str(dc)+'% duty cycle')
             self.parent.parent.GPIO.enable_led(ZionLEDColor.BLUE,float(dc/100.))
         else:
             self.parent.printToLog('Blue LED off')
             self.parent.parent.GPIO.enable_led(ZionLEDColor.BLUE,0)
-            
+
     def on_orange_led_button_toggled(self, switch):
         if switch.get_active():
             try:
-                dc = int(self.parent.orangeDCEntry.get_text())
+                dc = int(self.parent.orangeManualEntry.get_text())
             except ValueError:
-                self.parent.printToLog('Duty Cycle must be an integer from 0-100!')
+                self.parent.printToLog(f"Pulse width must be an integer from 0 - {self.parent.parent.Camera.exposure_speed_ms}!")
                 return
             self.parent.printToLog('Orange LED on, set to '+str(dc)+'% duty cycle')
             self.parent.parent.GPIO.enable_led(ZionLEDColor.ORANGE,float(dc/100.))
         else:
             self.parent.printToLog('Orange LED off')
             self.parent.parent.GPIO.enable_led(ZionLEDColor.ORANGE,0)
-            
+
     def on_uv_led_button_toggled(self, switch):
         if switch.get_active():
             try:
-                dc = int(self.parent.uvDCEntry.get_text())
+                dc = int(self.parent.uvManualEntry.get_text())
             except ValueError:
-                self.parent.printToLog('Duty Cycle must be an integer from 0-100!')
+                self.parent.printToLog(f"Pulse width must be an integer from 0 - {self.parent.parent.Camera.exposure_speed_ms}!")
                 return
             self.parent.printToLog('UV LED on, set to '+str(dc)+'% duty cycle')
             self.parent.parent.GPIO.enable_led(ZionLEDColor.UV,float(dc/100.))
         else:
             self.parent.printToLog('UV LED off')
             self.parent.parent.GPIO.enable_led(ZionLEDColor.UV,0)
-            
+
     # ~ def on_uv_switch_safety_button(self, button):
         # ~ if button.get_active():
             # ~ self.parent.secretUVSwitchButton.set_visible(True)
@@ -441,34 +436,31 @@ class Handlers:
         # ~ else:
             # ~ self.parent.secretUVSwitchButton.set_visible(False)
             # ~ self.parent.secretUVSwitchButton.set_sensitive(False)
-            
-    def on_led_test_button_activate(self, button):
-        print("WARNING: Not implemented")
-        # self.parent.parent.GPIO.enable_vsync_callback()
 
     def on_uv_led_pulse_button(self, button):
-        newVal = self.parent.pulseTextInput.get_text()
-        try:
-            newVal = float(newVal)
-        except ValueError:
-            self.parent.printToLog('Pulse time should be an floating point number of milliseconds!')
-            return
-        try:
-            dc = int(self.parent.uvDCEntry.get_text())
-        except ValueError:
-            self.parent.printToLog('Duty Cycle must be an integer from 0-100!')
-            return
-        self.parent.printToLog('Doing UV pulse of '+str(newVal)+' milliseconds at '+str(dc)+' % duty cycle')
-        pulse_thread = threading.Thread(target=self.parent.parent.GPIO.send_uv_pulse, args=(newVal,float(dc/100)))
-        pulse_thread.daemon = True
-        pulse_thread.start()
-            
-    def on_led__off_button_clicked(self, button):
-        self.parent.parent.GPIO.cancel_PWM()
+        pass
+        # newVal = self.parent.pulseTextInput.get_text()
+        # try:
+        #     newVal = float(newVal)
+        # except ValueError:
+        #     self.parent.printToLog('Pulse time should be an floating point number of milliseconds!')
+        #     return
+        # try:
+        #     dc = int(self.parent.uvManualEntry.get_text())
+        # except ValueError:
+        #     self.parent.printToLog('Duty Cycle must be an integer from 0-100!')
+        #     return
+        # self.parent.printToLog('Doing UV pulse of '+str(newVal)+' milliseconds at '+str(dc)+' % duty cycle')
+        # pulse_thread = threading.Thread(target=self.parent.parent.GPIO.send_uv_pulse, args=(newVal,float(dc/100)))
+        # pulse_thread.daemon = True
+        # pulse_thread.start()
+
+    def on_led_off_button_clicked(self, button):
+        self.parent.parent.GPIO.disable_all_leds()
         self.parent.blueSwitch.set_active(False)
         self.parent.orangeSwitch.set_active(False)
         self.parent.uvSwitch.set_active(False)
-    
+
     #Exposure Stuff
     def on_iso_auto_button(self, button):
         if button.get_active():
@@ -502,12 +494,12 @@ class Handlers:
         if button.get_active():
             self.parent.printToLog('ISO set to 800')
             self.parent.parent.Camera.set_iso(800)
-            
+
     def on_exposure_comp_scale_value_changed(self, scale):
         newval = int(scale.get_value())
         self.parent.parent.Camera.set_exp_comp(newval)
         self.parent.printToLog('Exposure compensation set to '+str(newval))
-        
+
     def on_exposure_time_entry_activate(self, entry):
         newval = entry.get_text()
         try:
@@ -867,7 +859,7 @@ class Handlers:
         self.parent.cameraPreviewWrapper.on_draw(*args)
         # print("on_camera_preview_draw: done!")
         return False
-       
+
     def on_camera_preview_button_press_event(self, *args):
         print("on_camera_preview_button_press_event")
         print("on_camera_preview_button_press_event: done!")
@@ -879,36 +871,6 @@ class Handlers:
         self._update_camera_preview()
         # print("on_camera_preview_configure_event: done!")
         return False
-
-    # ~ def on_offButton_clicked(self, widget):
-        # ~ self.LightOn = False
-        # ~ da.queue_draw() 
-    
-    # ~ # camera_preview is set as the userdata in glade
-    # ~ def on_onButton_clicked(self, widget):
-        # ~ self.LightOn = True
-        # ~ widget.queue_draw()
-        
-    def on_test_pulse_width_entry_activate(self, entry):
-        val = entry.get_text()
-        try:
-            val = float(val)
-        except ValueError:
-            print('width needs to be float')
-            return
-        if val <= 0:
-            print('width needs to be positive')
-        else:
-            self.parent.parent.GPIO.test_pulse_width = val
-
-    def on_test_delay_entry_activate(self, entry):
-        val = entry.get_text()
-        try:
-            val = float(val)
-        except ValueError:
-            print('delay needs to be float')
-            return
-        self.parent.parent.GPIO.test_delay = val
 
     def check_fixed_settings(self):
         is_fixed_capture, bad_params = self.parent.parent.Camera.is_fixed_capture()
