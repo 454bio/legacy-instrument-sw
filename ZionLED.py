@@ -21,6 +21,7 @@ ZionLEDsVT = int
 class ZionLEDs(UserDict):
     _colors = list(map(attrgetter('name'), ZionLEDColor))
     __max_pulsetime = 190
+    __pigpio_wave_id = -1
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -51,17 +52,42 @@ class ZionLEDs(UserDict):
 
         return super().__setitem__(led_color, pulsetime)
 
+    def __hash__(self):
+        return hash(repr(self))
+
+    def __eq__(self, other):
+        return hash(repr(self)) == hash(repr(other))
+
+    def __neq__(self, other):
+        return hash(repr(self)) != hash(repr(other))
+
+    def __repr__(self):
+        # Make sure it will return just the LEDColors in defined order
+        return str({k: self[k] for k in ZionLEDColor})
+
     @classmethod
-    def set_max_pulsetime(cls, max_pulsetime : int):
-        """ The pulsetime is a class level value """
-        if max_pulsetime < 0:
+    def set_max_pulsetime(cls, max_pulsetime_ms : int):
+        """ The pulsetime is a class level value. In units of milliseconds """
+        if max_pulsetime_ms < 0:
             raise ZionInvalidLEDMaxPulsetime(f"Invalid maximum pulsetime: {max_pulsetime}\nMaximum pulsetime must be greater than or equal to 0")
 
-        cls.__max_pulsetime = max_pulsetime
+        cls.__max_pulsetime = max_pulsetime_ms
 
     @property
     def max_pulsetime(self):
         return self.__max_pulsetime
+
+    def set_wave_id(self, wave_id : int):
+        self.__pigpio_wave_id = wave_id
+
+    def get_wave_id(self):
+        return self.__pigpio_wave_id
+
+    def has_wave_id(self):
+        return self.__pigpio_wave_id > -1
+
+    def clear_wave_id(self):
+        self.__pigpio_wave_id = -1
 
     def set_pulsetime(
         self,

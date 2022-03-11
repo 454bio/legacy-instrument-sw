@@ -124,6 +124,9 @@ class ZionProtocol():
             json.dump(self, f, indent=1, cls=ZionProtocolEncoder)
 
     def get_entries(self):
+        if self._protocoltree.is_dirty():
+            self.Entries = self._protocoltree.get_entries()
+
         return self.Entries
 
     def performEvent(self, event: ZionEvent, gpio_ctrl: "ZionGPIO"):
@@ -208,6 +211,23 @@ class ZionProtocol():
         entries.insert(index, event)
 
         return event
+
+    def flatten(self) -> List[ZionEvent]:
+        """
+        Convert Entries to an equivalent list of only ZionEvents
+        """
+        flat_events = []
+        for event in self.Entries:
+            if isinstance(event, ZionEvent):
+                flat_events.append(event)
+            elif isinstance(event, ZionEventGroup):
+                flat_events.extend(event.flatten())
+            else:
+                raise RuntimeError(
+                    f"Unrecognized type in the event list: {type(event)}"
+                )
+
+        return flat_events
 
     # The following gtk_* calls are pass through calls from ZionSession or ZionGtk
     def gtk_initialize_treeview(self, treeview : Gtk.TreeView):

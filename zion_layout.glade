@@ -2073,6 +2073,17 @@
               </packing>
             </child>
             <child>
+              <object class="GtkSeparator">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+                <property name="fill">True</property>
+                <property name="position">2</property>
+              </packing>
+            </child>
+            <child>
               <object class="GtkBox">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
@@ -2185,6 +2196,8 @@
                                 <property name="can_focus">True</property>
                                 <property name="width_chars">3</property>
                                 <property name="text" translatable="yes">10</property>
+                                <signal name="activate" handler="on_blue_led_manual_entry_activate" swapped="no"/>
+                                <signal name="focus-out-event" handler="on_blue_led_manual_entry_focus_out_event" swapped="no"/>
                               </object>
                               <packing>
                                 <property name="expand">False</property>
@@ -2243,8 +2256,12 @@
                               <object class="GtkEntry" id="orange_led_manual_entry">
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
+                                <property name="activates_default">True</property>
                                 <property name="width_chars">3</property>
                                 <property name="text" translatable="yes">10</property>
+                                <property name="input_purpose">digits</property>
+                                <signal name="activate" handler="on_orange_led_manual_entry_activate" swapped="no"/>
+                                <signal name="focus-out-event" handler="on_orange_led_manual_entry_focus_out_event" swapped="no"/>
                               </object>
                               <packing>
                                 <property name="expand">False</property>
@@ -2304,7 +2321,9 @@
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
                                 <property name="width_chars">3</property>
-                                <property name="text" translatable="yes">100</property>
+                                <property name="text" translatable="yes">10</property>
+                                <signal name="activate" handler="on_uv_led_manual_entry_activate" swapped="no"/>
+                                <signal name="focus-out-event" handler="on_uv_led_manual_entry_focus_out_event" swapped="no"/>
                               </object>
                               <packing>
                                 <property name="expand">False</property>
@@ -2374,17 +2393,6 @@
                     <property name="position">6</property>
                   </packing>
                 </child>
-              </object>
-              <packing>
-                <property name="expand">False</property>
-                <property name="fill">True</property>
-                <property name="position">2</property>
-              </packing>
-            </child>
-            <child>
-              <object class="GtkSeparator">
-                <property name="visible">True</property>
-                <property name="can_focus">False</property>
               </object>
               <packing>
                 <property name="expand">False</property>
