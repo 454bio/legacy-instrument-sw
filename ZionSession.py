@@ -1,3 +1,4 @@
+from operator import attrgetter, methodcaller
 import os
 from glob import glob
 import time
@@ -42,9 +43,8 @@ class ZionSession():
         print('Creating directory '+str(self.Dir))
         os.makedirs(self.Dir)
 
-        self.GPIO = ZionGPIO(parent=self)
-
         self.Camera = ZionCamera(Binning, Initial_Values, parent=self)
+        self.GPIO = ZionGPIO(parent=self)
         self.CaptureCount = 0
         self.SplitterCount = 0
         self.ProtocolCount = 0
@@ -132,34 +132,68 @@ class ZionSession():
         self.Protocol.load_from_file(filename)
 
     def RunProgram(self, stop : threading.Event):
+        # For the events. I think I want to preload all the potential waveforms
+        # Load up the shared queue for the fstrobe callback with the ids
+        # Check if the shared queue is empty at the end?
+        # Do I unroll _all_ the events?
+
         try:
             self.frame_period = 1000./self.Camera.framerate
             self.exposure_time = self.Camera.shutter_speed/1000. if self.Camera.shutter_speed else self.frame_period
             time.sleep(0.5)
             self.TimeOfLife = time.time()
-            event_groups = self.Protocol.get_event_groups()
+
+            events = self.Protocol.get_entries()
             GLib.idle_add(
                 self.gui.printToLog,
                 "Starting protocol!"
-                f"   # Event Groups: {len(event_groups)}"
+                f"   # Events and Groups: {len(events)}"
             )
-            for eg_ind, eg in enumerate(event_groups):
-                GLib.idle_add(
-                    self.gui.printToLog,
-                    f"Starting event group {eg_ind}..."
-                    f"   # Events: {len(eg.events)}"
-                    f"   # Cycles: {eg.cycles}"
-                )
-                for i in range(eg.cycles):
-                    GLib.idle_add(self.gui.printToLog, f"Starting cycle {i}...")
-                    if stop.is_set():
-                        break
-                    for event in eg.events:
-                        GLib.idle_add(self.gui.printToLog, f"Running event: {event}...")
-                        self.Protocol.performEvent(event, self.GPIO)
-                        if stop.is_set():
-                            break
-                        time.sleep(self.frame_period/250)
+            flat_events = self.Protocol.flatten()
+            GLib.idle_add(
+                self.gui.printToLog,
+                "Starting protocol!"
+                f"   # flat events: {len(flat_events)}"
+            )
+
+            unique_leds = set(map(attrgetter('leds'), flat_events))
+            GLib.idle_add(
+                self.gui.printToLog,
+                f"   # unique leds: {len(unique_leds)}"
+            )
+
+            # This will pre-program the pigpio with the waveforms for our LEDs
+            self.GPIO.create_event_led_wave_ids(unique_leds)
+
+            # Update our representation of the LEDs with the waveform ID
+            self.GPIO.update_led_wave_ids(map(attrgetter('leds'), flat_events))
+
+
+            # for eg in events:
+            #     if eg.is_event:
+            #         GLib.idle_add(
+            #             self.gui.printToLog,
+            #             f"Starting event {eg.name}..."
+            #             f"   # Cycles: {eg.cycles}"
+            #         )
+            #     else:
+            #         GLib.idle_add(
+            #             self.gui.printToLog,
+            #             f"Starting event group {eg.name}..."
+            #             f"   # Events: {len(eg.events)}"
+            #             f"   # Cycles: {eg.cycles}"
+            #         )
+
+            #     for i in range(eg.cycles):
+            #         GLib.idle_add(self.gui.printToLog, f"Starting cycle {i}...")
+            #         if stop.is_set():
+            #             break
+            #         for event in eg.events:
+            #             GLib.idle_add(self.gui.printToLog, f"Running event: {event}...")
+            #             self.Protocol.performEvent(event, self.GPIO)
+            #             if stop.is_set():
+            #                 break
+            #             time.sleep(self.frame_period/250)
 
         except Exception as e:
             tb = "".join(traceback.format_exception(type(e), e, e.__traceback__))
@@ -177,6 +211,9 @@ class ZionSession():
             GLib.idle_add(self.gui.cameraPreviewWrapper.clear_image)
             GLib.idle_add(partial(self.gui.handlers._update_camera_preview, force=True))
             GLib.idle_add(self.gui.runProgramButton.set_sensitive, True)
+            GLib.idle_add(self.gui.blueSwitch.set_sensitive, True)
+            GLib.idle_add(self.gui.orangeSwitch.set_sensitive, True)
+            GLib.idle_add(self.gui.uvSwitch.set_sensitive, True)
 
     def InteractivePreview(self, window):
         self.Camera.start_preview(fullscreen=False, window=window)

@@ -3,6 +3,7 @@ from fractions import Fraction
 from operator import eq, gt
 from dataclasses import dataclass,  asdict, fields, is_dataclass
 import json
+from ZionLED import ZionLEDs
 from picamera import PiCamera, PiRenderer, mmal, mmalobj, exc
 from picamera.array import PiRGBArray
 from picamera.mmalobj import to_rational
@@ -132,6 +133,9 @@ class ZionCamera(PiCamera):
 		self.load_params(initial_values)
 		# self.vflip = True
 
+		# Set the max pulse width from the framerate and readout time
+		ZionLEDs.set_max_pulsetime(int(1000 / self.framerate - self.readout_ms))
+
 		# self.image_denoise = False
 		# self.video_denoise = False
 		# self.brightness = initial_values['brightness']
@@ -175,6 +179,14 @@ class ZionCamera(PiCamera):
 	@property
 	def exposure_speed_ms(self):
 		return int(self.exposure_speed / 1000)
+
+	@property
+	def readout_ms(self):
+		# Calculated row readout time by varying fstrobe delay (units are rows)
+		# This gave 28.567 usec / row.
+		# Using "active" rows (3040 Rows) readout is: 86.8422816
+		# Using "effective" rows (3064 Rows) readout is: 87.52787856
+		return 86.8422816
 
 	def get_all_params(self, comment : str = "") -> ZionCameraParameters:
 		return ZionCameraParameters.load_from_camera(self, comment=comment)

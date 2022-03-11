@@ -217,7 +217,7 @@ class Handlers:
                 self.parent.parent.Camera.start_preview(fullscreen=False, window=self.camera_preview_window)
 
     def on_window1_delete_event(self, *args):
-        self.parent.parent.GPIO.disable_all_leds()
+        self.parent.parent.GPIO.disable_all_toggle_leds()
         GObject.source_remove(self.source_id)
         # ~ GObject.source_remove(self.source_id2)
         Gtk.main_quit(*args)
@@ -361,7 +361,7 @@ class Handlers:
             
     def on_saturation_entry_activate(self, entry):
         newval = entry.get_text()
-        try:
+        try:    
             newval = int(entry.get_text())
         except ValueError:
             self.parent.printToLog('Saturation must be an integer!')
@@ -388,46 +388,87 @@ class Handlers:
         else:
             self.parent.printToLog('Sharpness must be between -100 and +100!')
 
-
     # LED Control Section
     def on_blue_led_button_toggled(self, switch):
         if switch.get_active():
             try:
-                dc = int(self.parent.blueManualEntry.get_text())
+                pw = int(self.parent.blueManualEntry.get_text())
             except ValueError:
                 self.parent.printToLog(f"Pulse width must be an integer from 0 - {self.parent.parent.Camera.exposure_speed_ms}!")
                 return
-            self.parent.printToLog('Blue LED on, set to '+str(dc)+'% duty cycle')
-            self.parent.parent.GPIO.enable_led(ZionLEDColor.BLUE,float(dc/100.))
+            self.parent.printToLog(f"Blue LED on, set to {pw} pulse width")
+            self.parent.parent.GPIO.enable_toggle_led(ZionLEDColor.BLUE, pw)
         else:
-            self.parent.printToLog('Blue LED off')
-            self.parent.parent.GPIO.enable_led(ZionLEDColor.BLUE,0)
+            self.parent.printToLog("Blue LED off")
+            self.parent.parent.GPIO.disable_toggle_led(ZionLEDColor.BLUE)
+
+    def on_blue_led_manual_entry_focus_out_event(self, entry, _):
+        self.on_blue_led_manual_entry_activate(entry)
+
+    def on_blue_led_manual_entry_activate(self, entry):
+        if self.parent.blueSwitch.get_active():
+            # Treat this like we toggled the switch
+            try:
+                pw = int(entry.get_text())
+            except ValueError:
+                self.parent.printToLog(f"Pulse width must be an integer from 0 - {self.parent.parent.Camera.exposure_speed_ms}!")
+                return
+            self.parent.printToLog(f"Changing Blue LED pulse width to {pw}")
+            self.parent.parent.GPIO.enable_toggle_led(ZionLEDColor.BLUE, pw)
 
     def on_orange_led_button_toggled(self, switch):
         if switch.get_active():
             try:
-                dc = int(self.parent.orangeManualEntry.get_text())
+                pw = int(self.parent.orangeManualEntry.get_text())
             except ValueError:
                 self.parent.printToLog(f"Pulse width must be an integer from 0 - {self.parent.parent.Camera.exposure_speed_ms}!")
                 return
-            self.parent.printToLog('Orange LED on, set to '+str(dc)+'% duty cycle')
-            self.parent.parent.GPIO.enable_led(ZionLEDColor.ORANGE,float(dc/100.))
+            self.parent.printToLog(f"Orange LED on, set to {pw} pulse width")
+            self.parent.parent.GPIO.enable_toggle_led(ZionLEDColor.ORANGE, pw)
         else:
-            self.parent.printToLog('Orange LED off')
-            self.parent.parent.GPIO.enable_led(ZionLEDColor.ORANGE,0)
+            self.parent.printToLog("Orange LED off")
+            self.parent.parent.GPIO.disable_toggle_led(ZionLEDColor.ORANGE)
+
+    def on_orange_led_manual_entry_focus_out_event(self, entry, _):
+        self.on_orange_led_manual_entry_activate(entry)
+
+    def on_orange_led_manual_entry_activate(self, entry):
+        if self.parent.orangeSwitch.get_active():
+            # Treat this like we toggled the switch
+            try:
+                pw = int(entry.get_text())
+            except ValueError:
+                self.parent.printToLog(f"Pulse width must be an integer from 0 - {self.parent.parent.Camera.exposure_speed_ms}!")
+                return
+            self.parent.printToLog(f"Changing Orange LED pulse width to {pw}")
+            self.parent.parent.GPIO.enable_toggle_led(ZionLEDColor.ORANGE, pw)
 
     def on_uv_led_button_toggled(self, switch):
         if switch.get_active():
             try:
-                dc = int(self.parent.uvManualEntry.get_text())
+                pw = int(self.parent.uvManualEntry.get_text())
             except ValueError:
                 self.parent.printToLog(f"Pulse width must be an integer from 0 - {self.parent.parent.Camera.exposure_speed_ms}!")
                 return
-            self.parent.printToLog('UV LED on, set to '+str(dc)+'% duty cycle')
-            self.parent.parent.GPIO.enable_led(ZionLEDColor.UV,float(dc/100.))
+            self.parent.printToLog(f"UV LED on, set to {pw} pulse width")
+            self.parent.parent.GPIO.enable_toggle_led(ZionLEDColor.UV, pw)
         else:
-            self.parent.printToLog('UV LED off')
-            self.parent.parent.GPIO.enable_led(ZionLEDColor.UV,0)
+            self.parent.printToLog("UV LED off")
+            self.parent.parent.GPIO.disable_toggle_led(ZionLEDColor.UV)
+
+    def on_uv_led_manual_entry_focus_out_event(self, entry, _):
+        self.on_uv_led_manual_entry_activate(entry)
+
+    def on_uv_led_manual_entry_activate(self, entry):
+        if self.parent.uvSwitch.get_active():
+            # Treat this like we toggled the switch
+            try:
+                pw = int(entry.get_text())
+            except ValueError:
+                self.parent.printToLog(f"Pulse width must be an integer from 0 - {self.parent.parent.Camera.exposure_speed_ms}!")
+                return
+            self.parent.printToLog(f"Changing UV LED pulse width to {pw}")
+            self.parent.parent.GPIO.enable_toggle_led(ZionLEDColor.UV, pw)
 
     # ~ def on_uv_switch_safety_button(self, button):
         # ~ if button.get_active():
@@ -456,7 +497,6 @@ class Handlers:
         # pulse_thread.start()
 
     def on_led_off_button_clicked(self, button):
-        self.parent.parent.GPIO.disable_all_leds()
         self.parent.blueSwitch.set_active(False)
         self.parent.orangeSwitch.set_active(False)
         self.parent.uvSwitch.set_active(False)
@@ -571,7 +611,7 @@ class Handlers:
                 self.parent.expModeLockButton.set_active(False)
                 self.enable_exp_params(True)
             self.parent.expModeLockButton.handler_unblock(handle_id)
-                
+
     def on_lock_exp_mode_button(self, button):
         if button.get_active():
             self.parent.printToLog('Exposure settings locked')
@@ -599,14 +639,14 @@ class Handlers:
             on_now = self.parent.parent.Camera.toggle_awb()
             if not on_now[0]:
                 self.parent.printToLog('Auto WB disabled')
-                
+
                 self.parent.redGainScale.set_sensitive(True)
                 self.parent.redGainEntry.set_sensitive(True)
                 handle_id_red = get_handler_id(self.parent.redGainScale, "value-changed")
                 self.parent.redGainScale.handler_block(handle_id_red)
                 self.parent.redGainScale.set_value(on_now[1])
                 self.parent.redGainScale.handler_unblock(handle_id_red)
-                
+
                 self.parent.blueGainScale.set_sensitive(True)
                 self.parent.blueGainEntry.set_sensitive(True)
                 handle_id_blue = get_handler_id(self.parent.blueGainScale, "value-changed")
@@ -655,6 +695,7 @@ class Handlers:
         #TODO: get cropping from some self object here
         comment = self.parent.commentBox.get_text()
         suffix = self.parent.suffixBox.get_text()
+
         if not check_for_valid_filename(suffix):
             print("Invalid character (or whitespace) detected in filename suffix!")
             self.parent.printToLog("Invalid character (or whitespace) detected in filename suffix!")
@@ -672,6 +713,14 @@ class Handlers:
 
         self.stop_run_thread.clear()
         self.parent.parent.Camera.stop_preview()
+
+        # Turn off and disable the led toggles
+        self.parent.blueSwitch.set_active(False)
+        self.parent.orangeSwitch.set_active(False)
+        self.parent.uvSwitch.set_active(False)
+        self.parent.blueSwitch.set_sensitive(False)
+        self.parent.orangeSwitch.set_sensitive(False)
+        self.parent.uvSwitch.set_sensitive(False)
 
         # ~ button.set_sensitive(False)
         self.run_thread = threading.Thread(target=self.parent.parent.RunProgram, args=(self.stop_run_thread, ) )
@@ -699,10 +748,13 @@ class Handlers:
                     self.parent.printToLog("WARNING: The thread running the protocol didn't stop!\n You might want to restart the program...")
 
                 self.run_thread = None
-                self.parent.parent.GPIO.enable_led(ZionLEDColor.UV, 0)
-                self.parent.parent.GPIO.enable_led(ZionLEDColor.BLUE, 0)
-                self.parent.parent.GPIO.enable_led(ZionLEDColor.ORANGE, 0)
+                self.parent.parent.GPIO.disable_led(ZionLEDColor.UV)
+                self.parent.parent.GPIO.disable_led(ZionLEDColor.BLUE)
+                self.parent.parent.GPIO.disable_led(ZionLEDColor.ORANGE)
                 self.parent.runProgramButton.set_sensitive(True)
+                self.parent.blueSwitch.set_sensitive(True)
+                self.parent.orangeSwitch.set_sensitive(True)
+                self.parent.uvSwitch.set_sensitive(True)
 
     #File chooser:
     def on_param_file_chooser_dialog_realize(self, widget):
