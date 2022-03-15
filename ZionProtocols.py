@@ -129,11 +129,6 @@ class ZionProtocol():
 
         return self.Entries
 
-    def performEvent(self, event: ZionEvent, gpio_ctrl: "ZionGPIO"):
-        gpio_ctrl.enable_vsync_callback(event)
-        if event.postdelay > 0:
-            time.sleep(event.postdelay / 1000.0)
-
     def add_event_group(
         self,
         event_group : ZionEventGroup = None,
@@ -218,9 +213,7 @@ class ZionProtocol():
         """
         flat_events = []
         for event in self.Entries:
-            if isinstance(event, ZionEvent):
-                flat_events.append(event)
-            elif isinstance(event, ZionEventGroup):
+            if isinstance(event, (ZionEvent, ZionEventGroup)):
                 flat_events.extend(event.flatten())
             else:
                 raise RuntimeError(

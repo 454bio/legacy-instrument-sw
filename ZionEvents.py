@@ -1,3 +1,5 @@
+import math
+
 from dataclasses import (
     dataclass,
     field,
@@ -23,8 +25,8 @@ class ZionProtocolEntry():
     name: str = ""
     cycles: int = 1
     requested_cycle_time: int = 0
-    _cycle_time: int = 0  # Not actually used as a private variable. Just used for property decleration
-    _total_time: int = 0  # Not actually used as a private variable. Just used for property decleration
+    _cycle_time: int = 0            # Not actually used as a private variable. Just used for property decleration
+    _total_time_sec: float = 0.0    # Not actually used as a private variable. Just used for property decleration
 
     @staticmethod
     def dict_factory(*args, **kwargs):
@@ -61,10 +63,11 @@ class ZionEvent(ZionProtocolEntry):
 
     @property
     def total_time(self) -> int:
-        # print(f"-->{self.name}:total_time")
-        # tot_time = self._cycle_time * self.cycles
-        # print(f"<--{self.name}:total_time = {tot_time}")
         return self.cycle_time * self.cycles
+
+    @property
+    def total_time_sec(self) -> float:
+        return self.total_time / 1000.0
 
     @classmethod
     def set_minimum_cycle_time(cls, minimum_cycle_time : int):
@@ -72,11 +75,17 @@ class ZionEvent(ZionProtocolEntry):
         cls._minimum_cycle_time = minimum_cycle_time
 
     @property
+    def _time_to_cycles(self):
+        """ Returns the number of cycles to fulfill the requested cycle time"""
+        return math.ceil(self.requested_cycle_time / ZionEvent._minimum_cycle_time)
+
+    @property
     def cycle_time(self) -> int:
-        if self.requested_cycle_time < ZionEvent._minimum_cycle_time:
+        """ Return the actual cycle time. Which increment in steps of minimum_cycle_time. """
+        if self.requested_cycle_time <= ZionEvent._minimum_cycle_time:
             return ZionEvent._minimum_cycle_time
         else:
-            return self.requested_cycle_time
+            return self._time_to_cycles * ZionEvent._minimum_cycle_time
 
     @cycle_time.setter
     def cycle_time(self, cycle_time_in : int):
@@ -92,6 +101,22 @@ class ZionEvent(ZionProtocolEntry):
     @property
     def additional_cycle_time(self):
         return self.cycle_time - ZionEvent._minimum_cycle_time
+
+    def flatten(self) -> List['ZionEvent']:
+        """ This will create a list of events that is equivalent to the number of cycles and additional cycle time"""
+        extra_cycles_per_event = self._time_to_cycles - 1
+
+        cycle_filler_event = ZionEvent(
+            capture=False,
+            requested_cycle_time=ZionEvent._minimum_cycle_time
+        )
+
+        # equivalent_event will contain a list of this event padded
+        # with extra blank events to fulfill the cycle time
+        equivalent_event = [self,]
+        equivalent_event.extend([cycle_filler_event,] * extra_cycles_per_event)
+
+        return equivalent_event * self.cycles
 
 
 @dataclass
@@ -123,33 +148,54 @@ class ZionEventGroup(ZionProtocolEntry):
         """
         Convert a ZionEventGroup to an equivalent list of ZionEvents
         """
+        cycle_filler_event = ZionEvent(
+            capture=False,
+            requested_cycle_time=ZionEvent._minimum_cycle_time
+        )
+
         flat_events = []
         for _ in range(self.cycles):
             for event in self.entries:
-                if isinstance(event, ZionEvent):
-                    flat_events.append(event)
-                elif isinstance(event, ZionEventGroup):
+                if isinstance(event, (ZionEvent, ZionEventGroup)):
                     flat_events.extend(event.flatten())
                 else:
                     raise RuntimeError(
                         f"Unrecognized type in the event list: {type(event)}"
                     )
 
+            if self._additional_cycles:
+                flat_events.extend([cycle_filler_event,] * self._additional_cycles)
+
         return flat_events
 
     @property
     def total_time(self) -> int:
-        # print(f"-->{self.name}:total_time")
-        # tot_time = self.cycle_time * self.cycles
-        # print(f"<--{self.name}:total_time = {tot_time}")
         return self.cycle_time * self.cycles
 
     @property
+    def total_time_sec(self) -> float:
+        return self.total_time / 1000.0
+
+    @property
+    def _additional_cycle_time(self):
+        return self.cycle_time - self._minimum_cycle_time
+
+    @property
+    def _additional_cycles(self):
+        return math.ceil(self._additional_cycle_time / ZionEvent._minimum_cycle_time)
+
+    @property
+    def _time_to_cycles(self):
+        """ Returns the number of cycles to fulfill the requested cycle time"""
+        return math.ceil(self.requested_cycle_time / ZionEvent._minimum_cycle_time)
+
+    @property
     def cycle_time(self) -> int:
-        if self.requested_cycle_time < self._minimum_cycle_time:
+        """ Return the actual cycle time. Which increment in steps of ZionEvent._minimum_cycle_time. """
+        if self.requested_cycle_time <= self._minimum_cycle_time:
             return self._minimum_cycle_time
         else:
-            return self.requested_cycle_time
+            return self._time_to_cycles * ZionEvent._minimum_cycle_time
 
     @cycle_time.setter
     def cycle_time(self, cycle_time_in : int):

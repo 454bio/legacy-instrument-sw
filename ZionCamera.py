@@ -21,32 +21,36 @@ MMAL_PARAMETER_DIGITAL_GAIN = mmal.MMAL_PARAMETER_GROUP_CAMERA + 0x5A
 
 # The loading order is very important to ensure the analog/digital gains
 # as well as the awb gains are set to fixed values.
+# It's counter-intiuative but we first need exposure_mode to be on auto
+# then fix the shutter speed, fix the awb_gains, and iso set to 0
+# THEN we can set the analog/digital gains with mmal
+# Then we can turn exposure_mode to 'off' to lock them in....
 PARAMS_LOAD_ORDER = [
 	'brightness',
 	'contrast',
 	'saturation',
 	'sharpness',
 	'exposure_compensation',
+	'image_denoise',
+	'video_denoise',
 	'hflip',
 	'vflip',
+	'shutter_speed',
+	'awb_mode',
+	'awb_gains',
 	'iso',
 	'analog_gain',
 	'digital_gain',
-	'shutter_speed',
 	'exposure_mode',
-	'awb_mode',
-	'awb_gains',
-	'image_denoise',
-	'video_denoise',
 ]
 
 class ZionCameraParametersEncoder(json.JSONEncoder):
-    def default(self, obj):
-        if is_dataclass(obj):
-            return asdict(obj)
-        if isinstance(obj, Fraction):
-            return float(obj)
-        return json.JSONEncoder.default(self, obj)
+	def default(self, obj):
+		if is_dataclass(obj):
+			return asdict(obj)
+		if isinstance(obj, Fraction):
+			return float(obj)
+		return json.JSONEncoder.default(self, obj)
 
 @dataclass
 class ZionCameraParameters:
@@ -117,8 +121,11 @@ class ZionCameraParameters:
 class ZionCamera(PiCamera):
 
 	def __init__(self, binning : bool, initial_values : ZionCameraParameters, parent : 'ZionSession' = None):
+		# from rich import print as rprint
 
-		print('\nCamera Initializing...')
+		print(f"\nCamera Initializing...")
+		print(f"\tbinning: {binning}")
+		print(f"\tinitial_values: {initial_values}")
 
 		if binning:
 			resolution = (2028, 1520)
@@ -127,32 +134,25 @@ class ZionCamera(PiCamera):
 			resolution = (4056, 3040)
 			sensor_mode = 3
 
-		super().__init__(resolution=resolution, framerate = initial_values.framerate, sensor_mode=sensor_mode)
-		self.parent = parent
+		clock_mode = 'raw'
 
+		super().__init__(resolution=resolution, framerate = initial_values.framerate, sensor_mode=sensor_mode, clock_mode=clock_mode)
+		# from rich import print as rprint
+		sleep(2)
+		# print("[bold yellow] Properties after init")
+		# print(self.get_camera_props(['exposure_mode', 'iso', 'analog_gain', 'digital_gain']))
+		# sleep(5)
+		# print("[bold yellow] Properties after another sleep(2)")
+		# print(self.get_camera_props())
+
+		self.parent = parent
 		self.load_params(initial_values)
-		# self.vflip = True
+
+		print("[bold yellow] Properties after load_params(...)")
+		print(self.get_camera_props())
 
 		# Set the max pulse width from the framerate and readout time
 		ZionLEDs.set_max_pulsetime(int(1000 / self.framerate - self.readout_ms))
-
-		# self.image_denoise = False
-		# self.video_denoise = False
-		# self.brightness = initial_values['brightness']
-		# self.contrast = initial_values['contrast']
-		# self.saturation = initial_values['saturation']
-		# self.sharpness = initial_values['sharpness']
-		# self.awb_mode = initial_values['awb']
-		# self.awb_gains = (initial_values['red_gain'], initial_values['blue_gain'])
-		# self.exposure_mode = 'auto'
-		# self.shutter_speed = initial_values['exposure_time']*1000
-		# self.iso = 0
-		# self.set_analog_gain(initial_values['a_gain'])
-		# self.set_digital_gain(initial_values['d_gain'])
-		# self.shutter_speed = initial_values['exposure_time']*1000
-		# time.sleep(2)
-		# self.exposure_mode = 'off'
-		# time.sleep(2)
 
 		# TODO: check for zero for Jose
 		
@@ -188,18 +188,61 @@ class ZionCamera(PiCamera):
 		# Using "effective" rows (3064 Rows) readout is: 87.52787856
 		return 86.8422816
 
+	def get_raw_buffer_size(self):
+		res_pad = self.resolution.pad(width=32, height=16)
+		return res_pad.height * res_pad.width * 2
+
 	def get_all_params(self, comment : str = "") -> ZionCameraParameters:
 		return ZionCameraParameters.load_from_camera(self, comment=comment)
 
 	def load_params(self, params_in : ZionCameraParameters):
 		for param in PARAMS_LOAD_ORDER:
 			if param == 'awb_gains':
+				print(f"Setting {param} to {(params_in.red_gain, params_in.blue_gain)}")
 				self.awb_gains = (params_in.red_gain, params_in.blue_gain)
 			elif param == 'analog_gain':
-				self.set_analog_gain(params_in.analog_gain)
+				print(f"Setting {param} to {getattr(params_in, param)}")
+				if params_in.analog_gain > 0:
+					self.set_analog_gain(params_in.analog_gain)
+				else:
+					print(f"Skipping setting analog_gain of {params_in.analog_gain} since it's <= 0")
 			elif param == 'digital_gain':
-				self.set_digital_gain(params_in.digital_gain)
+				print(f"Setting {param} to {getattr(params_in, param)}")
+				if params_in.digital_gain > 0:
+					self.set_digital_gain(params_in.digital_gain)
+				else:
+					print(f"Skipping setting digital_gain of {params_in.digital_gain} since it's <= 0")
+			elif param == 'exposure_mode':
+				# Wait a maximum of 5 seconds for all the values to take a hold, to be sure the gains are correct before fixing them in place
+				sleep(1)
+				for _ in range(5):
+					settings_ok = True
+					if self.analog_gain != params_in.analog_gain:
+						print(f"WARNING: Analog gain does not match expected value!  expected: {params_in.analog_gain}  actual: {self.analog_gain}")
+						settings_ok = False
+
+					if self.digital_gain != params_in.digital_gain:
+						print(f"WARNING: Digital gain does not match expected value!  expected: {params_in.digital_gain}  actual: {self.digital_gain}")
+						settings_ok = False
+
+					expected_awb_gains = (Fraction(params_in.red_gain), Fraction(params_in.blue_gain))
+					if self.awb_gains != expected_awb_gains:
+						print(f"WARNING: AWB gains do not match expected values!  expected: {expected_awb_gains}  actual: {self.awb_gains}")
+						settings_ok = False
+
+					if settings_ok:
+						break
+
+					print("Sleeping another second for settings to propogate...")
+					sleep(1)
+
+				if not settings_ok:
+					# By skipping the `exposure_mode` settings if we failed, then we will pop a error to the user
+					print("ERROR: Setting the camera settings failed!!!")
+				else:
+					self.exposure_mode = params_in.exposure_mode
 			else:
+				print(f"Setting {param} to {getattr(params_in, param)}")
 				setattr(self, param, getattr(params_in, param))
 
 	def is_fixed_capture(self) -> Tuple[bool, dict]:
@@ -340,37 +383,53 @@ class ZionCamera(PiCamera):
 		self.set_gain(MMAL_PARAMETER_DIGITAL_GAIN, val)
 		
 	def set_framerate(self, val):
-		if val>0:
-			# ~ self.exposure_mode = 'auto'
-			if self.sensor_mode==2:
-				if val<=42 and val>=0.1:
-					self.exposure_mode='auto'
-					self.framerate = val
-					time.sleep(1)
-					self.exposure_mode = 'off'
-				else:
-					print('\nWith binning on, framerate must be between 0.1 and 42!')
-			elif self.sensor_mode==3:
-				if val<=10 and val>=0.05:
-					self.exposure_mode = 'auto'
-					self.framerate = val
-					time.sleep(1)
-					self.exposure_mode = 'off'
-				else:
-					print('\nWith binning off, framerate must be between 0.05 and 10!')
-		else:
-			if self.sensor_mode==2:
-				self.framerate_range = (0.1, 42)
-				# ~ self.exposure_mode = 'auto'
-				time.sleep(3)
-				self.exposure_mode = 'off'
-			elif self.sensor_mode==3:
-				self.framerate_range = (0.05, 10)
-				# ~ self.exposure_mode = 'auto'
-				time.sleep(3)
-				self.exposure_mode = 'off'
+		print("!!!!!!!!!!! ENTERED SET_FRAMERATE !!!!!!!!!!!!")
+		# if val>0:
+		# 	# ~ self.exposure_mode = 'auto'
+		# 	if self.sensor_mode==2:
+		# 		if val<=42 and val>=0.1:
+		# 			self.exposure_mode='auto'
+		# 			self.framerate = val
+		# 			time.sleep(1)
+		# 			self.exposure_mode = 'off'
+		# 		else:
+		# 			print('\nWith binning on, framerate must be between 0.1 and 42!')
+		# 	elif self.sensor_mode==3:
+		# 		if val<=10 and val>=0.05:
+		# 			self.exposure_mode = 'auto'
+		# 			self.framerate = val
+		# 			time.sleep(1)
+		# 			self.exposure_mode = 'off'
+		# 		else:
+		# 			print('\nWith binning off, framerate must be between 0.05 and 10!')
+		# else:
+		# 	if self.sensor_mode==2:
+		# 		self.framerate_range = (0.1, 42)
+		# 		# ~ self.exposure_mode = 'auto'
+		# 		time.sleep(3)
+		# 		self.exposure_mode = 'off'
+		# 	elif self.sensor_mode==3:
+		# 		self.framerate_range = (0.05, 10)
+		# 		# ~ self.exposure_mode = 'auto'
+		# 		time.sleep(3)
+		# 		self.exposure_mode = 'off'
 
 	def start_preview(self, fullscreen=False, window=(560,75,640,480)):
 		super(ZionCamera,self).start_preview(fullscreen=False, window=window)
+
+	def get_camera_props(self, props=PARAMS_LOAD_ORDER):
+		print(f"getting properities {props}")
+		props_ret = {}
+		for k in filter(lambda x: not x.startswith('_'), dir(self)):
+			if props and not (k in props):
+				continue
+			try:
+				if not callable(getattr(self, k)):
+					props_ret[k] = getattr(self, k)
+				else:
+					print(f"Skipping {k} due to being a method")
+			except:
+				print(f"Could not get property {k}")
+		return props_ret
 
 #TODO: link cropping with bounding box UI input
