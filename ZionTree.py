@@ -93,14 +93,14 @@ class ZionProtocolTree():
         'name': "Name",
         'cycles': "Cycles",
         'cycle_time': "Cycle Time\n(ms)",
-        'total_time': "Total Time\n(ms)",
+        'total_time_sec': "Total Time\n(sec)",
         'capture': "Capture?",
         'group': "Group",
         'leds': "$LED_NAME$ Pulse\n(ms)",  # Special field that gets formatted
     }
 
     # Displayed fields that shouldn't be edited
-    NOT_EDITABLE_FIELDS = ('total_time',)
+    NOT_EDITABLE_FIELDS = ('total_time_sec',)
 
     assert set(FIELDS.keys()) <= set([f.name.lstrip('_') for f in fields(ZionEvent)]), \
             f"'{set(FIELDS.keys())}' not a subset of '{set([f.name.lstrip('_') for f in fields(ZionEvent)])}'"
@@ -131,13 +131,13 @@ class ZionProtocolTree():
         self._treeview.set_model(self._treestore)
 
         _field_to_type = {f.name.lstrip('_'): f.type for f in fields(ZionEvent)}
-        _type_to_func = {str: self.get_event_entry_str, int: self.get_event_entry_str, bool: self.get_event_entry_bool}
+        _type_to_func = {str: self.get_event_entry_str, int: self.get_event_entry_str, float: self.get_event_entry_str, bool: self.get_event_entry_bool}
         _type_to_edit_func = {str: self._text_edited, int: self._int_edited, bool: self._toggle_edited}
         _type_to_edit_signal = {str: "edited", int: "edited", bool: "toggled"}
 
         for field, column_title in self.FIELDS.items():
             ftype = _field_to_type[field]
-            if ftype in (str, int, bool):
+            if ftype in (str, int, float, bool):
                 cell_data_func = _type_to_func[ftype]
 
                 if ftype is bool:

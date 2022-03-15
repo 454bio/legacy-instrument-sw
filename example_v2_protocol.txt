@@ -26,13 +26,13 @@
   {
    "is_event": false,
    "name": "All Steps",
-   "cycles": 5,
+   "cycles": 3,
    "requested_cycle_time": 0,
    "entries": [
     {
      "is_event": false,
      "name": "Extension",
-     "cycles": 144,
+     "cycles": 2,
      "requested_cycle_time": 5000,
      "entries": [
       {
@@ -78,20 +78,27 @@
     },
     {
      "is_event": false,
+     "name": "Wait",
+     "cycles": 1,
+     "requested_cycle_time": 600000,
+     "entries": []
+    },
+    {
+     "is_event": false,
      "name": "Cleaving",
-     "cycles": 4,
+     "cycles": 2,
      "requested_cycle_time": 0,
      "entries": [
       {
        "is_event": true,
        "name": "UV",
-       "cycles": 10,
+       "cycles": 3,
        "requested_cycle_time": 0,
        "capture": true,
        "group": "U",
        "leds": {
-        "UV": 100,
-        "BLUE": 0,
+        "UV": 0,
+        "BLUE": 100,
         "ORANGE": 0
        }
       },
@@ -117,7 +124,7 @@
        "group": "B",
        "leds": {
         "UV": 0,
-        "BLUE": 100,
+        "BLUE": 20,
         "ORANGE": 0
        }
       },
@@ -135,21 +142,21 @@
        }
       }
      ]
-    },
-    {
-     "is_event": true,
-     "name": "Final Event",
-     "cycles": 1,
-     "requested_cycle_time": 0,
-     "capture": true,
-     "group": "F",
-     "leds": {
-      "UV": 0,
-      "BLUE": 0,
-      "ORANGE": 0
-     }
     }
    ]
+  },
+  {
+   "is_event": true,
+   "name": "Final Event",
+   "cycles": 1,
+   "requested_cycle_time": 0,
+   "capture": true,
+   "group": "F",
+   "leds": {
+    "UV": 0,
+    "BLUE": 100,
+    "ORANGE": 0
+   }
   }
  ]
 }

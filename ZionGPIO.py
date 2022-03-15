@@ -1,12 +1,13 @@
 import glob
 import multiprocessing
 import multiprocessing.synchronize
+from operator import methodcaller, attrgetter
 import threading
 import itertools
 import traceback
 from collections.abc import Iterable
 from multiprocessing.managers import Namespace
-from queue import Empty
+from queue import Empty, Full
 from typing import Optional, Iterable, Dict
 
 from ZionErrors import ZionInvalidLEDColor, ZionInvalidLEDPulsetime
@@ -91,6 +92,7 @@ class ZionPigpioProcess(multiprocessing.Process):
         self.stop_event = self._mp_manager.Event()
         self.event_led_wave_id_done_event = self._mp_manager.Event()
         self.event_led_wave_ids = self._mp_manager.dict()
+        self.mp_namespace.num_event_frames = 0
 
     def run(self):
         self._init_pigpio()
@@ -168,9 +170,14 @@ class ZionPigpioProcess(multiprocessing.Process):
         except Empty:
             print("fstrobe_cb -- no wave_id")
         else:
-            print(f"fstrobe_cb -- Some info passed in: {wave_id} -- gpio: {gpio}  level: {level}  ticks: {ticks}")
-            ret = self.pi.wave_send_once(wave_id)
-            print(f"fstrobe_cb -- ret: {ret}")
+            print(f"fstrobe_cb -- wave_id: {wave_id}")
+            if wave_id < 0:
+                print(f"fstrobe_cb -- No LED this image...")
+            else:
+                ret = self.pi.wave_send_once(wave_id)
+                print(f"fstrobe_cb -- Sent wave_id: {wave_id}  num_frames: {self.mp_namespace.num_frames}")
+                print(f"fstrobe_cb -- ret: {ret}")
+            self.mp_namespace.num_frames += 1
 
     def xvs_cb(self, gpio, level, ticks):
         """ Triggers on XVS Rising Edge. If self.mp_namespace.toggle_led_wave_id is set then it will send it. """
@@ -260,7 +267,7 @@ class ZionPigpioProcess(multiprocessing.Process):
                         pi.wave_delete(wave_id)
                 except Exception as e:
                     tb = "".join(traceback.format_exception(type(e), e, e.__traceback__))
-                    print(f"Error deleting previous waveform id {wave_id} for led: {led}!! -- {tb}")
+                    print(f"_event_led_thread -- Error deleting previous waveform id {wave_id} for led: {led}!! -- {tb}")
                     continue
 
             # Add new leds
@@ -269,11 +276,11 @@ class ZionPigpioProcess(multiprocessing.Process):
 
                 if added_wf:
                     wave_id = pi.wave_create()
-                    print(f"New event wave_id: {wave_id}")
+                    print(f"_event_led_thread -- New event wave_id: {wave_id}")
                 else:
                     # We didn't add any waveforms
                     wave_id = -1
-                    print(f"No active leds for event!")
+                    print(f"_event_led_thread -- No active leds for event!")
 
                 event_led_wave_ids[led] = wave_id
 
@@ -281,7 +288,7 @@ class ZionPigpioProcess(multiprocessing.Process):
                 done_event.set()
             except Exception as e:
                 tb = "".join(traceback.format_exception(type(e), e, e.__traceback__))
-                print(f"Problem setting done_event! -- {tb}")
+                print(f"_event_led_thread -- Problem setting done_event! -- {tb}")
                 continue
 
     def create_event_led_wave_ids(self, leds : Iterable[ZionLEDs], blocking : bool = True, done_event : Optional[multiprocessing.Event] = None):
@@ -314,10 +321,34 @@ class ZionPigpioProcess(multiprocessing.Process):
         if done_event:
             done_event.set()
 
-    def update_led_wave_ids(self, leds : Iterable[ZionLEDs]):
+    def update_event_led_wave_ids(self, leds : Iterable[ZionLEDs]):
         """ This will update any ZionLEDs that have a wave_id that's been added by _event_led_thread """
         for led in leds:
             led.set_wave_id(self.event_led_wave_ids.get(led, -1))
+
+    def start_events(self, wave_ids: Iterable[int]):
+        """ This will run the passed in wave_ids for every frame """
+        self.mp_namespace.num_frames = 0
+        if not self.fstrobe_wave_id_queue.empty():
+            print(f"WARNING! We were expecting the event queue for fstrobe to empty!!")
+
+        num_events = 0
+        try:
+            for wave_id in wave_ids:
+                self.fstrobe_wave_id_queue.put_nowait(wave_id)
+                num_events += 1
+        except Full:
+            print(f"ERROR: Could not put event {num_events} on the queue!!")
+
+        print(f"Num Events: {num_events}")
+
+    def clear_events(self):
+        """ Clears the fstrobe wave ids queue so it won't turn on LEDs """
+        while True:
+            try:
+                _ = self.fstrobe_wave_id_queue.get_nowait()
+            except Empty:
+                break
 
 
 class ZionGPIO():
@@ -370,7 +401,7 @@ class ZionGPIO():
     #         self.enable_led(color, pulsetime/100, verbose=verbose, update=False)
     #     self.update_pwm_settings()
 
-    def disable_all_toggle_leds(self, verbose=False):
+    def disable_all_leds(self, verbose=False):
         for color in ZionLEDColor:
             # Temporary until pulsewidth is fully implemented
             self.disable_toggle_led(color, verbose=verbose)
@@ -394,12 +425,25 @@ class ZionGPIO():
         if verbose:
             self.parent.gui.printToLog(f"{color.name} set to 0")
 
-    def create_event_led_wave_ids(self, leds : Iterable[ZionLEDs]):
-        self.pigpio_process.create_event_led_wave_ids(leds)
+    def load_event_led_wave_ids(self, flat_events : Iterable['ZionEvent']):
+        """ Load the LED information into pigpio for the passed in list of events """
+        # Find just the unique LED configurations to create wave_ids for
+        unique_leds = set(map(attrgetter('leds'), flat_events))
+        print(f"   # unique leds: {len(unique_leds)}")
 
-    def update_led_wave_ids(self, leds : Iterable[ZionLEDs]):
-        self.pigpio_process.update_led_wave_ids(leds)
+        # Create the wave_ids
+        self.pigpio_process.create_event_led_wave_ids(unique_leds)
 
+        # Update our representation of the LEDs with the waveform ID
+        # also load up the fstrobe callback queue
+        self.pigpio_process.update_event_led_wave_ids(map(attrgetter('leds'), flat_events))
+
+        # Load up the fstrobe queue
+        self.pigpio_process.start_events(map(methodcaller('get_wave_id'), map(attrgetter('leds'), flat_events)))
+
+    def disable_event_leds(self):
+        """ Clear the fstrobe queue of wave ids. Even if fstrobe fires it won't send an wave """
+        self.pigpio_process.clear_events()
 
     # def turn_on_led(self, color : ZionLEDColor, verbose : bool = False):
     #     amt = self.LED_DC[color] / 100.
@@ -414,12 +458,3 @@ class ZionGPIO():
     #     self.enable_led(ZionLEDColor.UV, dc)
     #     time.sleep(pulsetime / 1000.)
     #     self.enable_led(ZionLEDColor.UV, 0)
-
-    def enable_vsync_callback(self, event : ZionEvent):
-        print("enable_vsync_callback -- TODO")
-        pass
-        # self.callback_for_uv_pulse = self.callback(
-        #     XVS,
-        #     pigpio.RISING_EDGE,
-        #     partial(self.parent.pulse_on_trigger, event)
-        # )

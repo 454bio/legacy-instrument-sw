@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
+from fractions import Fraction
 from ZionSession import ZionSession
 from ZionCamera import ZionCameraParameters
 from ZionGtk import check_for_valid_filename
@@ -28,12 +28,12 @@ Initial_Values = ZionCameraParameters(
     saturation=    0,
     sharpness=     0,
     awb_mode=      'off',
-    red_gain=      1.00,
-    blue_gain=     1.00,
+    red_gain=      Fraction(1,1),
+    blue_gain=     Fraction(1,1),
     exposure_mode= 'off',
     shutter_speed= 250000,
-    analog_gain=   8.0,
-    digital_gain=  1.0,
+    analog_gain=   Fraction(8,1),
+    digital_gain=  Fraction(1,1),
     framerate=     4,
     vflip=         True,
 )

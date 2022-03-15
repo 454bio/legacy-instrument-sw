@@ -3,6 +3,13 @@ import os
 from glob import glob
 import time
 from datetime import datetime
+import io
+import threading
+import traceback
+from functools import partial
+from queue import Queue
+from fractions import Fraction
+
 import gi
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk, GLib
@@ -10,10 +17,7 @@ from ZionCamera import ZionCamera, ZionCameraParameters
 from ZionGPIO import ZionGPIO
 from ZionProtocols import ZionProtocol
 from ZionGtk import ZionGUI
-from picamera.exc import PiCameraValueError, PiCameraAlreadyRecording, PiCameraMMALError
-import threading
-import traceback
-from functools import partial
+from picamera.exc import mmal
 from ZionEvents import ZionEvent
 
 mod_path = os.path.dirname(os.path.abspath(__file__))
@@ -131,16 +135,65 @@ class ZionSession():
         # TODO: Add error handling and notify user
         self.Protocol.load_from_file(filename)
 
-    def RunProgram(self, stop : threading.Event):
+    def _save_event_image(self, image_buffer_event_queue : Queue):
+        """ Thread that will consume event buffers and save the files accordingly """
+        protocol_count = str(self.ProtocolCount).zfill(ZionSession.protocolCountDigits) + 'A'
+        last_capture_with_led = None
+        while True:
+            buffer, event = image_buffer_event_queue.get()
+            if buffer is None:
+                print("_save_event_image -- received stop signal!")
+                break
+
+            # print(f"_save_event_image -- Received buffer -- len(buffer): {len(buffer)}  event: {event}")
+            print(f"_save_event_image -- Received buffer -- len(buffer): {len(buffer)}  event.name: {event.name}")
+
+            self.CaptureCount += 1
+            self.captureCountThisProtocol += 1
+
+            capture_count = str(self.CaptureCount).zfill(ZionSession.captureCountDigits)
+            timestamp_ms = str(round(1000*(time.time()-self.TimeOfLife))).zfill(9)
+            protocol_capture_count = str(self.captureCountThisProtocol).zfill(ZionSession.captureCountPerProtocolDigits)
+            group = event.group or ''
+
+            filename = "_".join([
+                capture_count,
+                protocol_count,
+                protocol_capture_count,
+                group,
+                timestamp_ms,
+            ])
+            filename += ".jpg"
+            filepath = os.path.join(self.Dir, filename)
+            GLib.idle_add(
+                self.gui.printToLog,
+                f"Writing event image to file {filepath}"
+            )
+            with open(filepath, "wb") as out:
+                out.write(buffer)
+
+            try:
+                # Attempt to update the last capture if the event had LED illumination
+                if event.leds.has_wave_id():
+                    if GLib.Source.remove_by_funcs_user_data(self.update_last_capture, last_capture_with_led):
+                        print("Removed previous update_last_capture call")
+
+                    print(f"Sending {filename} to update thread")
+                    GLib.idle_add(self.update_last_capture, filepath)
+                    last_capture_with_led = filepath
+            except Exception as e:
+                tb = "".join(traceback.format_exception(type(e), e, e.__traceback__))
+                GLib.idle_add(self.gui.printToLog,  "ERROR Updating last capture!")
+                print(f"ERROR Updating last capture!\n{tb}")
+
+    def RunProgram(self, stop_event : threading.Event):
         # For the events. I think I want to preload all the potential waveforms
         # Load up the shared queue for the fstrobe callback with the ids
         # Check if the shared queue is empty at the end?
         # Do I unroll _all_ the events?
+        # from rich import print as rprint
 
         try:
-            self.frame_period = 1000./self.Camera.framerate
-            self.exposure_time = self.Camera.shutter_speed/1000. if self.Camera.shutter_speed else self.frame_period
-            time.sleep(0.5)
             self.TimeOfLife = time.time()
 
             events = self.Protocol.get_entries()
@@ -156,57 +209,64 @@ class ZionSession():
                 f"   # flat events: {len(flat_events)}"
             )
 
-            unique_leds = set(map(attrgetter('leds'), flat_events))
-            GLib.idle_add(
-                self.gui.printToLog,
-                f"   # unique leds: {len(unique_leds)}"
-            )
-
             # This will pre-program the pigpio with the waveforms for our LEDs
-            self.GPIO.create_event_led_wave_ids(unique_leds)
+            # it will also update the LEDs fields withe wave id
+            self.GPIO.load_event_led_wave_ids(flat_events)
 
-            # Update our representation of the LEDs with the waveform ID
-            self.GPIO.update_led_wave_ids(map(attrgetter('leds'), flat_events))
+            # Pre-allocate enough space
+            seq_stream = io.BytesIO()
+            buffer_queue = Queue()
 
+            self.buffer_thread = threading.Thread(target=self._save_event_image, args=(buffer_queue, ) )
+            self.buffer_thread.daemon=True  # TODO: Should make this non-daemonic so files get save even if program is shutdown
+            self.buffer_thread.start()
 
-            # for eg in events:
-            #     if eg.is_event:
-            #         GLib.idle_add(
-            #             self.gui.printToLog,
-            #             f"Starting event {eg.name}..."
-            #             f"   # Cycles: {eg.cycles}"
-            #         )
-            #     else:
-            #         GLib.idle_add(
-            #             self.gui.printToLog,
-            #             f"Starting event group {eg.name}..."
-            #             f"   # Events: {len(eg.events)}"
-            #             f"   # Cycles: {eg.cycles}"
-            #         )
+            expected_num_frames = len(flat_events)
 
-            #     for i in range(eg.cycles):
-            #         GLib.idle_add(self.gui.printToLog, f"Starting cycle {i}...")
-            #         if stop.is_set():
-            #             break
-            #         for event in eg.events:
-            #             GLib.idle_add(self.gui.printToLog, f"Running event: {event}...")
-            #             self.Protocol.performEvent(event, self.GPIO)
-            #             if stop.is_set():
-            #                 break
-            #             time.sleep(self.frame_period/250)
+            # rprint(self.Camera.get_camera_props())
+            for frame_ind, (event, _) in enumerate(zip(flat_events, self.Camera.capture_continuous(seq_stream, format='jpeg', burst=True, bayer=False))):
+                print(f"Captured frame {frame_ind}!")
+                print(f"stream_size: {seq_stream.tell()}")
+                seq_stream.truncate()
+                seq_stream.seek(0)
+                if event.capture:
+                    buffer_queue.put_nowait((seq_stream.getvalue(), event))
+                    print("Put Buffer on Queue!\n")
+                else:
+                    print("Skipped saving...\n")
+
+                if stop_event.is_set():
+                    print("Received stop!")
+                    break
+
+            print("RunProgram Finished!!")
+            # rprint(self.Camera.get_camera_props())
+
+            num_captured_frames = frame_ind + 1
+            if expected_num_frames != num_captured_frames:
+                print(f"WARNING: We did not receive the expected number of frames!!  num_frames: {num_captured_frames}  expected: {expected_num_frames}")
+            else:
+                print(f"RunProgram Captured {num_captured_frames} frames!!")
 
         except Exception as e:
             tb = "".join(traceback.format_exception(type(e), e, e.__traceback__))
             GLib.idle_add(self.gui.printToLog,  "ERROR Running Protocol!")
             print(f"RunProgram Error!!\n{tb}")
         finally:
+            protocol_length = time.time() - self.TimeOfLife
             self.captureCountThisProtocol = 0
-            if stop.is_set():
-                GLib.idle_add(self.gui.printToLog,  "Protocol has been stopped!")
+            if stop_event.is_set():
+                GLib.idle_add(self.gui.printToLog,  f"Protocol has been stopped! Total Time: {protocol_length:.0f} sec")
                 print("RunProgram has been stopped!")
             else:
-                GLib.idle_add(self.gui.printToLog,  "Protocol has finished!")
+                GLib.idle_add(self.gui.printToLog,  f"Protocol has finished! Total Time: {protocol_length:.0f} sec")
                 print("RunProgram has finished")
+
+            # Send the stop signal to the image saving thread
+            buffer_queue.put((None,None))
+            self.buffer_thread.join(5.0)
+            if self.buffer_thread.is_alive():
+                print("WARNING: buffer_thread is still alive!!!")
 
             GLib.idle_add(self.gui.cameraPreviewWrapper.clear_image)
             GLib.idle_add(partial(self.gui.handlers._update_camera_preview, force=True))
@@ -233,36 +293,6 @@ class ZionSession():
         if os.path.isdir(self.Dir) and not any(os.scandir(self.Dir)):
             print(f"Removing {self.Dir} since it's empty!")
             os.removedirs(self.Dir)
-
-    def pulse_on_trigger(self, event : ZionEvent, gpio, level, ticks):
-        self.GPIO.callback_for_uv_pulse.cancel() #to make this a one-shot
-        #entering this function ~1ms after vsync trigger
-        if event.leds:
-            pt = event.leds[0].pulsetime
-            colors = event.leds
-        else:
-            pt = 0
-            colors = []
-
-        time.sleep((self.frame_period-3)/2000)
-        if event.capture:
-            capture_thread = threading.Thread(target=self.CaptureImageThread, kwargs={'group':event.group})
-            capture_thread.daemon = True
-            capture_thread.start()
-        time1 = (self.frame_period-6)/2000
-        time2 = (3*self.frame_period-(self.exposure_time+pt+6))/2000
-        # ~ time.sleep((2*self.frame_period-(self.exposure_time+pw+6)/2000)
-        # ~ time.sleep(0.087+(self.frame_period-self.exposure_time)/1000) #wait for ~87 ms
-        # ~ print(self.frame_period)
-        # ~ print(self.exposure_time/2)
-        # ~ print(pw/2)
-        # ~ time.sleep((self.frame_period-(self.exposure_time+pw)/2)/1000) #wait for ~87 ms
-        time.sleep(max([time1, time2]))
-        if colors:
-            self.GPIO.enable_leds(colors)
-            if pt > 3:
-                time.sleep((pt-3)/1000)   #
-            self.GPIO.disable_leds(colors)
 
     def update_last_capture(self, last_capture_file):
         print(f"Updating capture with {last_capture_file}...")

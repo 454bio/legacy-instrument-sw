@@ -156,6 +156,7 @@ class ZionGUI():
         # self.parent.Protocol.add_event(name="Orange", group="O", capture=True, leds=orange_led, parent=g_3)
 
         self.parent.Protocol.gtk_initialize_treeview(self.EventTreeViewGtk)
+        # self.parent.Protocol.load_from_file(filename="brett_testing_protocol.txt")
         self.parent.Protocol.load_from_file(filename="example_v2_protocol.txt")
         # self.EventTreeViewGtk.get_selection().set_mode(Gtk.SelectionMode.SINGLE)
         self.EventTreeViewGtk.show_all()
@@ -217,7 +218,13 @@ class Handlers:
                 self.parent.parent.Camera.start_preview(fullscreen=False, window=self.camera_preview_window)
 
     def on_window1_delete_event(self, *args):
-        self.parent.parent.GPIO.disable_all_toggle_leds()
+        if self.is_program_running():
+            self.stop_run_thread.set()
+            self.parent.printToLog('Requesting script to stop')
+            print('Requesting thread to stop')
+            self._stop_running_program()
+
+        self.parent.parent.GPIO.disable_all_leds()
         GObject.source_remove(self.source_id)
         # ~ GObject.source_remove(self.source_id2)
         Gtk.main_quit(*args)
@@ -276,6 +283,7 @@ class Handlers:
             self.parent.paramFileChooser.hide()
             self.recent_protocol_file = filename
             self.parent.parent.LoadProtocolFromFile(filename)
+            self.parent.EventTreeViewGtk.expand_all()
         elif response == Gtk.ResponseType.CANCEL:
             self.parent.paramFileChooser.hide()
 
@@ -724,8 +732,28 @@ class Handlers:
 
         # ~ button.set_sensitive(False)
         self.run_thread = threading.Thread(target=self.parent.parent.RunProgram, args=(self.stop_run_thread, ) )
-        self.run_thread.daemon=True
+        self.run_thread.daemon=True  # TODO: Should make this non-daemonic so files get save even if program is shutdown
         self.run_thread.start()
+
+    def _stop_running_program(self):
+        self.run_thread.join(5.0)
+        if self.run_thread.is_alive():
+            self.parent.printToLog("WARNING: The thread running the protocol didn't stop!\n You might want to restart the program...")
+            d = Gtk.MessageDialog(
+                transient_for=self.parent.mainWindow,
+                modal=True,
+                buttons=Gtk.ButtonsType.OK
+            )
+            d.props.text = "ERROR: The program thread did not shut down in a timely manner! Suggest you restart..."
+            d.run()
+            d.destroy()
+
+        self.run_thread = None
+        self.parent.parent.GPIO.disable_event_leds()
+        self.parent.runProgramButton.set_sensitive(True)
+        self.parent.blueSwitch.set_sensitive(True)
+        self.parent.orangeSwitch.set_sensitive(True)
+        self.parent.uvSwitch.set_sensitive(True)
 
     def on_stop_program_button_clicked(self, button):
         if self.is_program_running():
@@ -743,18 +771,7 @@ class Handlers:
                 self.stop_run_thread.set()
                 self.parent.printToLog('Requesting script to stop')
                 print('Requesting thread to stop')
-                self.run_thread.join(5.0)
-                if self.run_thread.is_alive():
-                    self.parent.printToLog("WARNING: The thread running the protocol didn't stop!\n You might want to restart the program...")
-
-                self.run_thread = None
-                self.parent.parent.GPIO.disable_led(ZionLEDColor.UV)
-                self.parent.parent.GPIO.disable_led(ZionLEDColor.BLUE)
-                self.parent.parent.GPIO.disable_led(ZionLEDColor.ORANGE)
-                self.parent.runProgramButton.set_sensitive(True)
-                self.parent.blueSwitch.set_sensitive(True)
-                self.parent.orangeSwitch.set_sensitive(True)
-                self.parent.uvSwitch.set_sensitive(True)
+                GLib.idle_add(self._stop_running_program)
 
     #File chooser:
     def on_param_file_chooser_dialog_realize(self, widget):
