@@ -60,6 +60,8 @@ class ZionSession():
         self.gui = ZionGUI(Initial_Values, self)
 
         self.TimeOfLife = time.time()
+        self.update_last_capture_path = None
+        self.update_last_capture_lock = threading.Lock()
 
     def CaptureImageThread(self, cropping=(0,0,1,1), group=None, verbose=False, comment='', suffix='', protocol=True):
         """ This is running in a thread. It should not call any GTK functions """
@@ -138,7 +140,6 @@ class ZionSession():
     def _save_event_image(self, image_buffer_event_queue : Queue):
         """ Thread that will consume event buffers and save the files accordingly """
         protocol_count = str(self.ProtocolCount).zfill(ZionSession.protocolCountDigits) + 'A'
-        last_capture_with_led = None
         while True:
             buffer, event = image_buffer_event_queue.get()
             if buffer is None:
@@ -175,12 +176,17 @@ class ZionSession():
             try:
                 # Attempt to update the last capture if the event had LED illumination
                 if event.leds.has_wave_id():
-                    if GLib.Source.remove_by_funcs_user_data(self.update_last_capture, last_capture_with_led):
-                        print("Removed previous update_last_capture call")
+                    if self.update_last_capture_lock.locked():
+                        continue
+
+                    with self.update_last_capture_lock:
+                        call_update = self.update_last_capture_path is None
+                        self.update_last_capture_path = filepath
 
                     print(f"Sending {filename} to update thread")
-                    GLib.idle_add(self.update_last_capture, filepath)
-                    last_capture_with_led = filepath
+                    if call_update:
+                        GLib.idle_add(self.update_last_capture)
+
             except Exception as e:
                 tb = "".join(traceback.format_exception(type(e), e, e.__traceback__))
                 GLib.idle_add(self.gui.printToLog,  "ERROR Updating last capture!")
@@ -224,6 +230,7 @@ class ZionSession():
             expected_num_frames = len(flat_events)
 
             # rprint(self.Camera.get_camera_props())
+
             for frame_ind, (event, _) in enumerate(zip(flat_events, self.Camera.capture_continuous(seq_stream, format='jpeg', burst=True, bayer=False))):
                 print(f"Captured frame {frame_ind}!")
                 print(f"stream_size: {seq_stream.tell()}")
@@ -256,10 +263,10 @@ class ZionSession():
             protocol_length = time.time() - self.TimeOfLife
             self.captureCountThisProtocol = 0
             if stop_event.is_set():
-                GLib.idle_add(self.gui.printToLog,  f"Protocol has been stopped! Total Time: {protocol_length:.0f} sec")
+                GLib.idle_add(self.gui.printToLog,  f"Protocol has been stopped! Total Time: {protocol_length:.2f} sec")
                 print("RunProgram has been stopped!")
             else:
-                GLib.idle_add(self.gui.printToLog,  f"Protocol has finished! Total Time: {protocol_length:.0f} sec")
+                GLib.idle_add(self.gui.printToLog,  f"Protocol has finished! Total Time: {protocol_length:.2f} sec")
                 print("RunProgram has finished")
 
             # Send the stop signal to the image saving thread
@@ -294,8 +301,11 @@ class ZionSession():
             print(f"Removing {self.Dir} since it's empty!")
             os.removedirs(self.Dir)
 
-    def update_last_capture(self, last_capture_file):
-        print(f"Updating capture with {last_capture_file}...")
-        self.gui.cameraPreviewWrapper.image_path = last_capture_file
-        print(f"Done!")
+    def update_last_capture(self):
+        with self.update_last_capture_lock:
+            print(f"Updating capture with {self.update_last_capture_path}...")
+            t_path = self.update_last_capture_path
+            self.update_last_capture_path = None
+            self.gui.cameraPreviewWrapper.image_path = t_path
+            print(f"Done!")
         # self.gui.cameraPreview.get_parent().queue_draw()

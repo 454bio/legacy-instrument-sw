@@ -138,7 +138,7 @@ class ZionCamera(PiCamera):
 
 		super().__init__(resolution=resolution, framerate = initial_values.framerate, sensor_mode=sensor_mode, clock_mode=clock_mode)
 		# from rich import print as rprint
-		sleep(2)
+		sleep(1)
 		# print("[bold yellow] Properties after init")
 		# print(self.get_camera_props(['exposure_mode', 'iso', 'analog_gain', 'digital_gain']))
 		# sleep(5)
