@@ -65,7 +65,8 @@ class ZionProtocol():
         self.Entries: List[Union[ZionEvent, ZionEventGroup]] = []
         self._protocoltree = None # type: ZionProtocolTree
 
-        ZionEvent.set_minimum_cycle_time(int(camera_parameters.exposure_speed / 1000))
+        min_cycle_time = max(int(camera_parameters.exposure_speed / 1000), int(1000 / camera_parameters.framerate))
+        ZionEvent.set_minimum_cycle_time(min_cycle_time)
         # Set the minimum event time based on the camera parameters
         if filename:
             self.load_from_file(filename, flatten=False)

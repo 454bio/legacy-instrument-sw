@@ -1,4 +1,6 @@
 import math
+import threading
+import time
 
 from dataclasses import (
     dataclass,
@@ -11,6 +13,7 @@ from typing import (
     Optional,
     Union,
     ClassVar,
+    Callable,
 )
 
 from functools import reduce
@@ -27,6 +30,7 @@ class ZionProtocolEntry():
     requested_cycle_time: int = 0
     _cycle_time: int = 0            # Not actually used as a private variable. Just used for property decleration
     _total_time_sec: float = 0.0    # Not actually used as a private variable. Just used for property decleration
+    _progress: int = 0
 
     @staticmethod
     def dict_factory(*args, **kwargs):
@@ -43,9 +47,11 @@ class ZionProtocolEntry():
 class ZionEvent(ZionProtocolEntry):
     is_event: bool = True
     capture: bool = True
+    _is_wait: bool = False
     group: str = ""
     leds: ZionLEDs = field(default_factory=ZionLEDs)
     _minimum_cycle_time: ClassVar[int] = 0
+    _minimum_wait_event_time: ClassVar[int] = 0
 
     def __post_init__(self):
         if isinstance(self.leds, dict):
@@ -73,6 +79,7 @@ class ZionEvent(ZionProtocolEntry):
     def set_minimum_cycle_time(cls, minimum_cycle_time : int):
         """ minimum_cycle_time is a class property """
         cls._minimum_cycle_time = minimum_cycle_time
+        cls._minimum_wait_event_time = minimum_cycle_time * 10
 
     @property
     def _time_to_cycles(self):
@@ -99,22 +106,69 @@ class ZionEvent(ZionProtocolEntry):
             self.requested_cycle_time = cycle_time_in
 
     @property
-    def additional_cycle_time(self):
+    def _additional_cycle_time(self):
         return self.cycle_time - ZionEvent._minimum_cycle_time
 
+    @property
+    def is_wait(self) -> bool:
+        # return self._is_wait or self.cycle_time > self._minimum_wait_event_time
+        return self._is_wait
+
+    def sleep(self, stop_event : threading.Event, progress_bar_func : Optional[Callable] = (lambda *args : None), progress_log_func : Optional[Callable] = (lambda *args: None) ):
+        """ If event is a wait event, it will sleep for cycle_time and update it's progress """
+        start_time = time.time()
+        cycle_time_sec = self.cycle_time / 1000
+
+        self._progress = 0
+        _previous_progress = 0
+        _previous_log_progress = 0
+        progress_log_func(f"Waiting for {int(cycle_time_sec)} seconds...")
+        while True:
+            elapsed_time = time.time() - start_time
+            if elapsed_time > cycle_time_sec:
+                self._progress = 100
+                progress_log_func(f"Wait of {cycle_time_sec:.0f} complete!")
+                break
+
+            self._progress = round(elapsed_time / cycle_time_sec * 100)
+
+            # Set the progress if it's changed by a percent
+            if self._progress > _previous_progress:
+                _previous_progress = self._progress
+                progress_bar_func(_previous_progress / 100)
+
+            # Only send a log update every 5%
+            if int(self._progress / 5) > _previous_log_progress:
+                _previous_log_progress = int(self._progress / 5)
+                progress_log_func(f"{_previous_log_progress * 5}% complete... {cycle_time_sec - elapsed_time:.0f} seconds to go...")
+
+            if stop_event.wait(1.0):
+                # We received the stop signal, abort!
+                progress_bar_func(0)
+                break
+
     def flatten(self) -> List['ZionEvent']:
-        """ This will create a list of events that is equivalent to the number of cycles and additional cycle time"""
-        extra_cycles_per_event = self._time_to_cycles - 1
+        """ This will either return just ourselves in a list. Or ourselves plus a filler event that captures the extra cycle time """
 
-        cycle_filler_event = ZionEvent(
-            capture=False,
-            requested_cycle_time=ZionEvent._minimum_cycle_time
-        )
-
-        # equivalent_event will contain a list of this event padded
-        # with extra blank events to fulfill the cycle time
         equivalent_event = [self,]
-        equivalent_event.extend([cycle_filler_event,] * extra_cycles_per_event)
+        if self._additional_cycle_time:
+            if self._additional_cycle_time > self._minimum_wait_event_time:
+                equivalent_event.append(
+                    ZionEvent(
+                        capture=False,
+                        requested_cycle_time=self._additional_cycle_time,
+                        name=f"{self.name} long wait",
+                        _is_wait=True,
+                    )
+                )
+            else:
+                cycle_filler_event = ZionEvent(
+                    capture=False,
+                    requested_cycle_time=ZionEvent._minimum_cycle_time,
+                    name=f"{self.name} wait"
+                )
+                extra_cycles_per_event = self._time_to_cycles - 1
+                equivalent_event.extend([cycle_filler_event,] * extra_cycles_per_event)
 
         return equivalent_event * self.cycles
 
@@ -148,10 +202,26 @@ class ZionEventGroup(ZionProtocolEntry):
         """
         Convert a ZionEventGroup to an equivalent list of ZionEvents
         """
-        cycle_filler_event = ZionEvent(
-            capture=False,
-            requested_cycle_time=ZionEvent._minimum_cycle_time
-        )
+
+        # Pre-calcute the wait events or filler events we'll use to get the cycle time correct
+        wait_events = []
+        if self._additional_cycle_time:
+            if self._additional_cycle_time > ZionEvent._minimum_wait_event_time:
+                wait_events = [
+                    ZionEvent(
+                        capture=False,
+                        requested_cycle_time=self._additional_cycle_time,
+                        name=f"{self.name} long wait",
+                        _is_wait=True,
+                    ),
+                ]
+            else:
+                cycle_filler_event = ZionEvent(
+                    capture=False,
+                    requested_cycle_time=ZionEvent._minimum_cycle_time,
+                    name=f"{self.name} wait"
+                )
+                wait_events.extend([cycle_filler_event,] * self._additional_cycles)
 
         flat_events = []
         for _ in range(self.cycles):
@@ -163,8 +233,7 @@ class ZionEventGroup(ZionProtocolEntry):
                         f"Unrecognized type in the event list: {type(event)}"
                     )
 
-            if self._additional_cycles:
-                flat_events.extend([cycle_filler_event,] * self._additional_cycles)
+            flat_events.extend(wait_events)
 
         return flat_events
 

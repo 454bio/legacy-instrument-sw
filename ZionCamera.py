@@ -270,7 +270,7 @@ class ZionCamera(PiCamera):
 		fileToWrite = filename+'.jpg'
 		# ~ fileToWrite = filename+'.raw'
 		if self.parent:
-			self.parent.GPIO.camera_trigger(True)
+			self.parent.GPIO.camera_trigger()
 		if bayer:
 			print('\nWriting image to file '+fileToWrite)
 			# ret = super(ZionCamera,self).capture(fileToWrite, use_video_port=False)
@@ -284,7 +284,6 @@ class ZionCamera(PiCamera):
 			# ~ ret = super(ZionCamera,self).capture_sequence([fileToWrite], use_video_port=False, bayer=False, burst=True)
 
 		if self.parent:
-			self.parent.GPIO.camera_trigger(False)
 			GLib.idle_add(self.parent.update_last_capture, fileToWrite)
 
 		self.zoom=(0,0,1,1)
@@ -338,6 +337,9 @@ class ZionCamera(PiCamera):
 			print('\nSetting exposure time to auto')
 		else:
 			print('\nSetting exposure time to '+str(val))
+
+		print(f"Actual exposure time: {self.exposure_speed / 1000:.3f} ms")
+		print(f"shutter_speed: {self.shutter_speed}")
 
 	def set_exp_mode(self, val):
 		self.exposure_mode = val

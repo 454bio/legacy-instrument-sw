@@ -1688,10 +1688,32 @@
                       </packing>
                     </child>
                     <child>
-                      <placeholder/>
+                      <object class="GtkProgressBar" id="protocol_progress_bar">
+                        <property name="visible">True</property>
+                        <property name="can_focus">False</property>
+                        <property name="text" translatable="yes">Protocol Progress</property>
+                        <property name="show_text">True</property>
+                      </object>
+                      <packing>
+                        <property name="expand">False</property>
+                        <property name="fill">True</property>
+                        <property name="padding">5</property>
+                        <property name="position">7</property>
+                      </packing>
                     </child>
                     <child>
-                      <placeholder/>
+                      <object class="GtkProgressBar" id="current_event_progress_bar">
+                        <property name="visible">True</property>
+                        <property name="can_focus">False</property>
+                        <property name="text" translatable="yes">Current Event</property>
+                        <property name="show_text">True</property>
+                      </object>
+                      <packing>
+                        <property name="expand">False</property>
+                        <property name="fill">True</property>
+                        <property name="padding">5</property>
+                        <property name="position">8</property>
+                      </packing>
                     </child>
                     <child>
                       <placeholder/>
@@ -1958,6 +1980,7 @@
                 <child>
                   <object class="GtkButton" id="stop_program_button">
                     <property name="visible">True</property>
+                    <property name="sensitive">False</property>
                     <property name="can_focus">True</property>
                     <property name="receives_default">True</property>
                     <property name="halign">center</property>

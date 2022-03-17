@@ -34,7 +34,7 @@ Initial_Values = ZionCameraParameters(
     shutter_speed= 250000,
     analog_gain=   Fraction(8,1),
     digital_gain=  Fraction(1,1),
-    framerate=     4,
+    framerate=     2,
     vflip=         True,
 )
 
