@@ -341,6 +341,8 @@ class ZionSession():
             if self.buffer_thread.is_alive():
                 print("WARNING: buffer_thread is still alive!!!")
 
+            GLib.idle_add(self.gui.ProtocolProgressBar.set_fraction, 0.0)
+            GLib.idle_add(self.gui.CurrentEventProgressBar.set_fraction, 0.0)
             GLib.idle_add(self.gui.cameraPreviewWrapper.clear_image)
             GLib.idle_add(partial(self.gui.handlers._update_camera_preview, force=True))
             GLib.idle_add(self.gui.runProgramButton.set_sensitive, True)
