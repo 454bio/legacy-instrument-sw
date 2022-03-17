@@ -164,7 +164,10 @@ class ZionGUI():
 
         self.EventListScroll = self.builder.get_object("eventlist_scroll")
 
+        self.ProtocolProgressBar = self.builder.get_object("protocol_progress_bar")
+        self.CurrentEventProgressBar = self.builder.get_object("current_event_progress_bar")
         self.runProgramButton = self.builder.get_object("run_program_button")
+        self.stopProgramButton  = self.builder.get_object("stop_program_button")
 
         self.cameraPreview = self.builder.get_object("camera_preview")
         self.cameraPreviewWrapper = PictureView(self.cameraPreview, os.path.join(mod_path, "Detect_Logo.png"))
@@ -559,14 +562,16 @@ class Handlers:
             self.parent.printToLog(f"Requesting exposure time of {newval:.0f} ms")
             
         if newval==0:
-            self.parent.parent.Camera.shutter_speed = 0
+            # self.parent.parent.Camera.shutter_speed = 0
             self.parent.parent.Camera.set_shutter_speed(0)
             self.parent.printToLog('Exposure time set to auto')
         else:
-            self.parent.parent.Camera.shutter_speed = round(1000*newval)
+            # self.parent.parent.Camera.shutter_speed = round(1000*newval)
             self.parent.parent.Camera.set_shutter_speed(round(1000*newval))
             self.parent.printToLog('Exposure time set to '+str(newval)+' ms')
-            
+        
+        self.updateExpParams()
+
     def on_framerate_entry_activate(self, entry):
         newval = entry.get_text()
         try:
@@ -714,13 +719,6 @@ class Handlers:
 
     def on_run_program_button_clicked(self,button):
         button.set_sensitive(False)
-        self.parent.expModeComboBox.set_active(0)
-        comment = self.parent.commentBox.get_text()
-        self.parent.parent.SaveParameterFile(comment, True)
-        self.parent.parent.SaveProtocolFile(comment=comment)
-
-        self.stop_run_thread.clear()
-        self.parent.parent.Camera.stop_preview()
 
         # Turn off and disable the led toggles
         self.parent.blueSwitch.set_active(False)
@@ -730,10 +728,20 @@ class Handlers:
         self.parent.orangeSwitch.set_sensitive(False)
         self.parent.uvSwitch.set_sensitive(False)
 
+        self.parent.expModeComboBox.set_active(0)
+        comment = self.parent.commentBox.get_text()
+        self.parent.parent.SaveParameterFile(comment, True)
+        self.parent.parent.SaveProtocolFile(comment=comment)
+
+        self.stop_run_thread.clear()
+        self.parent.parent.Camera.stop_preview()
+
         # ~ button.set_sensitive(False)
         self.run_thread = threading.Thread(target=self.parent.parent.RunProgram, args=(self.stop_run_thread, ) )
         self.run_thread.daemon=True  # TODO: Should make this non-daemonic so files get save even if program is shutdown
         self.run_thread.start()
+
+        self.parent.stopProgramButton.set_sensitive(True)
 
     def _stop_running_program(self):
         self.run_thread.join(5.0)

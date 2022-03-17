@@ -47,7 +47,8 @@ GpioPins = (
     (16,   True,  None  ),
     (18,   True,  None  ),
     (22,   True,  None  ),
-    (37,   True,  None  ))
+    (37,   True,  None  ),
+    (13,   True,  None  ))  # GPIO 27
 
 # Now define GPIO uses for Zion:
 
@@ -74,13 +75,18 @@ TEMP_INPUT_1W = 5 #pin 29
 FSTROBE = 23 #pin 16
 XVS = 24 #pin 18
 
+DEBUG_TRIGGER = 27 # pin 13
+
 class ZionPigpioProcess(multiprocessing.Process):
-    def __init__(self, xvs_delay_ms: float = 0.0, led_gpios=LED_GPIOS, temp_out_gpio=TEMP_OUTPUT, temp_in_gpio=TEMP_INPUT_1W, camera_trigger_gpio=CAMERA_TRIGGER):
+    def __init__(self, xvs_delay_ms: float = 0.0, led_gpios=LED_GPIOS,
+                temp_out_gpio=TEMP_OUTPUT, temp_in_gpio=TEMP_INPUT_1W,
+                camera_trigger_gpio=CAMERA_TRIGGER, debug_trigger_gpio=DEBUG_TRIGGER):
         super().__init__()
         self.led_gpios = led_gpios
         self.temp_out_gpio = temp_out_gpio
         self.temp_in_gpio = temp_in_gpio
         self.camera_trigger_gpio = camera_trigger_gpio
+        self.debug_trigger_gpio = debug_trigger_gpio
 
         self._mp_manager = multiprocessing.Manager()
         self.mp_namespace = self._mp_manager.Namespace()
@@ -89,10 +95,15 @@ class ZionPigpioProcess(multiprocessing.Process):
         self.fstrobe_wave_id_queue = self._mp_manager.Queue()
         self.event_led_wave_id_queue = self._mp_manager.Queue()
         self.toggle_led_queue = self._mp_manager.Queue()
+        self.camera_trigger_event = self._mp_manager.Event()
+        self.debug_trigger_event = self._mp_manager.Event()
         self.stop_event = self._mp_manager.Event()
+        self.capture_busy = self._mp_manager.Event()
+        self.fstrobe_sent = self._mp_manager.Event()
         self.event_led_wave_id_done_event = self._mp_manager.Event()
         self.event_led_wave_ids = self._mp_manager.dict()
         self.mp_namespace.num_event_frames = 0
+        self.mp_namespace.num_fstrobes = 0
 
     def run(self):
         self._init_pigpio()
@@ -115,7 +126,7 @@ class ZionPigpioProcess(multiprocessing.Process):
 
         # Check that GPIO settings are valid:
         #TODO: may need adjustment for temperature output (eg if it takes more than one pin)
-        for g in itertools.chain(*self.led_gpios.values(), [self.temp_out_gpio, self.camera_trigger_gpio]):
+        for g in itertools.chain(*self.led_gpios.values(), [self.temp_out_gpio, self.camera_trigger_gpio, self.debug_trigger_gpio]):
             if GpioPins[g][1]:
                 self.pi.set_pull_up_down(g, pigpio.PUD_DOWN)
                 self.pi.set_mode(g, pigpio.OUTPUT)
@@ -149,12 +160,44 @@ class ZionPigpioProcess(multiprocessing.Process):
         self._event_led_handle.daemon = True
         self._event_led_handle.start()
 
+        self._camera_trigger_handle = threading.Thread(
+            target=self._camera_trigger_thread,
+            args=(self.camera_trigger_event, self.stop_event, self.pi)
+        )
+        self._camera_trigger_handle.daemon = True
+        self._camera_trigger_handle.start()
+
+        self._debug_trigger_handle = threading.Thread(
+            target=self._debug_trigger_thread,
+            args=(self.debug_trigger_event, self.stop_event, self.pi)
+        )
+        self._debug_trigger_handle.daemon = True
+        self._debug_trigger_handle.start()
+
     def _cleanup(self):
         """ Cleanup pigpio and signal the child threads to quit """
+        self.camera_trigger_event.set()
         self.toggle_led_queue.put((None, None))
         self.event_led_wave_id_queue.put(None)
         self._fstrobe_cb_handle.cancel()
         self._xvs_cb_handle.cancel()
+
+        self._toggle_led_handle.join(1.0)
+        if self._toggle_led_handle.is_alive():
+            print("_toggle_led_thread is still alive!")
+
+        self._event_led_handle.join(1.0)
+        if self._event_led_handle.is_alive():
+            print("_event_led_thread is still alive!")
+
+        self._camera_trigger_handle.join(1.0)
+        if self._camera_trigger_handle.is_alive():
+            print("_camera_trigger_thread is still alive!")
+
+        self._debug_trigger_handle.join(1.0)
+        if self._debug_trigger_handle.is_alive():
+            print("_debug_trigger_thread is still alive!")
+
         self.pi.wave_tx_stop()
         self.pi.wave_clear()
         self.pi.stop()
@@ -164,20 +207,33 @@ class ZionPigpioProcess(multiprocessing.Process):
         print("Setting stop signal...")
         self.stop_event.set()
 
+    def get_num_fstrobes(self):
+        return self.mp_namespace.num_fstrobes
+
+    def get_capture_busy_event(self) -> multiprocessing.Event:
+        return self.capture_busy
+
     def fstrobe_cb(self, gpio, level, ticks):
+
+        if self.capture_busy.is_set():
+            print(f"fstrobe_cb -- capture is busy...")
+            return
+
         try:
             wave_id = self.fstrobe_wave_id_queue.get_nowait()
         except Empty:
-            print("fstrobe_cb -- no wave_id")
+            pass
         else:
-            print(f"fstrobe_cb -- wave_id: {wave_id}")
             if wave_id < 0:
                 print(f"fstrobe_cb -- No LED this image...")
             else:
                 ret = self.pi.wave_send_once(wave_id)
                 print(f"fstrobe_cb -- Sent wave_id: {wave_id}  num_frames: {self.mp_namespace.num_frames}")
-                print(f"fstrobe_cb -- ret: {ret}")
+
             self.mp_namespace.num_frames += 1
+        finally:
+            self.mp_namespace.num_fstrobes += 1
+            print(f"# fstrobes: {self.mp_namespace.num_fstrobes}")
 
     def xvs_cb(self, gpio, level, ticks):
         """ Triggers on XVS Rising Edge. If self.mp_namespace.toggle_led_wave_id is set then it will send it. """
@@ -211,6 +267,28 @@ class ZionPigpioProcess(multiprocessing.Process):
                 added_wf = True
 
         return added_wf
+
+    def _camera_trigger_thread(self, camera_trigger_event : multiprocessing.Event, stop_event : multiprocessing.Event, pi : pigpio.pi):
+        """ Send a pulse on the DEBUG pin. """
+        while True:
+            camera_trigger_event.wait()
+            if stop_event.is_set():
+                print("_camera_trigger_thread -- received stop signal!")
+                camera_trigger_event.clear()
+                break
+            pi.gpio_trigger(self.camera_trigger_gpio, 100, 1)
+            camera_trigger_event.clear()
+
+    def _debug_trigger_thread(self, debug_trigger_event : multiprocessing.Event, stop_event : multiprocessing.Event, pi : pigpio.pi):
+        """ Send a pulse on the DEBUG pin. """
+        while True:
+            debug_trigger_event.wait()
+            if stop_event.is_set():
+                print("_debug_trigger_thread -- received stop signal!")
+                debug_trigger_event.clear()
+                break
+            pi.gpio_trigger(self.debug_trigger_gpio, 100, 1)
+            debug_trigger_event.clear()
 
     def _toggle_led_thread(self, mp_namespace : Namespace, toggle_led_queue : multiprocessing.Queue, pi : pigpio.pi):
         """ Add a wave_id for the given color and pulsewidth. """
@@ -265,6 +343,8 @@ class ZionPigpioProcess(multiprocessing.Process):
                 try:
                     if wave_id > -1:
                         pi.wave_delete(wave_id)
+                except pigpio.error as e:
+                    print(f"could not delete wave_id {wave_id} -- {e}")
                 except Exception as e:
                     tb = "".join(traceback.format_exception(type(e), e, e.__traceback__))
                     print(f"_event_led_thread -- Error deleting previous waveform id {wave_id} for led: {led}!! -- {tb}")
@@ -350,9 +430,20 @@ class ZionPigpioProcess(multiprocessing.Process):
             except Empty:
                 break
 
+    def send_camera_trigger(self):
+        """ Send a pulse on the camera_trigger pin """
+        self.camera_trigger_event.set()
+
+    def send_debug_trigger(self):
+        """ Send a pulse on the debug_trigger pin """
+        self.debug_trigger_event.set()
+
 
 class ZionGPIO():
-    def __init__(self, led_gpios=LED_GPIOS, temp_out_gpio=TEMP_OUTPUT, temp_in_gpio=TEMP_INPUT_1W, camera_trigger_gpio=CAMERA_TRIGGER, parent : Optional['ZionSession'] = None):
+    def __init__(
+        self, led_gpios=LED_GPIOS, temp_out_gpio=TEMP_OUTPUT, temp_in_gpio=TEMP_INPUT_1W, 
+        camera_trigger_gpio=CAMERA_TRIGGER, parent : Optional['ZionSession'] = None
+    ):
         self.parent=parent
 
         #TODO: implement heat control output
@@ -365,13 +456,19 @@ class ZionGPIO():
             self.Temp_1W_device = None
 
         print(f"ZionGPIO -- get_start_method: {multiprocessing.get_start_method()}")
-        self.pigpio_process = ZionPigpioProcess(led_gpios=led_gpios, temp_out_gpio=temp_out_gpio, temp_in_gpio=temp_in_gpio, camera_trigger_gpio=camera_trigger_gpio, xvs_delay_ms=parent.Camera.readout_ms)
+        if parent:
+            xvs_delay = parent.Camera.readout_ms
+        else:
+            xvs_delay = 86.8422816
+
+        self.pigpio_process = ZionPigpioProcess(led_gpios=led_gpios, temp_out_gpio=temp_out_gpio, temp_in_gpio=temp_in_gpio, camera_trigger_gpio=camera_trigger_gpio, xvs_delay_ms=xvs_delay)
         self.pigpio_process.start()
 
-    def camera_trigger(self, bEnable):
-        print("camera_trigger -- need to signal spawned process")
-        pass
-        # self.write(self.Camera_Trigger, bEnable)
+    def camera_trigger(self):
+        self.pigpio_process.send_camera_trigger()
+
+    def debug_trigger(self):
+        self.pigpio_process.send_debug_trigger()
 
     def read_temperature(self):
         if self.Temp_1W_device:
@@ -387,6 +484,12 @@ class ZionGPIO():
             return temp_c
         else:
             return None
+
+    def get_num_fstrobes(self):
+        return self.pigpio_process.get_num_fstrobes()
+
+    def get_capture_busy_event(self) -> multiprocessing.Event:
+        return self.pigpio_process.get_capture_busy_event()
 
     def quit(self):
         print("Stopping GPIO...")

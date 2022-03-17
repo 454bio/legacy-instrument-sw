@@ -1,3 +1,4 @@
+import multiprocessing
 from operator import attrgetter, methodcaller
 import os
 from glob import glob
@@ -139,9 +140,11 @@ class ZionSession():
 
     def _save_event_image(self, image_buffer_event_queue : Queue):
         """ Thread that will consume event buffers and save the files accordingly """
+        print("_save_event_image starting...")
         protocol_count = str(self.ProtocolCount).zfill(ZionSession.protocolCountDigits) + 'A'
         while True:
             buffer, event = image_buffer_event_queue.get()
+            # buffer, event = image_buffer_event_queue.get_nowait()
             if buffer is None:
                 print("_save_event_image -- received stop signal!")
                 break
@@ -166,6 +169,8 @@ class ZionSession():
             ])
             filename += ".jpg"
             filepath = os.path.join(self.Dir, filename)
+            print(f"Writing event image to file {filepath}")
+
             GLib.idle_add(
                 self.gui.printToLog,
                 f"Writing event image to file {filepath}"
@@ -203,57 +208,118 @@ class ZionSession():
             self.TimeOfLife = time.time()
 
             events = self.Protocol.get_entries()
+            all_flat_events = self.Protocol.flatten()
             GLib.idle_add(
                 self.gui.printToLog,
                 "Starting protocol!"
                 f"   # Events and Groups: {len(events)}"
-            )
-            flat_events = self.Protocol.flatten()
-            GLib.idle_add(
-                self.gui.printToLog,
-                "Starting protocol!"
-                f"   # flat events: {len(flat_events)}"
+                f"   # expected frames: {len(list(filter(attrgetter('capture'), all_flat_events)))}"
             )
 
-            # This will pre-program the pigpio with the waveforms for our LEDs
-            # it will also update the LEDs fields withe wave id
-            self.GPIO.load_event_led_wave_ids(flat_events)
+            # rprint(self.Camera.get_camera_props(props=['exposure_speed', 'shutter_speed', 'framerate']))
+
+            # Generate groups of events which are seperated by the special wait events in our flat events list
+            # A wait event is an event that has it's `is_wait` flag set and represents a wait time that is longer then
+            # the time it would take to reconfigure for a new group of events (10 minimum_cycle_times?).
+            # The call to .flatten() has taken care of this for us though
+            grouped_flat_events = []
+            events_group = []
+            for event in all_flat_events:
+                if event.is_wait:
+                    grouped_flat_events.append(events_group)
+                    grouped_flat_events.append(event)
+                    events_group = []
+                else:
+                    events_group.append(event)
+
+            # rprint(grouped_flat_events)
 
             # Pre-allocate enough space
             seq_stream = io.BytesIO()
-            buffer_queue = Queue()
+            buffer_queue = multiprocessing.Queue()
 
+            # self.buffer_thread = multiprocessing.Process(target=self._save_event_image, args=(buffer_queue, ) )
             self.buffer_thread = threading.Thread(target=self._save_event_image, args=(buffer_queue, ) )
             self.buffer_thread.daemon=True  # TODO: Should make this non-daemonic so files get save even if program is shutdown
             self.buffer_thread.start()
 
-            expected_num_frames = len(flat_events)
+            total_number_of_groups = float(len(grouped_flat_events))
+            for gow_ind, group_or_wait in enumerate(grouped_flat_events):
+                GLib.idle_add(self.gui.ProtocolProgressBar.set_fraction, gow_ind / total_number_of_groups)
 
-            # rprint(self.Camera.get_camera_props())
+                if not isinstance(group_or_wait, list):
+                    # We're a wait event
+                    # GLib.idle_add(
+                    #     self.gui.printToLog,
+                    #     f"Waiting for {group_or_wait.cycle_time / 1000} seconds..."
+                    # )
+                    group_or_wait.sleep(
+                        stop_event=stop_event,
+                        progress_log_func=partial(GLib.idle_add, self.gui.printToLog),
+                        progress_bar_func=partial(GLib.idle_add, self.gui.CurrentEventProgressBar.set_fraction)
+                    )
 
-            for frame_ind, (event, _) in enumerate(zip(flat_events, self.Camera.capture_continuous(seq_stream, format='jpeg', burst=True, bayer=False))):
-                print(f"Captured frame {frame_ind}!")
-                print(f"stream_size: {seq_stream.tell()}")
-                seq_stream.truncate()
-                seq_stream.seek(0)
-                if event.capture:
-                    buffer_queue.put_nowait((seq_stream.getvalue(), event))
-                    print("Put Buffer on Queue!\n")
+                    if stop_event.is_set():
+                        print("Received stop!")
+                        break
+
                 else:
-                    print("Skipped saving...\n")
+                    flat_events = group_or_wait
 
-                if stop_event.is_set():
-                    print("Received stop!")
-                    break
+                    # This will pre-program the pigpio with the waveforms for our LEDs
+                    # it will also update the LEDs fields withe wave id
+                    self.GPIO.load_event_led_wave_ids(flat_events)
 
-            print("RunProgram Finished!!")
-            # rprint(self.Camera.get_camera_props())
+                    expected_num_frames = len(flat_events)
 
-            num_captured_frames = frame_ind + 1
-            if expected_num_frames != num_captured_frames:
-                print(f"WARNING: We did not receive the expected number of frames!!  num_frames: {num_captured_frames}  expected: {expected_num_frames}")
-            else:
-                print(f"RunProgram Captured {num_captured_frames} frames!!")
+                    # rprint(self.Camera.get_camera_props())
+                    start_fstrobe = self.GPIO.get_num_fstrobes()
+                    capture_busy_event = self.GPIO.get_capture_busy_event()
+                    bayer = False
+                    quality = 85
+                    for frame_ind, (event, _) in enumerate(zip(flat_events, self.Camera.capture_continuous(seq_stream, format='jpeg', burst=True, bayer=bayer, thumbnail=None, quality=quality))):
+                        # print(f"stream_size: {seq_stream.tell()}")
+                        # stream_size = seq_stream.tell()
+                        # seq_stream.seek(0)
+
+                        # if event.capture:
+                        #     buffer_queue.put_nowait((seq_stream.read1(stream_size), event))
+                        #     seq_stream.seek(0)
+                        #     print(f"Received frame {frame_ind} for event '{event.name}'  capture: {event.capture}  buf size: {stream_size}")
+                        self.GPIO.camera_trigger()
+                        seq_stream.truncate()
+                        stream_size = seq_stream.tell()
+                        seq_stream.seek(0)
+
+                        if event.capture:
+                            buffer_queue.put_nowait((seq_stream.getvalue(), event))
+                            print(f"Received frame {frame_ind} for event '{event.name}'  capture: {event.capture}  buf size: {stream_size}")
+                        elif frame_ind % 10 == 0:
+                            print(f"Received frame {frame_ind} for event '{event.name}'  capture: {event.capture}")
+
+                        if stop_event.is_set():
+                            print("Received stop!")
+                            break
+
+                        self.GPIO.debug_trigger()
+
+                    end_fstrobe = self.GPIO.get_num_fstrobes()
+
+                    print("Event Group Finished")
+                    # rprint(self.Camera.get_camera_props())
+                    # buffer_queue.put_nowait((None,None))
+
+                    num_captured_frames = frame_ind + 1
+                    if expected_num_frames != num_captured_frames:
+                        print(f"WARNING: We did not receive the expected number of frames!!  num_frames: {num_captured_frames}  expected: {expected_num_frames}")
+                    else:
+                        print(f"Event Group Captured {num_captured_frames} frames!!")
+
+                    num_fstrobe = end_fstrobe - start_fstrobe
+                    if num_fstrobe != num_captured_frames:
+                        print(f"WARNING: We did not receive all of the frames actually captured!!  num_fstrobe: {num_fstrobe}  expected: {expected_num_frames}")
+
+            print("RunProgram Finished!")
 
         except Exception as e:
             tb = "".join(traceback.format_exception(type(e), e, e.__traceback__))
@@ -278,6 +344,7 @@ class ZionSession():
             GLib.idle_add(self.gui.cameraPreviewWrapper.clear_image)
             GLib.idle_add(partial(self.gui.handlers._update_camera_preview, force=True))
             GLib.idle_add(self.gui.runProgramButton.set_sensitive, True)
+            GLib.idle_add(self.gui.stopProgramButton.set_sensitive, False)
             GLib.idle_add(self.gui.blueSwitch.set_sensitive, True)
             GLib.idle_add(self.gui.orangeSwitch.set_sensitive, True)
             GLib.idle_add(self.gui.uvSwitch.set_sensitive, True)
@@ -307,5 +374,4 @@ class ZionSession():
             t_path = self.update_last_capture_path
             self.update_last_capture_path = None
             self.gui.cameraPreviewWrapper.image_path = t_path
-            print(f"Done!")
         # self.gui.cameraPreview.get_parent().queue_draw()
