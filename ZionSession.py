@@ -216,6 +216,10 @@ class ZionSession():
                 f"   # expected frames: {len(list(filter(attrgetter('capture'), all_flat_events)))}"
             )
 
+            # Reset progress bars
+            GLib.idle_add(self.gui.ProtocolProgressBar.set_fraction, 0.0)
+            GLib.idle_add(self.gui.CurrentEventProgressBar.set_fraction, 0.0)
+
             # rprint(self.Camera.get_camera_props(props=['exposure_speed', 'shutter_speed', 'framerate']))
 
             # Generate groups of events which are seperated by the special wait events in our flat events list
@@ -341,8 +345,8 @@ class ZionSession():
             if self.buffer_thread.is_alive():
                 print("WARNING: buffer_thread is still alive!!!")
 
-            GLib.idle_add(self.gui.ProtocolProgressBar.set_fraction, 0.0)
-            GLib.idle_add(self.gui.CurrentEventProgressBar.set_fraction, 0.0)
+            GLib.idle_add(self.gui.ProtocolProgressBar.set_fraction, 1.0)
+            GLib.idle_add(self.gui.CurrentEventProgressBar.set_fraction, 1.0)
             GLib.idle_add(self.gui.cameraPreviewWrapper.clear_image)
             GLib.idle_add(partial(self.gui.handlers._update_camera_preview, force=True))
             GLib.idle_add(self.gui.runProgramButton.set_sensitive, True)
