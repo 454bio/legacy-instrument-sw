@@ -11,6 +11,11 @@ from functools import partial
 from queue import Queue
 from fractions import Fraction
 
+try:
+    from rich import print as rprint
+except:
+    rprint = print
+
 import gi
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk, GLib
@@ -202,7 +207,6 @@ class ZionSession():
         # Load up the shared queue for the fstrobe callback with the ids
         # Check if the shared queue is empty at the end?
         # Do I unroll _all_ the events?
-        # from rich import print as rprint
 
         try:
             self.TimeOfLife = time.time()
@@ -215,7 +219,10 @@ class ZionSession():
                 f"   # Events and Groups: {len(events)}"
                 f"   # expected frames: {len(list(filter(attrgetter('capture'), all_flat_events)))}"
             )
-
+            # rprint("[bold yellow]Events[/bold yellow]")
+            # rprint(events)
+            # rprint("[bold yellow]Flat Events[/bold yellow]")
+            # rprint(all_flat_events)
             # Reset progress bars
             GLib.idle_add(self.gui.ProtocolProgressBar.set_fraction, 0.0)
             GLib.idle_add(self.gui.CurrentEventProgressBar.set_fraction, 0.0)
@@ -236,6 +243,11 @@ class ZionSession():
                 else:
                     events_group.append(event)
 
+            # Need to make sure to add the last group if the last event isn't a wait
+            if events_group:
+                grouped_flat_events.append(events_group)
+
+            # rprint("[bold yellow]Grouped Flat Events[/bold yellow]")
             # rprint(grouped_flat_events)
 
             # Pre-allocate enough space

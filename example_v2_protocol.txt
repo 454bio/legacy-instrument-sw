@@ -9,15 +9,15 @@
   "red_gain": 1.0,
   "blue_gain": 1.0,
   "exposure_mode": "off",
-  "exposure_speed": 249353,
-  "shutter_speed": 249353,
+  "exposure_speed": 249982,
+  "shutter_speed": 249982,
   "exposure_compensation": 0,
   "iso": 0,
   "image_denoise": false,
   "video_denoise": false,
   "analog_gain": 8.0,
   "digital_gain": 1.0,
-  "framerate": 4.0,
+  "framerate": 2.0,
   "vflip": true,
   "hflip": false,
   "comment": ""
@@ -77,11 +77,17 @@
      ]
     },
     {
-     "is_event": false,
+     "is_event": true,
      "name": "Wait",
      "cycles": 1,
      "requested_cycle_time": 600000,
-     "entries": []
+     "capture": false,
+     "group": "",
+     "leds": {
+      "UV": 0,
+      "BLUE": 0,
+      "ORANGE": 0
+     }
     },
     {
      "is_event": false,
