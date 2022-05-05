@@ -144,8 +144,8 @@ class ZionProtocolTree():
                     renderer = Gtk.CellRendererToggle()
                 else:
                     renderer = Gtk.CellRendererText()
-                    # Center Align text (not the name though)
-                    renderer.set_property("xalign", 0.5)
+                    # If you want to center align text
+                    # renderer.set_property("xalign", 0.5)
 
                 column = Gtk.TreeViewColumn(column_title, renderer)
 

@@ -59,6 +59,8 @@ LED_GPIOS = {
     ZionLEDColor.ORANGE: [20], #pin 38
 }
 
+# TODO: Need to add assert that the keys of LED_GPIOS are ZionLEDColor
+
 # 1 GPIO for camera capture timing testing:
 CAMERA_TRIGGER = 21 #pin 40
 
