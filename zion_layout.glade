@@ -1169,6 +1169,7 @@
                                                             <child>
                                                             <object class="GtkEntry" id="framerate_entry">
                                                             <property name="visible">True</property>
+                                                            <property name="sensitive">False</property>
                                                             <property name="can_focus">True</property>
                                                             <property name="valign">center</property>
                                                             <property name="width_chars">6</property>
@@ -1613,6 +1614,7 @@
                     <child>
                       <object class="GtkEntry" id="framerate_entry1">
                         <property name="visible">True</property>
+                        <property name="sensitive">False</property>
                         <property name="can_focus">True</property>
                         <property name="valign">center</property>
                         <property name="width_chars">6</property>
