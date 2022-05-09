@@ -21,6 +21,8 @@ from ZionLED import (
     ZionLEDColor,
 )
 
+from ZionGPIO import LED_GPIOS
+
 import gi
 gi.require_version('Gtk', '3.0')
 from gi.repository import (
@@ -158,12 +160,13 @@ class ZionProtocolTree():
 
             elif ftype is ZionLEDs:
                 for led_color in ZionLEDColor:  # Actually a dict of led name to title of strings
-                    renderer = Gtk.CellRendererText()
-                    column = Gtk.TreeViewColumn(column_title.replace("$LED_NAME$", led_color.name), renderer)
-                    column.set_cell_data_func(renderer, self.get_event_entry_led, led_color)
-                    self._treeview.append_column(column)
-                    renderer.set_property("editable", True)
-                    renderer.connect("edited", partial(self._led_cell_edited, field, led_color))
+                    if LED_GPIOS[led_color]:
+                        renderer = Gtk.CellRendererText()
+                        column = Gtk.TreeViewColumn(column_title.replace("$LED_NAME$", led_color.name), renderer)
+                        column.set_cell_data_func(renderer, self.get_event_entry_led, led_color)
+                        self._treeview.append_column(column)
+                        renderer.set_property("editable", True)
+                        renderer.connect("edited", partial(self._led_cell_edited, field, led_color))
             else:
                 raise RuntimeError(f"Unrecognized field type for field {field}: {ftype}")
 

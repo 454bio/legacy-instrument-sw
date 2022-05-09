@@ -27,15 +27,15 @@ GpioPins = (
     (7,    True,  '1W'  ), #Pin for 1-wire interface, used for TEMP1W (setup in boot config)
     (29,   True,  None  ),
     (31,   True,  None  ),
-    (26,   False, None  ), #was SPI
-    (24,   False, None  ), #was SPI
-    (21,   False, None  ), #was SPI
+    (26,   False, None  ), #was SPI, used for bluetooth button now
+    (24,   False, None  ), #was SPI, used for fan now
+    (21,   False, None  ), #was SPI, used for fan now
     (19,   False, 'SPI' ), #used for case leds
     (23,   False, 'SPI' ), #used for case leds
     (32,   True,  None  ),
     (33,   True,  None  ),
-    (8,    False, None  ), #also used for UART TX
-    (10,   False, None  ), #also used for UART RX
+    (8,    True, None  ), #also used for UART TX
+    (10,   True, None  ), #also used for UART RX
     (36,   True,  None  ),
     (11,   True,  None  ),
     (12,   True,  None  ),
@@ -58,11 +58,11 @@ LED_GPIOS = {
     ZionLEDColor.UV: [16], #pin 36
     ZionLEDColor.BLUE: [17], #pin 11
     ZionLEDColor.ORANGE: [18], #pin 12
-    ZionLEDColor.COLOR3: [19], #pin 35
-    ZionLEDColor.COLOR4: [20], #pin 38
-    ZionLEDColor.COLOR5: [21], #pin 40
-    ZionLEDColor.COLOR6: [22], #pin 15
-    ZionLEDColor.COLOR7: [23] #pin 16
+    ZionLEDColor.COLOR3: [], #[19], #pin 35
+    ZionLEDColor.COLOR4: [], #[20], #pin 38
+    ZionLEDColor.COLOR5: [], #[21], #pin 40
+    ZionLEDColor.COLOR6: [], #[22], #pin 15
+    ZionLEDColor.COLOR7: [], #[23] #pin 16
 }
 
 #2 GPIOs for testing camera sync signals:
