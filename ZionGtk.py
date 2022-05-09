@@ -82,6 +82,7 @@ class ZionGUI():
         self.blueManualEntry = self.builder.get_object("blue_led_manual_entry")
         self.orangeManualEntry = self.builder.get_object("orange_led_manual_entry")
         self.uvManualEntry = self.builder.get_object("uv_led_manual_entry")
+        #TODO: blue and orange named switches
         self.blueSwitch = self.builder.get_object("blue_led_switch")
         self.orangeSwitch = self.builder.get_object("orange_led_switch")
         self.uvSwitch = self.builder.get_object("uv_led_switch")
