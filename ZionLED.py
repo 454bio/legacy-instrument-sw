@@ -14,6 +14,12 @@ class ZionLEDColor(IntEnum):
     UV = 0
     BLUE = 1
     ORANGE = 2
+    # TODO define color names here?
+    COLOR3 = 3
+    COLOR4 = 4
+    COLOR5 = 5
+    COLOR6 = 6
+    COLOR7 = 7
 
 ZionLEDsKT = TypeVar('ZionLEDsKT', str, int, ZionLEDColor)
 ZionLEDsVT = int

@@ -19,65 +19,81 @@ from ZionLED import ZionLEDs, ZionLEDColor
 # multiprocessing.set_start_method('spawn')
 
 # Gpio Pin Lookup Table. Index is GPIO #, format is (pin #, enabled, alternate function)
-# (can remove/trim if memory is an issue)
 GpioPins = (
     (None, None,  None  ), #No GPIO 0
     (None, None,  None  ), #No GPIO 1
     (3,    False, 'I2C' ),
     (5,    False, 'I2C' ),
-    (7,    True,  None  ), #Default pin for 1-wire interface
-    (29,   True,  '1W'  ), #Using this pin for 1-wire instead (GPIO5 referenced in boot config)
+    (7,    True,  '1W'  ), #Pin for 1-wire interface, used for TEMP1W (setup in boot config)
+    (29,   True,  None  ),
     (31,   True,  None  ),
-    (26,   False, 'SPI' ), #used for TFT
-    (24,   False, 'SPI' ), #used for TFT
-    (21,   False, 'SPI' ), #used for TFT
-    (19,   False, 'SPI' ), #used for TFT
-    (23,   False, 'SPI' ), #used for TFT
+    (26,   False, None  ), #was SPI
+    (24,   False, None  ), #was SPI
+    (21,   False, None  ), #was SPI
+    (19,   False, 'SPI' ), #used for case leds
+    (23,   False, 'SPI' ), #used for case leds
     (32,   True,  None  ),
     (33,   True,  None  ),
-    (8,    False, 'UART'),
-    (10,   False, 'UART'),
+    (8,    False, None  ), #also used for UART TX
+    (10,   False, None  ), #also used for UART RX
     (36,   True,  None  ),
     (11,   True,  None  ),
-    (12,   True,  'PCM' ),
-    (35,   True,  'PCM' ),
-    (38,   True,  'PCM' ),
-    (40,   True,  'PCM' ),
+    (12,   True,  None  ),
+    (35,   True,  None  ),
+    (38,   True,  None  ),
+    (40,   True,  None  ),
     (15,   True,  None  ),
     (16,   True,  None  ),
     (18,   True,  None  ),
     (22,   True,  None  ),
     (37,   True,  None  ),
-    (13,   True,  None  ))  # GPIO 27
+    (13,   True,  None  ))
 
 # Now define GPIO uses for Zion:
 
 # 2 GPIOs for each LED:
 LED_GPIOS = {
-    ZionLEDColor.UV: [12], #pin 32
-    ZionLEDColor.BLUE: [16], #pins 36
-    ZionLEDColor.ORANGE: [20], #pin 38
+    # TODO: update color names here and/or assign multiple GPIOs to colors
+    # TODO: Need to add assert that the keys of LED_GPIOS are ZionLEDColor
+    ZionLEDColor.UV: [16], #pin 36
+    ZionLEDColor.BLUE: [17], #pin 11
+    ZionLEDColor.ORANGE: [18], #pin 12
+    ZionLEDColor.COLOR3: [19], #pin 35
+    ZionLEDColor.COLOR4: [20], #pin 38
+    ZionLEDColor.COLOR5: [21], #pin 40
+    ZionLEDColor.COLOR6: [22], #pin 15
+    ZionLEDColor.COLOR7: [23] #pin 16
 }
 
-# TODO: Need to add assert that the keys of LED_GPIOS are ZionLEDColor
+#2 GPIOs for testing camera sync signals:
+FSTROBE = 5 #pin 29
+XVS = 6 #pin 31
 
-# 1 GPIO for camera capture timing testing:
-CAMERA_TRIGGER = 21 #pin 40
+# 2 GPIOs for camera capture timing testing & debugging:
+# TODO if we ever use UART, re-assign these
+CAMERA_TRIGGER = 14 #pin 8 (TX)
+DEBUG_TRIGGER = 15 # pin 10 (RX)
 
 #1 GPIO for heat control:
 TEMP_OUTPUT = 13 #pin 33
+#1 GPIOs for temp sensing (to use 1-wire):
+TEMP_INPUT_1W = 4 #pin 7 (configured in boot config file)
 
-# 1 GPIOs for temp sensing (to use 1-wire):
-TEMP_INPUT_1W = 5 #pin 29
+#1 GPIO for bluetooth pairing button:
+# TODO double check where this is set up (eg rc local?)
+BT_BUTTON = 7 #pin 26 (configured in OS)
+#SPI clk and mosi for case LEDS (configued in OS):
+CASE_LEDS_MOSI = 10 #pin 19 
+CASE_LEDS_CLK = 11 #pin 23
 
-#1 GPIO for UV safety switch:
-#TODO
+#HW ID pins (MSb first):
+# TODO should this be LSb first?
+HW_ID = (27, 26, 25, 24) #pins (13, 37, 22, 18)
 
-#2 GPIOs for testing camera sync signals:
-FSTROBE = 23 #pin 16
-XVS = 24 #pin 18
-
-DEBUG_TRIGGER = 27 # pin 13
+#Fan stuff:
+FAN_ON = 8 #pin 24
+FAN_PWM = 12 #pin 32
+FAN_TACH = 9 #pin 21
 
 class ZionPigpioProcess(multiprocessing.Process):
     def __init__(self, xvs_delay_ms: float = 0.0, led_gpios=LED_GPIOS,
