@@ -327,6 +327,11 @@ class ZionProtocolTree():
         cell_value = getattr(event, event_field, None)
 
         self._set_cell_value_visibility(cell, 'text', cell_value)
+        if event_field == "cycle_time":
+            if getattr(event, "_additional_cycle_time", 0):
+                cell.set_property('weight', 1000)
+            else:
+                cell.set_property('weight', 400)
 
     def get_event_entry_bool(self, treeviewcolumn, cell, model, iter_, event_field):
         event = model[iter_][0]
