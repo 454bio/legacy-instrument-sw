@@ -53,16 +53,16 @@ GpioPins = (
 
 # 2 GPIOs for each LED:
 LED_GPIOS = {
-    # TODO: update color names here and/or assign multiple GPIOs to colors
     # TODO: Need to add assert that the keys of LED_GPIOS are ZionLEDColor
-    ZionLEDColor.UV: [16], #pin 36
-    ZionLEDColor.BLUE: [17], #pin 11
-    ZionLEDColor.ORANGE: [18], #pin 12
-    ZionLEDColor.COLOR3: [], #[19], #pin 35
-    ZionLEDColor.COLOR4: [], #[20], #pin 38
-    ZionLEDColor.COLOR5: [], #[21], #pin 40
-    ZionLEDColor.COLOR6: [], #[22], #pin 15
-    ZionLEDColor.COLOR7: [], #[23] #pin 16
+    ZionLEDColor.UV: [16,17,20,21], #LED_ENs 0,1,4,5 hw pins 36,11,38,40
+    ZionLEDColor.BLUE: [22,23], #LED_ENs 6,7 hw pins 15,16
+    ZionLEDColor.ORANGE: [18,19], #LED_ENs 2,3 hw pins 12,35
+    # TODO: update color names here and/or assign multiple GPIOs to colors
+    ZionLEDColor.COLOR3: [],
+    ZionLEDColor.COLOR4: [],
+    ZionLEDColor.COLOR5: [],
+    ZionLEDColor.COLOR6: [],
+    ZionLEDColor.COLOR7: [],
 }
 
 #2 GPIOs for testing camera sync signals:
