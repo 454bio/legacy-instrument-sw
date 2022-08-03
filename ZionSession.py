@@ -291,7 +291,7 @@ class ZionSession():
                     # rprint(self.Camera.get_camera_props())
                     start_fstrobe = self.GPIO.get_num_fstrobes()
                     capture_busy_event = self.GPIO.get_capture_busy_event()
-                    bayer = False
+                    bayer = True
                     quality = 85
                     for frame_ind, (event, _) in enumerate(zip(flat_events, self.Camera.capture_continuous(seq_stream, format='jpeg', burst=True, bayer=bayer, thumbnail=None, quality=quality))):
                         # print(f"stream_size: {seq_stream.tell()}")
