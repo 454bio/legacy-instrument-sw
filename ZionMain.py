@@ -24,7 +24,7 @@ Binning = False
 #Default Values:
 Initial_Values = ZionCameraParameters(
     brightness=    50,
-    contrast=      0,
+    contrast=      -2,
     saturation=    0,
     sharpness=     0,
     awb_mode=      'off',
