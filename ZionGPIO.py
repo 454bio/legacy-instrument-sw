@@ -479,7 +479,7 @@ class ZionGPIO():
         else:
             xvs_delay = 86.8422816
 
-        self.pigpio_process = ZionPigpioProcess(led_gpios=led_gpios, temp_out_gpio=temp_out_gpio, temp_in_gpio=temp_in_gpio, camera_trigger_gpio=camera_trigger_gpio, xvs_delay_ms=xvs_delay)
+        self.pigpio_process = ZionPigpioProcess(led_gpios=led_gpios, temp_out_gpio=temp_out_gpio, temp_in_gpio=temp_in_gpio, camera_trigger_gpio=camera_trigger_gpio, xvs_delay_ms=(1000/self.parent.Camera.framerate)+xvs_delay-(self.parent.Camera.exposure_speed/1000))
         self.pigpio_process.start()
 
     def camera_trigger(self):
