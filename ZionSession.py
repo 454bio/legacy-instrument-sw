@@ -80,18 +80,20 @@ class ZionSession():
 
         if protocol:
             filename += '_'+str(self.ProtocolCount).zfill(ZionSession.protocolCountDigits)+'A_'+str(self.captureCountThisProtocol).zfill(ZionSession.captureCountPerProtocolDigits)+'_'+group
+            bayer = True
         else:
             filename += '_'+str(self.ProtocolCount).zfill(ZionSession.protocolCountDigits)+'M_'+str(self.captureCountThisProtocol).zfill(ZionSession.captureCountPerProtocolDigits)
+            bayer = False
         
         timestamp_ms = round(1000*(time.time()-self.TimeOfLife))
         filename += '_'+str(timestamp_ms).zfill(9)
-        filename = filename+'_'+suffix if not protocol else filename
+        filename = filename+'_'+suffix if ( (not protocol) and (suffix) ) else filename
         if verbose:
             GLib.idle_add(self.gui.printToLog, f"Writing image to file {filename}.jpg")
 
         # ~ try:
         self.SplitterCount += 1
-        self.Camera.capture(filename, cropping=cropping, splitter=self.SplitterCount % 4)
+        self.Camera.capture(filename, cropping=cropping, splitter=self.SplitterCount % 4, bayer=bayer)
         ret = 0
         if not protocol:
             self.SaveParameterFile(comment, False, timestamp_ms)
@@ -119,7 +121,7 @@ class ZionSession():
         else:
             filename = os.path.join(self.Dir, str(self.CaptureCount).zfill(ZionSession.captureCountDigits)+'_'+str(self.ProtocolCount).zfill(ZionSession.protocolCountDigits)+'M_'+str(self.captureCountThisProtocol).zfill(ZionSession.captureCountPerProtocolDigits))
             if timestamp > 0:
-                    filename += '_'+str(timestamp)
+                    filename += '_'+str(timestamp).zfill(9)
 
         params.save_to_file(filename)
 
