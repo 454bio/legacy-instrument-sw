@@ -301,12 +301,12 @@ class ZionPigpioProcess(multiprocessing.Process):
                 for led_pin in LED_GPIOS[color]:
                     gpio_bits |= 1<<led_pin
                     
-                for idx in range(len(timings)):
-                    print(f"Appending pulse -- bits: {hex(gpio_bits)}  color: {color.name}  level: {int(levels[idx])}  timing: {int(timings[idx]/1000)}")
-                    if levels[idx]: # actually send pulse
-                        led_wf.append(pigpio.pulse(gpio_bits, 0, int(timings[idx])))
+                for timing, level in zip(timings, levels):
+                    print(f"Appending pulse -- bits: {hex(gpio_bits)}  color: {color.name}  level: {int(level)}  timing: {int(timing/1000)}")
+                    if level: # actually send pulse
+                        led_wf.append(pigpio.pulse(gpio_bits, 0, int(timing)))
                     else: #actually send delay
-                        led_wf.append(pigpio.pulse(0, gpio_bits, int(timings[idx])))
+                        led_wf.append(pigpio.pulse(0, gpio_bits, int(timing)))
                         
                 pi.wave_add_generic(led_wf)
                 added_wf = True
@@ -574,46 +574,25 @@ class ZionGPIO():
         fp_us = int(1000000/self.parent.Camera.framerate)
         xvs_delay_us = fp_us + readout_us - exp_time_us
         
-        timings = []
-        levels = []
-        
         if pw_us < exp_time_us-readout_us:
             #off for xvs_delay, on for pw, off for fp-(pw+xvs_delay)
-            timings.append(xvs_delay_us)
-            levels.append(False)
-            
-            timings.append(pw_us)
-            levels.append(True)
-            
-            timings.append(exp_time_us - readout_us - pw_us)
-            levels.append(False) 
-            
+            timings = [xvs_delay_us, pw_us, exp_time_us - readout_us - pw_us]
+            levels = [False, True, False]
+
         elif exp_time_us-readout_us <= pw_us and pw_us < exp_time_us:
             #on for exp_time-pw, off for xvs_delay-exptime+pw, on for fp - xvs_delay
-            timings.append(readout_us - exp_time_us + pw_us)
-            levels.append(True)
-            
-            timings.append(fp_us - pw_us)
-            levels.append(False)
-            
-            timings.append(exp_time_us - readout_us)
-            levels.append(True) 
-            
+            timings = [readout_us - exp_time_us + pw_us, fp_us - pw_us, exp_time_us - readout_us]
+            levels = [True, False, True]
+
         elif exp_time_us <= pw_us and pw_us < fp_us:
             #on until pw+xvs_delay-fp, off for fp-pw, on for fp-xvs_delay
-            timings.append(pw_us + readout_us - exp_time_us)
-            levels.append(True)
-            
-            timings.append(fp_us - pw_us)
-            levels.append(False)
-            
-            timings.append(exp_time_us - readout_us)
-            levels.append(True) 
-            
+            timings = [pw_us + readout_us - exp_time_us, fp_us - pw_us, exp_time_us - readout_us]
+            levels = [True, False, True]
+
         else: # pw_us >= fp_us
-            timings.append(fp_us)
-            levels.append(True)
-        
+            timings = [fp_us]
+            levels = [True]
+
         self.pigpio_process.enable_toggle_led(color, amt, timings, levels)
         if verbose:
             self.parent.gui.printToLog(f"{color.name} set to {amt} (with delay set to {delay_us} uS")
