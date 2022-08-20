@@ -14,6 +14,7 @@ from PIL import Image
 from time import sleep
 import time
 import os
+import math
 from gi.repository import GLib
 
 MMAL_PARAMETER_ANALOG_GAIN = mmal.MMAL_PARAMETER_GROUP_CAMERA + 0x59
@@ -152,7 +153,7 @@ class ZionCamera(PiCamera):
 		print(self.get_camera_props())
 
 		# Set the max pulse width from the framerate and readout time
-		ZionLEDs.set_max_pulsetime(int(1000 / self.framerate - self.readout_ms))
+		ZionLEDs.set_max_pulsetime(math.floor(1000 / self.framerate))
 
 		# TODO: check for zero for Jose
 		
