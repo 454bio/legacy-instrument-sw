@@ -258,7 +258,7 @@ class ZionPigpioProcess(multiprocessing.Process):
         if self.mp_namespace.toggle_led_wave_id > -1:
             self.pi.wave_send_once(self.mp_namespace.toggle_led_wave_id)
 
-    def enable_toggle_led(self, color : ZionLEDColor, amt : int, timings : list, levels : list):
+    def enable_toggle_led(self, color : ZionLEDColor, amt : int, timings : list=None, levels : list=None):
         """ Will send the color/pulse_width to _toggle_led_thread so it can add it to pigpio. """
         self.toggle_led_queue.put((color, amt, timings, levels))
 
@@ -360,9 +360,7 @@ class ZionPigpioProcess(multiprocessing.Process):
                 print(f"ERROR: {pulse_width} is not a valid pulse width. Valid range is 0-{toggle_leds_pw.max_pulsetime}!")
                 continue
 
-            #added_wf = self._add_led_waveform(led=toggle_leds_pw, pi=pi, delay=xvs_delay if delay is None else delay)
-            added_wf = self._add_complex_led_waveform(led=toggle_leds_pw, pi=pi, timings=timings, levels=levels)
-
+            added_wf = self._add_complex_led_waveform(led=toggle_leds_pw, pi=pi, timings=timings, levels=levels) if pulse_width>0 else self._add_led_waveform(led=toggle_leds_pw, pi=pi)
             old_wave_id = mp_namespace.toggle_led_wave_id
 
             if added_wf:
