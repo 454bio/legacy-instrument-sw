@@ -14,7 +14,7 @@ from ZionErrors import ZionInvalidLEDColor, ZionInvalidLEDPulsetime
 
 import pigpio
 from ZionEvents import ZionEvent
-from ZionLED import ZionLEDs, ZionLEDColor
+from ZionLED import ZionLEDs, ZionLEDColor, ZionLEDTimings
 
 # multiprocessing.set_start_method('spawn')
 
@@ -274,10 +274,10 @@ class ZionPigpioProcess(multiprocessing.Process):
                     gpio_bits |= 1<<led_pin
 
                 if delay:
-                    print(f"Appending pulse -- bits: {hex(gpio_bits)}  color: {color.name}  pw: {pw}  delay: {delay}")
+                    print(f"Appending pulse -- bits: {hex(gpio_bits)}  color: {color.name}  pw: {pw} (ms)  delay: {delay} (us)")
                     led_wf.append(pigpio.pulse(0, 0, delay))
                 else:
-                    print(f"Appending pulse -- bits: {hex(gpio_bits)}  color: {color.name}  pw: {pw}")
+                    print(f"Appending pulse -- bits: {hex(gpio_bits)}  color: {color.name}  pw: {pw} (ms)")
 
                 led_wf.append(pigpio.pulse(gpio_bits, 0, pw * 1000))
                 led_wf.append(pigpio.pulse(0, gpio_bits, 0))
@@ -287,27 +287,27 @@ class ZionPigpioProcess(multiprocessing.Process):
         return added_wf
         
     @staticmethod
-    def _add_complex_led_waveform(led : ZionLEDs, pi : pigpio.pi, timings : list, levels : list) -> bool:
+    def _add_complex_led_waveform(led : ZionLEDs, pi : pigpio.pi, delay : int = 0) -> bool:
         """ Adds COMPLEX waveforms for the pulsewidths/colors in led. Returns True if a wave was added.
             timings is a tuple of time amounts in microseconds, levels is a tuple of corresopnding high/low values."""
+
         added_wf = False
-        
-        #TODO: check that neither timings nor levels is empty, that both are same length, and levels contains only bools
-        
-        for color, pw in led.items():
-            if pw > 0:
+
+        for color, pw_timings_tpl in led.items():
+            if pw_timings_tpl is not None:
                 led_wf = []
                 gpio_bits = 0
                 for led_pin in LED_GPIOS[color]:
                     gpio_bits |= 1<<led_pin
                     
-                for timing, level in zip(timings, levels):
+                for timing, level in zip(*pw_timings_tpl):
                     print(f"Appending pulse -- bits: {hex(gpio_bits)}  color: {color.name}  level: {int(level)}  timing: {int(timing/1000)}")
                     if level: # actually send pulse
                         led_wf.append(pigpio.pulse(gpio_bits, 0, int(timing)))
                     else: #actually send delay
                         led_wf.append(pigpio.pulse(0, gpio_bits, int(timing)))
-                        
+
+                # ~ #led_wf.append(pigpio.pulse(0, gpio_bits, 0))
                 pi.wave_add_generic(led_wf)
                 added_wf = True
 
@@ -337,7 +337,7 @@ class ZionPigpioProcess(multiprocessing.Process):
 
     def _toggle_led_thread(self, mp_namespace : Namespace, toggle_led_queue : multiprocessing.Queue, pi : pigpio.pi):
         """ Add a wave_id for the given color and pulsewidth. """
-        toggle_leds_pw = ZionLEDs()
+        toggle_leds_pw = ZionLEDTimings()
         xvs_delay = mp_namespace.xvs_delay
 
         while True:
@@ -346,13 +346,12 @@ class ZionPigpioProcess(multiprocessing.Process):
                 print("toggle_led_thread -- received stop signal!")
                 break
 
-            ##TODO: re-enable printing info from toggle_led_thread
-            #print(f"toggle_led_thread -- Received command -- led: {led}  pulse_width: {pulse_width}")
+            print(f"toggle_led_thread -- Received command -- led: {led}  pulse_width: {pulse_width}")
             
             ##TODO: update the checking necessary...
             try:
-                toggle_leds_pw[led] = pulse_width
-                ##toggle_leds_pw.set_pulsetime(led, pulse_width)
+                #toggle_leds_pw[led] = pulse_width
+                toggle_leds_pw.set_pulsetimings(led, (timings, levels))
             except ZionInvalidLEDColor:
                 print(f"ERROR: {led} is not a valid LED color!")
                 continue
@@ -360,7 +359,7 @@ class ZionPigpioProcess(multiprocessing.Process):
                 print(f"ERROR: {pulse_width} is not a valid pulse width. Valid range is 0-{toggle_leds_pw.max_pulsetime}!")
                 continue
 
-            added_wf = self._add_complex_led_waveform(led=toggle_leds_pw, pi=pi, timings=timings, levels=levels) if pulse_width>0 else self._add_led_waveform(led=toggle_leds_pw, pi=pi)
+            added_wf = self._add_complex_led_waveform(led=toggle_leds_pw, pi=pi) #delays are now embedded in toggle_leds_pw
             old_wave_id = mp_namespace.toggle_led_wave_id
 
             if added_wf:
@@ -562,38 +561,44 @@ class ZionGPIO():
     #         self.enable_led(color, 0, verbose=verbose, update=False)
     #     self.update_pwm_settings()
 
-    def enable_toggle_led(self, color : ZionLEDColor, amt : int, verbose : bool = False):
-        print(f"\nSetting {color.name} to {amt}")
-        #amt is pw in milliseconds
-        
+    def enable_toggle_led(self, color : ZionLEDColor, pulse_width : int, verbose : bool = False):
+        print(f"\nSetting {color.name} to {pulse_width}")
+        #pulse width is in milliseconds
+
         exp_time_us = self.parent.Camera.exposure_speed
-        pw_us = 1000*amt
+        pw_us = 1000*pulse_width
         readout_us = 1000*self.parent.Camera.readout_ms
         fp_us = int(1000000/self.parent.Camera.framerate)
         xvs_delay_us = fp_us + readout_us - exp_time_us
-        
-        if pw_us < exp_time_us-readout_us:
+
+        #TODO: what about when exposure time is less than readout time?
+
+        if 0 < pw_us and pw_us < exp_time_us-readout_us:
             #off for xvs_delay, on for pw, off for fp-(pw+xvs_delay)
             timings = [xvs_delay_us, pw_us, exp_time_us - readout_us - pw_us]
             levels = [False, True, False]
+            #delay_us = xvs_delay_us
 
-        elif exp_time_us-readout_us <= pw_us and pw_us < exp_time_us:
-            #on for exp_time-pw, off for xvs_delay-exptime+pw, on for fp - xvs_delay
-            timings = [readout_us - exp_time_us + pw_us, fp_us - pw_us, exp_time_us - readout_us]
-            levels = [True, False, True]
-
-        elif exp_time_us <= pw_us and pw_us < fp_us:
+        elif exp_time_us-readout_us <= pw_us and pw_us < fp_us:
             #on until pw+xvs_delay-fp, off for fp-pw, on for fp-xvs_delay
             timings = [pw_us + readout_us - exp_time_us, fp_us - pw_us, exp_time_us - readout_us]
             levels = [True, False, True]
+            #delay_us = fp_us - pw_us
 
-        else: # pw_us >= fp_us
+        elif pw_us >= fp_us:
             timings = [fp_us]
             levels = [True]
+            #delay_us = 0
 
-        self.pigpio_process.enable_toggle_led(color, amt, timings, levels)
+        else: #pw_us<=0
+            timings = [fp_us]
+            levels = [False]
+            #delay_us = 0
+
+        self.pigpio_process.enable_toggle_led(color, pulse_width, timings, levels)
+#        self.pigpio_process.enable_toggle_led(color, pulse_width)
         if verbose:
-            self.parent.gui.printToLog(f"{color.name} set to {amt} (with delay set to {delay_us} uS")
+            self.parent.gui.printToLog(f"{color.name} set to {pulse_width}")
 
     def disable_toggle_led(self, color : ZionLEDColor, verbose : bool = False):
         print(f"\nSetting {color.name} to 0")

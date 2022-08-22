@@ -3,7 +3,7 @@ from fractions import Fraction
 from operator import eq, gt
 from dataclasses import dataclass,  asdict, fields, is_dataclass
 import json
-from ZionLED import ZionLEDs
+from ZionLED import ZionLEDs, ZionLEDTimings
 from picamera import PiCamera, PiRenderer, mmal, mmalobj, exc
 from picamera.array import PiRGBArray
 from picamera.mmalobj import to_rational
@@ -154,6 +154,8 @@ class ZionCamera(PiCamera):
 
 		# Set the max pulse width from the framerate and readout time
 		ZionLEDs.set_max_pulsetime(math.floor(1000 / self.framerate))
+		#TODO: necessary?
+		ZionLEDTimings.set_max_pulsetime(math.floor(1000000 / self.framerate))
 
 		# TODO: check for zero for Jose
 		
