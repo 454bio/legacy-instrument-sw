@@ -602,7 +602,7 @@ class ZionGPIO():
 
     def disable_toggle_led(self, color : ZionLEDColor, verbose : bool = False):
         print(f"\nSetting {color.name} to 0")
-        self.pigpio_process.enable_toggle_led(color, 0)
+        self.pigpio_process.enable_toggle_led(color, 0, [int(1000000/self.parent.Camera.framerate)], [False])
         if verbose:
             self.parent.gui.printToLog(f"{color.name} set to 0")
 
