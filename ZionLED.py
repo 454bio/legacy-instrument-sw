@@ -144,10 +144,8 @@ class ZionLEDTimings(UserDict):
                 raise TypeError(f"pulsetimings must contain 2 lists!")
             if not len(pulsetimings[0]) == len(pulsetimings[1]):
                 raise TypeError(f"Timings and levels must be the same length!")
-
             if any([not isinstance(pl, bool) for pl in pulsetimings[1]]):
                 raise TypeError(f"Levels must contain only bools!")
-
             if any([pt < 0 for pt in pulsetimings[0]]) or any([pt > self.__max_pulsetime for pt in pulsetimings[0]]):
                 raise ZionInvalidLEDPulsetime(f"Pulsetime must be between 0 and {self.__max_pulsetime}")
 
