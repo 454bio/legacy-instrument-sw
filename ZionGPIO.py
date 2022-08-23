@@ -195,7 +195,7 @@ class ZionPigpioProcess(multiprocessing.Process):
     def _cleanup(self):
         """ Cleanup pigpio and signal the child threads to quit """
         self.camera_trigger_event.set()
-        self.toggle_led_queue.put((None, None))
+        self.toggle_led_queue.put((None, None, None, None))
         self.event_led_wave_id_queue.put(None)
         self._fstrobe_cb_handle.cancel()
         self._xvs_cb_handle.cancel()
@@ -300,8 +300,10 @@ class ZionPigpioProcess(multiprocessing.Process):
                 for led_pin in LED_GPIOS[color]:
                     gpio_bits |= 1<<led_pin
                     
+                print_wf_info = any(pw_timings_tpl[1])
                 for timing, level in zip(*pw_timings_tpl):
-                    print(f"Appending pulse -- bits: {hex(gpio_bits)}  color: {color.name}  level: {int(level)}  timing: {int(timing/1000)}")
+                    if print_wf_info:
+                        print(f"Appending pulse -- bits: {hex(gpio_bits)}  color: {color.name}  level: {int(level)}  timing: {int(timing/1000)}")
                     if level: # actually send pulse
                         led_wf.append(pigpio.pulse(gpio_bits, 0, int(timing)))
                     else: #actually send delay

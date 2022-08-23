@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 import os
-
+import time
 import gi
 gi.require_version('Gtk', '3.0')
 gi.require_version('Gst', '1.0')
@@ -229,6 +229,8 @@ class Handlers:
             self._stop_running_program()
 
         self.parent.parent.GPIO.disable_all_leds()
+        # Added following line to resolve stopping toggle led thread too early (TODO: change this to be thread-based?)
+        time.sleep(1)
         GObject.source_remove(self.source_id)
         # ~ GObject.source_remove(self.source_id2)
         Gtk.main_quit(*args)
@@ -515,9 +517,10 @@ class Handlers:
         # pulse_thread.start()
 
     def on_led_off_button_clicked(self, button):
+        # TODO: this should probably call self.parent.parent.GPIO.disable_all_leds() instead
+        self.parent.uvSwitch.set_active(False)
         self.parent.blueSwitch.set_active(False)
         self.parent.orangeSwitch.set_active(False)
-        self.parent.uvSwitch.set_active(False)
 
     #Exposure Stuff
     def on_iso_auto_button(self, button):
