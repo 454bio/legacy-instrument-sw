@@ -154,7 +154,7 @@ class ZionCamera(PiCamera):
 
 		# Set the max pulse width from the framerate and readout time
 		ZionLEDs.set_max_pulsetime(math.floor(1000 / self.framerate))
-		#TODO: necessary?
+		#TODO: merging ZionLEDs and ZionLEDTimings may make this unnecessary
 		ZionLEDTimings.set_max_pulsetime(math.floor(1000000 / self.framerate))
 
 		# TODO: check for zero for Jose
