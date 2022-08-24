@@ -229,7 +229,8 @@ class Handlers:
             self._stop_running_program()
 
         self.parent.parent.GPIO.disable_all_leds()
-        # Added following line to resolve stopping toggle led thread too early (TODO: change this to be thread-based?)
+        # Added following line to resolve stopping toggle led thread too early
+        # TODO: change this? thread-safe?
         time.sleep(1)
         GObject.source_remove(self.source_id)
         # ~ GObject.source_remove(self.source_id2)

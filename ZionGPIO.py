@@ -573,32 +573,30 @@ class ZionGPIO():
         fp_us = int(1000000/self.parent.Camera.framerate)
         xvs_delay_us = fp_us + readout_us - exp_time_us
 
-        #TODO: what about when exposure time is less than readout time?
+        if exp_time_us > readout_us:
+            if 0 < pw_us and pw_us < exp_time_us-readout_us:
+                #off for xvs_delay, on for pw, off for fp-(pw+xvs_delay)
+                timings = [xvs_delay_us, pw_us, exp_time_us - readout_us - pw_us]
+                levels = [False, True, False]
 
-        if 0 < pw_us and pw_us < exp_time_us-readout_us:
-            #off for xvs_delay, on for pw, off for fp-(pw+xvs_delay)
-            timings = [xvs_delay_us, pw_us, exp_time_us - readout_us - pw_us]
-            levels = [False, True, False]
-            #delay_us = xvs_delay_us
+            elif exp_time_us-readout_us <= pw_us and pw_us < fp_us:
+                #on until pw+xvs_delay-fp, off for fp-pw, on for fp-xvs_delay
+                timings = [pw_us + readout_us - exp_time_us, fp_us - pw_us, exp_time_us - readout_us]
+                levels = [True, False, True]
 
-        elif exp_time_us-readout_us <= pw_us and pw_us < fp_us:
-            #on until pw+xvs_delay-fp, off for fp-pw, on for fp-xvs_delay
-            timings = [pw_us + readout_us - exp_time_us, fp_us - pw_us, exp_time_us - readout_us]
-            levels = [True, False, True]
-            #delay_us = fp_us - pw_us
+            elif pw_us >= fp_us:
+                timings = [fp_us]
+                levels = [True]
 
-        elif pw_us >= fp_us:
-            timings = [fp_us]
-            levels = [True]
-            #delay_us = 0
+            else: # 0 <= pw_us
+                timings = [fp_us]
+                levels = [False]
 
-        else: #pw_us<=0
+        else: #TODO: what about when exposure time is less than readout time?
             timings = [fp_us]
             levels = [False]
-            #delay_us = 0
 
         self.pigpio_process.enable_toggle_led(color, pulse_width, timings, levels)
-#        self.pigpio_process.enable_toggle_led(color, pulse_width)
         if verbose:
             self.parent.gui.printToLog(f"{color.name} set to {pulse_width}")
 
