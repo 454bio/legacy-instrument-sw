@@ -80,18 +80,20 @@ class ZionSession():
 
         if protocol:
             filename += '_'+str(self.ProtocolCount).zfill(ZionSession.protocolCountDigits)+'A_'+str(self.captureCountThisProtocol).zfill(ZionSession.captureCountPerProtocolDigits)+'_'+group
+            bayer = True
         else:
             filename += '_'+str(self.ProtocolCount).zfill(ZionSession.protocolCountDigits)+'M_'+str(self.captureCountThisProtocol).zfill(ZionSession.captureCountPerProtocolDigits)
+            bayer = False
         
         timestamp_ms = round(1000*(time.time()-self.TimeOfLife))
         filename += '_'+str(timestamp_ms).zfill(9)
-        filename = filename+'_'+suffix if not protocol else filename
+        filename = filename+'_'+suffix if ( (not protocol) and (suffix) ) else filename
         if verbose:
             GLib.idle_add(self.gui.printToLog, f"Writing image to file {filename}.jpg")
 
         # ~ try:
         self.SplitterCount += 1
-        self.Camera.capture(filename, cropping=cropping, splitter=self.SplitterCount % 4)
+        self.Camera.capture(filename, cropping=cropping, splitter=self.SplitterCount % 4, bayer=bayer)
         ret = 0
         if not protocol:
             self.SaveParameterFile(comment, False, timestamp_ms)
@@ -119,7 +121,7 @@ class ZionSession():
         else:
             filename = os.path.join(self.Dir, str(self.CaptureCount).zfill(ZionSession.captureCountDigits)+'_'+str(self.ProtocolCount).zfill(ZionSession.protocolCountDigits)+'M_'+str(self.captureCountThisProtocol).zfill(ZionSession.captureCountPerProtocolDigits))
             if timestamp > 0:
-                    filename += '_'+str(timestamp)
+                    filename += '_'+str(timestamp).zfill(9)
 
         params.save_to_file(filename)
 
@@ -291,7 +293,7 @@ class ZionSession():
                     # rprint(self.Camera.get_camera_props())
                     start_fstrobe = self.GPIO.get_num_fstrobes()
                     capture_busy_event = self.GPIO.get_capture_busy_event()
-                    bayer = False
+                    bayer = True
                     quality = 85
                     for frame_ind, (event, _) in enumerate(zip(flat_events, self.Camera.capture_continuous(seq_stream, format='jpeg', burst=True, bayer=bayer, thumbnail=None, quality=quality))):
                         # print(f"stream_size: {seq_stream.tell()}")
@@ -363,6 +365,7 @@ class ZionSession():
             GLib.idle_add(partial(self.gui.handlers._update_camera_preview, force=True))
             GLib.idle_add(self.gui.runProgramButton.set_sensitive, True)
             GLib.idle_add(self.gui.stopProgramButton.set_sensitive, False)
+            #TODO: blue and orange switches named here
             GLib.idle_add(self.gui.blueSwitch.set_sensitive, True)
             GLib.idle_add(self.gui.orangeSwitch.set_sensitive, True)
             GLib.idle_add(self.gui.uvSwitch.set_sensitive, True)

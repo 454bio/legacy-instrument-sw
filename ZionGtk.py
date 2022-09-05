@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 import os
-
+import time
 import gi
 gi.require_version('Gtk', '3.0')
 gi.require_version('Gst', '1.0')
@@ -82,6 +82,7 @@ class ZionGUI():
         self.blueManualEntry = self.builder.get_object("blue_led_manual_entry")
         self.orangeManualEntry = self.builder.get_object("orange_led_manual_entry")
         self.uvManualEntry = self.builder.get_object("uv_led_manual_entry")
+        #TODO: blue and orange named switches
         self.blueSwitch = self.builder.get_object("blue_led_switch")
         self.orangeSwitch = self.builder.get_object("orange_led_switch")
         self.uvSwitch = self.builder.get_object("uv_led_switch")
@@ -228,6 +229,9 @@ class Handlers:
             self._stop_running_program()
 
         self.parent.parent.GPIO.disable_all_leds()
+        # Added following line to resolve stopping toggle led thread too early
+        # TODO: change this? thread-safe?
+        time.sleep(1)
         GObject.source_remove(self.source_id)
         # ~ GObject.source_remove(self.source_id2)
         Gtk.main_quit(*args)
@@ -405,8 +409,9 @@ class Handlers:
             try:
                 pw = int(self.parent.blueManualEntry.get_text())
             except ValueError:
-                self.parent.printToLog(f"Pulse width must be an integer from 0 - {self.parent.parent.Camera.exposure_speed_ms}!")
+                self.parent.printToLog("Pulse width must be an integer!")
                 return
+            #TODO: condition this following printToLog on the success of the pulse width setting (exception handled in a different thread)
             self.parent.printToLog(f"Blue LED on, set to {pw} pulse width")
             self.parent.parent.GPIO.enable_toggle_led(ZionLEDColor.BLUE, pw)
         else:
@@ -422,8 +427,9 @@ class Handlers:
             try:
                 pw = int(entry.get_text())
             except ValueError:
-                self.parent.printToLog(f"Pulse width must be an integer from 0 - {self.parent.parent.Camera.exposure_speed_ms}!")
+                self.parent.printToLog("Pulse width must be an integer!")
                 return
+            #TODO: condition this following printToLog on the success of the pulse width setting (exception handled in a different thread)
             self.parent.printToLog(f"Changing Blue LED pulse width to {pw}")
             self.parent.parent.GPIO.enable_toggle_led(ZionLEDColor.BLUE, pw)
 
@@ -432,8 +438,9 @@ class Handlers:
             try:
                 pw = int(self.parent.orangeManualEntry.get_text())
             except ValueError:
-                self.parent.printToLog(f"Pulse width must be an integer from 0 - {self.parent.parent.Camera.exposure_speed_ms}!")
+                self.parent.printToLog("Pulse width must be an integer!")
                 return
+            #TODO: condition this following printToLog on the success of the pulse width setting (exception handled in a different thread)
             self.parent.printToLog(f"Orange LED on, set to {pw} pulse width")
             self.parent.parent.GPIO.enable_toggle_led(ZionLEDColor.ORANGE, pw)
         else:
@@ -449,8 +456,9 @@ class Handlers:
             try:
                 pw = int(entry.get_text())
             except ValueError:
-                self.parent.printToLog(f"Pulse width must be an integer from 0 - {self.parent.parent.Camera.exposure_speed_ms}!")
+                self.parent.printToLog("Pulse width must be an integer!")
                 return
+            #TODO: condition this following printToLog on the success of the pulse width setting (exception handled in a different thread)
             self.parent.printToLog(f"Changing Orange LED pulse width to {pw}")
             self.parent.parent.GPIO.enable_toggle_led(ZionLEDColor.ORANGE, pw)
 
@@ -459,8 +467,9 @@ class Handlers:
             try:
                 pw = int(self.parent.uvManualEntry.get_text())
             except ValueError:
-                self.parent.printToLog(f"Pulse width must be an integer from 0 - {self.parent.parent.Camera.exposure_speed_ms}!")
+                self.parent.printToLog("Pulse width must be an integer!")
                 return
+            #TODO: condition this following printToLog on the success of the pulse width setting (exception handled in a different thread)
             self.parent.printToLog(f"UV LED on, set to {pw} pulse width")
             self.parent.parent.GPIO.enable_toggle_led(ZionLEDColor.UV, pw)
         else:
@@ -476,8 +485,9 @@ class Handlers:
             try:
                 pw = int(entry.get_text())
             except ValueError:
-                self.parent.printToLog(f"Pulse width must be an integer from 0 - {self.parent.parent.Camera.exposure_speed_ms}!")
+                self.parent.printToLog("Pulse width must be an integer!")
                 return
+            #TODO: condition this following printToLog on the success of the pulse width setting (exception handled in a different thread)
             self.parent.printToLog(f"Changing UV LED pulse width to {pw}")
             self.parent.parent.GPIO.enable_toggle_led(ZionLEDColor.UV, pw)
 
@@ -508,9 +518,10 @@ class Handlers:
         # pulse_thread.start()
 
     def on_led_off_button_clicked(self, button):
+        # TODO: this should probably call self.parent.parent.GPIO.disable_all_leds() instead
+        self.parent.uvSwitch.set_active(False)
         self.parent.blueSwitch.set_active(False)
         self.parent.orangeSwitch.set_active(False)
-        self.parent.uvSwitch.set_active(False)
 
     #Exposure Stuff
     def on_iso_auto_button(self, button):

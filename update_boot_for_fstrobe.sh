@@ -19,6 +19,8 @@ grep -q "^imx477_fstrobe_delay=" $file && sed -i.bak 's/^imx477_fstrobe_delay=.*
 grep -q "^imx477_fstrobe_stills_only=" $file && sed -i.bak 's/^imx477_fstrobe_stills_only=.*/imx477_fstrobe_stills_only=1/' $file || echo "imx477_fstrobe_stills_only=1" >> $file
 grep -q "^imx477_fstrobe_width=" $file && sed -i.bak 's/^imx477_fstrobe_width=.*/imx477_fstrobe_width=12000/' $file || echo "imx477_fstrobe_width=12000" >> $file
 
+grep -q "^dtoverlay=w1-gpio" $file && sed -i.bak 's/^dtoverlay=w1-gpio.*/dtoverlay=w1-gpio/' $file || echo "dtoverlay=w1-gpio" >> $file
+
 echo "Success!"
 echo ""
 echo "Please restart the system for the changes to take effect."
