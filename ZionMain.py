@@ -24,17 +24,17 @@ Binning = False
 #Default Values:
 Initial_Values = ZionCameraParameters(
     brightness=    50,
-    contrast=      0,
+    contrast=      -2,
     saturation=    0,
     sharpness=     0,
     awb_mode=      'off',
-    red_gain=      Fraction(1,1),
-    blue_gain=     Fraction(1,1),
+    red_gain=      Fraction(2,1),
+    blue_gain=     Fraction(2,1),
     exposure_mode= 'off',
     shutter_speed= 250000,
     analog_gain=   Fraction(8,1),
     digital_gain=  Fraction(1,1),
-    framerate=     2,
+    framerate=     1,
     vflip=         True,
 )
 

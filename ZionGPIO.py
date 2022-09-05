@@ -14,70 +14,86 @@ from ZionErrors import ZionInvalidLEDColor, ZionInvalidLEDPulsetime
 
 import pigpio
 from ZionEvents import ZionEvent
-from ZionLED import ZionLEDs, ZionLEDColor
+from ZionLED import ZionLEDs, ZionLEDColor, ZionLEDTimings
 
 # multiprocessing.set_start_method('spawn')
 
 # Gpio Pin Lookup Table. Index is GPIO #, format is (pin #, enabled, alternate function)
-# (can remove/trim if memory is an issue)
 GpioPins = (
     (None, None,  None  ), #No GPIO 0
     (None, None,  None  ), #No GPIO 1
     (3,    False, 'I2C' ),
     (5,    False, 'I2C' ),
-    (7,    True,  None  ), #Default pin for 1-wire interface
-    (29,   True,  '1W'  ), #Using this pin for 1-wire instead (GPIO5 referenced in boot config)
+    (7,    True,  '1W'  ), #Pin for 1-wire interface, used for TEMP1W (setup in boot config)
+    (29,   True,  None  ),
     (31,   True,  None  ),
-    (26,   False, 'SPI' ), #used for TFT
-    (24,   False, 'SPI' ), #used for TFT
-    (21,   False, 'SPI' ), #used for TFT
-    (19,   False, 'SPI' ), #used for TFT
-    (23,   False, 'SPI' ), #used for TFT
+    (26,   False, None  ), #was SPI, used for bluetooth button now
+    (24,   False, None  ), #was SPI, used for fan now
+    (21,   False, None  ), #was SPI, used for fan now
+    (19,   False, 'SPI' ), #used for case leds
+    (23,   False, 'SPI' ), #used for case leds
     (32,   True,  None  ),
     (33,   True,  None  ),
-    (8,    False, 'UART'),
-    (10,   False, 'UART'),
+    (8,    True, None  ), #also used for UART TX
+    (10,   True, None  ), #also used for UART RX
     (36,   True,  None  ),
     (11,   True,  None  ),
-    (12,   True,  'PCM' ),
-    (35,   True,  'PCM' ),
-    (38,   True,  'PCM' ),
-    (40,   True,  'PCM' ),
+    (12,   True,  None  ),
+    (35,   True,  None  ),
+    (38,   True,  None  ),
+    (40,   True,  None  ),
     (15,   True,  None  ),
     (16,   True,  None  ),
     (18,   True,  None  ),
     (22,   True,  None  ),
     (37,   True,  None  ),
-    (13,   True,  None  ))  # GPIO 27
+    (13,   True,  None  ))
 
 # Now define GPIO uses for Zion:
 
 # 2 GPIOs for each LED:
 LED_GPIOS = {
-    ZionLEDColor.UV: [12], #pin 32
-    ZionLEDColor.BLUE: [16], #pins 36
-    ZionLEDColor.ORANGE: [20], #pin 38
+    # TODO: Need to add assert that the keys of LED_GPIOS are ZionLEDColor
+    ZionLEDColor.UV: [18,19,22,23], #LED_ENs 2,3,6,7 gpio hw pins 12,35,15,16
+    ZionLEDColor.BLUE: [16,17], #LED_ENs 0,1 gpio hw pins 36,11
+    ZionLEDColor.ORANGE: [20,21], #LED_ENs 4,5 gpio hw pins 38,40
+    # TODO: update color names here and/or assign multiple GPIOs to colors
+    ZionLEDColor.COLOR3: [],
+    ZionLEDColor.COLOR4: [],
+    ZionLEDColor.COLOR5: [],
+    ZionLEDColor.COLOR6: [],
+    ZionLEDColor.COLOR7: [],
 }
 
-# TODO: Need to add assert that the keys of LED_GPIOS are ZionLEDColor
+#2 GPIOs for testing camera sync signals:
+FSTROBE = 5 #pin 29
+XVS = 6 #pin 31
 
-# 1 GPIO for camera capture timing testing:
-CAMERA_TRIGGER = 21 #pin 40
+# 2 GPIOs for camera capture timing testing & debugging:
+# TODO if we ever use UART, re-assign these
+CAMERA_TRIGGER = 14 #pin 8 (TX)
+DEBUG_TRIGGER = 15 # pin 10 (RX)
 
 #1 GPIO for heat control:
 TEMP_OUTPUT = 13 #pin 33
+#1 GPIOs for temp sensing (to use 1-wire):
+TEMP_INPUT_1W = 4 #pin 7 (configured in boot config file)
 
-# 1 GPIOs for temp sensing (to use 1-wire):
-TEMP_INPUT_1W = 5 #pin 29
+#1 GPIO for bluetooth pairing button:
+# TODO double check where this is set up (eg rc local?)
+BT_BUTTON = 7 #pin 26 (configured in OS)
+#SPI clk and mosi for case LEDS (configued in OS):
+CASE_LEDS_MOSI = 10 #pin 19 
+CASE_LEDS_CLK = 11 #pin 23
 
-#1 GPIO for UV safety switch:
-#TODO
+#HW ID pins (MSb first):
+# TODO should this be LSb first?
+HW_ID = (27, 26, 25, 24) #pins (13, 37, 22, 18)
 
-#2 GPIOs for testing camera sync signals:
-FSTROBE = 23 #pin 16
-XVS = 24 #pin 18
-
-DEBUG_TRIGGER = 27 # pin 13
+#Fan stuff:
+FAN_ON = 8 #pin 24
+FAN_PWM = 12 #pin 32
+FAN_TACH = 9 #pin 21
 
 class ZionPigpioProcess(multiprocessing.Process):
     def __init__(self, xvs_delay_ms: float = 0.0, led_gpios=LED_GPIOS,
@@ -179,7 +195,7 @@ class ZionPigpioProcess(multiprocessing.Process):
     def _cleanup(self):
         """ Cleanup pigpio and signal the child threads to quit """
         self.camera_trigger_event.set()
-        self.toggle_led_queue.put((None, None))
+        self.toggle_led_queue.put((None, None, None, None))
         self.event_led_wave_id_queue.put(None)
         self._fstrobe_cb_handle.cancel()
         self._xvs_cb_handle.cancel()
@@ -242,9 +258,9 @@ class ZionPigpioProcess(multiprocessing.Process):
         if self.mp_namespace.toggle_led_wave_id > -1:
             self.pi.wave_send_once(self.mp_namespace.toggle_led_wave_id)
 
-    def enable_toggle_led(self, color : ZionLEDColor, pulse_width : int):
+    def enable_toggle_led(self, color : ZionLEDColor, amt : int, timings : list=None, levels : list=None):
         """ Will send the color/pulse_width to _toggle_led_thread so it can add it to pigpio. """
-        self.toggle_led_queue.put((color, pulse_width))
+        self.toggle_led_queue.put((color, amt, timings, levels))
 
     @staticmethod
     def _add_led_waveform(led : ZionLEDs, pi : pigpio.pi, delay : int = 0) -> bool:
@@ -258,13 +274,42 @@ class ZionPigpioProcess(multiprocessing.Process):
                     gpio_bits |= 1<<led_pin
 
                 if delay:
-                    print(f"Appending pulse -- bits: {hex(gpio_bits)}  color: {color.name}  pw: {pw}  delay: {delay}")
+                    print(f"Appending pulse -- bits: {hex(gpio_bits)}  color: {color.name}  pw: {pw} (ms)  delay: {delay} (us)")
                     led_wf.append(pigpio.pulse(0, 0, delay))
                 else:
-                    print(f"Appending pulse -- bits: {hex(gpio_bits)}  color: {color.name}  pw: {pw}")
+                    print(f"Appending pulse -- bits: {hex(gpio_bits)}  color: {color.name}  pw: {pw} (ms)")
 
                 led_wf.append(pigpio.pulse(gpio_bits, 0, pw * 1000))
                 led_wf.append(pigpio.pulse(0, gpio_bits, 0))
+                pi.wave_add_generic(led_wf)
+                added_wf = True
+
+        return added_wf
+        
+    @staticmethod
+    def _add_complex_led_waveform(led : ZionLEDs, pi : pigpio.pi, delay : int = 0) -> bool:
+        """ Adds COMPLEX waveforms for the pulsewidths/colors in led. Returns True if a wave was added.
+            timings is a tuple of time amounts in microseconds, levels is a tuple of corresopnding high/low values."""
+
+        added_wf = False
+
+        for color, pw_timings_tpl in led.items():
+            if pw_timings_tpl is not None:
+                led_wf = []
+                gpio_bits = 0
+                for led_pin in LED_GPIOS[color]:
+                    gpio_bits |= 1<<led_pin
+                    
+                print_wf_info = any(pw_timings_tpl[1])
+                for timing, level in zip(*pw_timings_tpl):
+                    if print_wf_info:
+                        print(f"Appending pulse -- bits: {hex(gpio_bits)}  color: {color.name}  level: {int(level)}  timing: {int(timing/1000)}")
+                    if level: # actually send pulse
+                        led_wf.append(pigpio.pulse(gpio_bits, 0, int(timing)))
+                    else: #actually send delay
+                        led_wf.append(pigpio.pulse(0, gpio_bits, int(timing)))
+
+                # ~ #led_wf.append(pigpio.pulse(0, gpio_bits, 0))
                 pi.wave_add_generic(led_wf)
                 added_wf = True
 
@@ -294,19 +339,21 @@ class ZionPigpioProcess(multiprocessing.Process):
 
     def _toggle_led_thread(self, mp_namespace : Namespace, toggle_led_queue : multiprocessing.Queue, pi : pigpio.pi):
         """ Add a wave_id for the given color and pulsewidth. """
-        toggle_leds_pw = ZionLEDs()
+        toggle_leds_pw = ZionLEDTimings()
         xvs_delay = mp_namespace.xvs_delay
 
         while True:
-            led, pulse_width = toggle_led_queue.get()
+            led, pulse_width, timings, levels = toggle_led_queue.get()
             if led is None:
                 print("toggle_led_thread -- received stop signal!")
                 break
 
             print(f"toggle_led_thread -- Received command -- led: {led}  pulse_width: {pulse_width}")
-
+            
+            ##TODO: update the checking necessary...
             try:
-                toggle_leds_pw[led] = pulse_width
+                #toggle_leds_pw[led] = pulse_width
+                toggle_leds_pw.set_pulsetimings(led, (timings, levels))
             except ZionInvalidLEDColor:
                 print(f"ERROR: {led} is not a valid LED color!")
                 continue
@@ -314,8 +361,7 @@ class ZionPigpioProcess(multiprocessing.Process):
                 print(f"ERROR: {pulse_width} is not a valid pulse width. Valid range is 0-{toggle_leds_pw.max_pulsetime}!")
                 continue
 
-            added_wf = self._add_led_waveform(led=toggle_leds_pw, pi=pi, delay=xvs_delay)
-
+            added_wf = self._add_complex_led_waveform(led=toggle_leds_pw, pi=pi) #delays are now embedded in toggle_leds_pw
             old_wave_id = mp_namespace.toggle_led_wave_id
 
             if added_wf:
@@ -463,7 +509,7 @@ class ZionGPIO():
         else:
             xvs_delay = 86.8422816
 
-        self.pigpio_process = ZionPigpioProcess(led_gpios=led_gpios, temp_out_gpio=temp_out_gpio, temp_in_gpio=temp_in_gpio, camera_trigger_gpio=camera_trigger_gpio, xvs_delay_ms=xvs_delay)
+        self.pigpio_process = ZionPigpioProcess(led_gpios=led_gpios, temp_out_gpio=temp_out_gpio, temp_in_gpio=temp_in_gpio, camera_trigger_gpio=camera_trigger_gpio, xvs_delay_ms=(1000/self.parent.Camera.framerate)+xvs_delay-(self.parent.Camera.exposure_speed/1000))
         self.pigpio_process.start()
 
     def camera_trigger(self):
@@ -517,16 +563,46 @@ class ZionGPIO():
     #         self.enable_led(color, 0, verbose=verbose, update=False)
     #     self.update_pwm_settings()
 
-    def enable_toggle_led(self, color : ZionLEDColor, amt : int, verbose : bool = False):
-        print(f"\nSetting {color.name} to {amt}")
+    def enable_toggle_led(self, color : ZionLEDColor, pulse_width : int, verbose : bool = False):
+        print(f"\nSetting {color.name} to {pulse_width}")
+        #pulse width is in milliseconds
 
-        self.pigpio_process.enable_toggle_led(color, amt)
+        exp_time_us = self.parent.Camera.exposure_speed
+        pw_us = 1000*pulse_width
+        readout_us = 1000*self.parent.Camera.readout_ms
+        fp_us = int(1000000/self.parent.Camera.framerate)
+        xvs_delay_us = fp_us + readout_us - exp_time_us
+
+        if exp_time_us > readout_us:
+            if 0 < pw_us and pw_us < exp_time_us-readout_us:
+                #off for xvs_delay, on for pw, off for fp-(pw+xvs_delay)
+                timings = [xvs_delay_us, pw_us, exp_time_us - readout_us - pw_us]
+                levels = [False, True, False]
+
+            elif exp_time_us-readout_us <= pw_us and pw_us < fp_us:
+                #on until pw+xvs_delay-fp, off for fp-pw, on for fp-xvs_delay
+                timings = [pw_us + readout_us - exp_time_us, fp_us - pw_us, exp_time_us - readout_us]
+                levels = [True, False, True]
+
+            elif pw_us >= fp_us:
+                timings = [fp_us]
+                levels = [True]
+
+            else: # 0 <= pw_us
+                timings = [fp_us]
+                levels = [False]
+
+        else: #TODO: what about when exposure time is less than readout time?
+            timings = [fp_us]
+            levels = [False]
+
+        self.pigpio_process.enable_toggle_led(color, pulse_width, timings, levels)
         if verbose:
-            self.parent.gui.printToLog(f"{color.name} set to {amt}")
+            self.parent.gui.printToLog(f"{color.name} set to {pulse_width}")
 
     def disable_toggle_led(self, color : ZionLEDColor, verbose : bool = False):
         print(f"\nSetting {color.name} to 0")
-        self.pigpio_process.enable_toggle_led(color, 0)
+        self.pigpio_process.enable_toggle_led(color, 0, [int(1000000/self.parent.Camera.framerate)], [False])
         if verbose:
             self.parent.gui.printToLog(f"{color.name} set to 0")
 
