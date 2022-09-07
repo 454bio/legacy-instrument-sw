@@ -13,7 +13,7 @@ from ZionGtk import check_for_valid_filename
 # NOTE: No underscores allowed in session name!
 Session_Name = 'TS'
 if not check_for_valid_filename(Session_Name):
-    raise Exception("Invalid character (or whitespace) detected in session name!")
+    raise Exception("Invalid character (or whitespace) found in session name!")
     
 # Camera Properties:
     # These can't change while camera is open:

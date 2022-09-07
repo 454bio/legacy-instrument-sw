@@ -171,7 +171,7 @@ class ZionGUI():
         self.stopProgramButton  = self.builder.get_object("stop_program_button")
 
         self.cameraPreview = self.builder.get_object("camera_preview")
-        self.cameraPreviewWrapper = PictureView(self.cameraPreview, os.path.join(mod_path, "Detect_Logo.png"))
+        self.cameraPreviewWrapper = PictureView(self.cameraPreview, os.path.join(mod_path, "Logo.png"))
 
         self.handlers = Handlers(self)
         self.builder.connect_signals(self.handlers)
