@@ -4,9 +4,14 @@ from operator import eq, gt
 from dataclasses import dataclass,  asdict, fields, is_dataclass
 import json
 from ZionLED import ZionLEDs, ZionLEDTimings
-from picamera import PiCamera, PiRenderer, mmal, mmalobj, exc
-from picamera.array import PiRGBArray
-from picamera.mmalobj import to_rational
+
+#from picamera import PiCamera, PiRenderer, mmal, mmalobj, exc
+#from picamera.array import PiRGBArray
+#from picamera.mmalobj import to_rational
+
+from picamera2 import Picamera2, Preview
+from libcamera import Transform, controls
+
 import pigpio
 import numpy as np
 from io import BytesIO
@@ -17,8 +22,9 @@ import os
 import math
 from gi.repository import GLib
 
-MMAL_PARAMETER_ANALOG_GAIN = mmal.MMAL_PARAMETER_GROUP_CAMERA + 0x59
-MMAL_PARAMETER_DIGITAL_GAIN = mmal.MMAL_PARAMETER_GROUP_CAMERA + 0x5A
+#shouldn't need this anymore
+#MMAL_PARAMETER_ANALOG_GAIN = mmal.MMAL_PARAMETER_GROUP_CAMERA + 0x59
+#MMAL_PARAMETER_DIGITAL_GAIN = mmal.MMAL_PARAMETER_GROUP_CAMERA + 0x5A
 
 # The loading order is very important to ensure the analog/digital gains
 # as well as the awb gains are set to fixed values.
@@ -55,35 +61,46 @@ class ZionCameraParametersEncoder(json.JSONEncoder):
 
 @dataclass
 class ZionCameraParameters:
-	brightness: int = 50            # 0 <-> 100
-	contrast: int = 0               # -100 <-> 100
-	saturation: int = 0             # -100 <-> 100
-	sharpness: int = 0              # -100 <-> 100
-	awb_mode: str = 'off'           # ['off', 'auto', 'sunlight', 'cloudy', 'shade', 'tungsten', 'fluorescent', 'incandescent', 'flash', 'horizon']
-	red_gain: float = 1.0           # 0.0 <-> 8.0
-	blue_gain: float = 1.0          # 0.0 <-> 8.0
-	exposure_mode: str = 'off'      # ['off', 'auto', 'night', 'nightpreview', 'backlight', 'spotlight', 'sports', 'snow', 'beach', 'verylong', 'fixedfps', 'antishake', 'fireworks']
-	exposure_speed: int = 250000    # This is a read-only property of picamera
-	shutter_speed: int = 250000     # Microseconds (0 is auto)
-	exposure_compensation: int = 0  # -25 <-> 25
-	iso: int = 0                    # 0 <-> 1600
-	image_denoise: bool = False
-	video_denoise: bool = False
-	analog_gain: float = 8.0        # max is 16
-	digital_gain: float = 1.0       # unity gain for avoiding quantization error
+	
+	#todo: move this somewhere else?
 	framerate: float = 4.0          # min 0.1 max 42 if binning, else min 0.05 max 10
+	
+	Brightness: float = 0			# -1.0 <-> 1.0
+	Contrast: float = 1.0			# 0.0 <-> 32.0
+	Saturation: float = 1.0         # 0.0 <-> 32.0
+	Sharpness: float = 1.0          # 0.0 <-> 16.0
+	
+	AwbEnable: bool = False			#Awb affects color gains
+	#AwbMode: 
+	RedGain: float = 1.0			# 0.0 <-> 32.0
+	BlueGain: float = 1.0           # 0.0 <-> 32.0
+	
+	AeEnable: bool = False			#Auto-exposure / auto-gain
+	#AeConstraintMode:
+	#AeExposureMode:
+	#AeMeterMode:
+	ExposureTime: int = 250000		# Microseconds (0 is auto)
+	ExposureValue: float = 0.0  	# -8.0 <-> 8.0 This is exposure "compensation"
+	
+	#iso: int = 0                   # 0 <-> 1600
+	#image_denoise: bool = False
+	#video_denoise: bool = False
+	
+	AnalogueGain: float = 8.0       # max is 16
+	DigitalGain: float = 1.0        # unity gain for avoiding quantization error
+	
+	#Todo: move following to Transform for preview and _____ for stream/capture
 	vflip: bool = True
 	hflip: bool = False
+
 	comment: str = ""
 
 	def is_fixed_capture(self):
 		""" Routine to return if the parameters correspond with
-			non-auto adjusting gains and exposures """
+			non-auto adjusting gains and exposures """		
 		return (
-			self.awb_mode == 'off' and
-			self.exposure_mode == 'off' and
-			self.shutter_speed > 0 and
-			self.iso == 0
+			not self.AwbEnable and
+			not self.AeEnable
 		)
 
 	@classmethod
@@ -119,7 +136,7 @@ class ZionCameraParameters:
 			json.dump(self, f, indent=1, cls=ZionCameraParametersEncoder)
 
 
-class ZionCamera(PiCamera):
+class ZionCamera(Picamera2):
 
 	def __init__(self, binning : bool, initial_values : ZionCameraParameters, parent : 'ZionSession' = None):
 		# from rich import print as rprint

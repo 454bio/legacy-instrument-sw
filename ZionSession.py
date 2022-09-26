@@ -23,7 +23,6 @@ from ZionCamera import ZionCamera, ZionCameraParameters
 from ZionGPIO import ZionGPIO
 from ZionProtocols import ZionProtocol
 from ZionGtk import ZionGUI
-from picamera.exc import mmal
 from ZionEvents import ZionEvent
 
 mod_path = os.path.dirname(os.path.abspath(__file__))
