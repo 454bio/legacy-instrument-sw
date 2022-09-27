@@ -22,37 +22,7 @@ Binning = False
     # w/o binning: 0.05 < framerate < 10 fps
 
 #Default Values:
-Initial_Values = ZionCameraParameters(
-    brightness=    50,
-    contrast=      -2,
-    saturation=    0,
-    sharpness=     0,
-    awb_mode=      'off',
-    red_gain=      Fraction(2,1),
-    blue_gain=     Fraction(2,1),
-    exposure_mode= 'off',
-    shutter_speed= 250000,
-    analog_gain=   Fraction(8,1),
-    digital_gain=  Fraction(1,1),
-    framerate=     1,
-    vflip=         True,
-)
-
-# Initial_Values = {
-#     'brightness':    50,      # between 0 and 100
-#     'contrast':      0,      # between -100 and 100
-#     'saturation':    0,       # between -100 and 100
-#     'sharpness':     0,       # between -100 and 100
-#     'awb':           'off',   # 'off' or 'auto'
-#     'red_gain':      1.00,     # 0.0 to 8.0
-#     'blue_gain':     1.00,     # 0.0 to 8.0
-#     'exposure_mode': 'off', # 'auto', 'night', 'verylong', etc. (***'off')
-#     'shutter_speed': 250,       # 0 is auto
-#     'analog_gain':  8.0,        # max is 16
-#     'digital_gain': 1.0,         #unity gain for avoiding quantization error
-#     'framerate':     4,         # min 0.1 max 42 if binning, else min 0.05 max 10
-#     }
-
+Initial_Values = ZionCameraParameters()
 
 ########################################################################
 ############################# Main Script ##############################
