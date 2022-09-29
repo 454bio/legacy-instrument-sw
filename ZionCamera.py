@@ -40,12 +40,10 @@ PARAMS_LOAD_ORDER = [
 	'ExposureValue',
 	'ExposureTime',
 	'AwbEnable',
-	#'AwbMode',
 	'ColourGains',
 	'AnalogueGain',
 	'DigitalGain',
 	'AeEnable',
-	#'AeExposureMode',
 ]
 
 class ZionCameraParametersEncoder(json.JSONEncoder):
@@ -60,30 +58,30 @@ class ZionCameraParametersEncoder(json.JSONEncoder):
 class ZionCameraParameters:
 	
 	#todo: move this somewhere else?
-	framerate: float = 2.0          # min 0.1 max 42 if binning, else min 0.05 max 10
+	FrameRate: float = 2.0          # min 0.1 max 42 if binning, else min 0.05 max 10
 	
-	Brightness: float = 0			# -1.0 <-> 1.0
+	Brightness: float = 0.0			# -1.0 <-> 1.0
 	Contrast: float = 1.0			# 0.0 <-> 32.0
 	Saturation: float = 1.0         # 0.0 <-> 32.0
 	Sharpness: float = 1.0          # 0.0 <-> 16.0
 	
-	AwbEnable: bool = False			#Awb affects color gains
-	#AwbMode: controls.AwbModeEnum = controls.AwbModeEnum.Auto
-	RedGain: float = 1.0			# 0.0 <-> 32.0
-	BlueGain: float = 1.0           # 0.0 <-> 32.0
-	
 	AeEnable: bool = False			#Auto-exposure / auto-gain
+	ExposureValue: float = 0.0  	# -8.0 <-> 8.0 This is exposure "compensation"
+	ExposureTime: int = 250000		# Microseconds
 	#AeConstraintMode: controls.AeConstraintModeEnum = controls.AeConstraintModeEnum.Normal
 	#AeExposureMode: controls.AeExposureModeEnum = controls.AeExposureModeEnum.Normal
 	#AeMeteringMode: controls.AeMeteringModeEnum = controls.AeMeteringModeEnum.Spot
-	ExposureTime: int = 250000		# Microseconds
-	ExposureValue: float = 0.0  	# -8.0 <-> 8.0 This is exposure "compensation"
-	
-	NoiseReductionMode: controls.draft.NoiseReductionModeEnum = controls.draft.NoiseReductionModeEnum.Off
-	
-	AnalogueGain: float = 8.0       # max is 16
+	#todo change to 8
+	AnalogueGain: float = 8.0       # max is 16?
 	DigitalGain: float = 1.0        # unity gain for avoiding quantization error
 	
+	AwbEnable: bool = False			#Awb affects color gains
+	RedGain: float = 1.0			# 0.0 <-> 32.0
+	BlueGain: float = 1.0           # 0.0 <-> 32.0
+	#AwbMode: controls.AwbModeEnum = controls.AwbModeEnum.Auto
+
+	NoiseReductionMode: controls.draft.NoiseReductionModeEnum = controls.draft.NoiseReductionModeEnum.Off
+
 	#Todo: move following to Transform for preview and _____ for stream/capture
 	vflip: bool = True
 	hflip: bool = False
@@ -101,17 +99,19 @@ class ZionCameraParameters:
 	@classmethod
 	def load_from_camera(cls, camera : 'ZionCamera', comment : str = "") -> 'ZionCameraParameters':
 		p = cls()
+		#TODO: ensure camera is running first
+		metadata = camera.capture_metadata()
 		for field in fields(p):
 			if field.name == "RedGain":
-				p.RedGain = camera.controls.ColourGains[0]
+				p.RedGain = metadata["ColourGains"][0]
 			elif field.name == "BlueGain":
-				p.BlueGain = camera.controls.ColourGains[1]
+				p.BlueGain = metadata["ColourGains"][1]
 			elif field.name == "comment":
 				if comment:
 					p.comment = str(comment)
 			else:
+				#TODO: update this to access metadata dictionary keys, vals instead
 				setattr(p, field.name, field.type(getattr(camera, field.name)))
-
 		return p
 
 	@classmethod
@@ -147,26 +147,45 @@ class ZionCamera(Picamera2):
 			resolution = (4056, 3040)
 			sensor_mode = 3
 		
-		frameduration = int(1000000/initial_values.framerate)
+		frameduration = int(1000000/initial_values.FrameRate)
+		self.framerate = initial_values.FrameRate
+		controls_obj = {"FrameDurationLimits": (frameduration, frameduration), "NoiseReductionMode": initial_values.NoiseReductionMode}
+		#TODO: add initial values to control object here
+		for param in PARAMS_LOAD_ORDER:
+			if param == "ColourGains":
+				controls_obj[param] = (initial_values.RedGain, initial_values.BlueGain)
+			elif param == "DigitalGain":
+				#don't include for now
+				pass
+			else:
+				controls_obj[param] = getattr(initial_values, param)
 
+		print(controls_obj)
 		clock_mode = 'raw'
 		#super().__init__(resolution=resolution, framerate = initial_values.framerate, sensor_mode=sensor_mode, clock_mode=clock_mode)
 		
 		super().__init__()
 		
-		controls = {"ColourGains": (2,2)}
-		#TODO: choose XBGR8888 or BGR888
-		self.config = super().create_preview_configuration({"size": resolution, "format": "XBGR8888"}, transform=Transform(hflip = initial_values.hflip, vflip = initial_values.vflip), controls={"FrameDurationLimits": (frameduration, frameduration), "NoiseReductionMode": initial_values.NoiseReductionMode}, raw=super().sensor_modes[sensor_mode])
-		#self.config = super().create_preview_configuration({"size": resolution, "format": "BGR888"}, transform=Transform(hflip = initial_values.hflip, vflip = initial_values.vflip), controls={"FrameDurationLimits": (frameduration, frameduration), "NoiseReductionMode": initial_values.NoiseReductionMode}, raw=super().sensor_modes[sensor_mode])
 
-		sleep(1)
-		print(f"\{self.config}")
+		#TODO: choose XBGR8888 or BGR888 (affects choice of preview)
+		self.config = super().create_preview_configuration({"size": resolution, "format": "XBGR8888"}, buffer_count=2, transform=Transform(hflip = initial_values.hflip, vflip = initial_values.vflip), controls=controls_obj, raw=super().sensor_modes[sensor_mode])
+		#self.config = super().create_preview_configuration({"size": resolution, "format": "BGR888"}, buffer_count=2, transform=Transform(hflip = initial_values.hflip, vflip = initial_values.vflip), controls=controls_obj, raw=super().sensor_modes[sensor_mode])
+		super().configure(self.config)
+		
 		self.parent = parent
 		
-		self.load_params(initial_values)
+		super().start()
+		sleep(2)
+		
+		print(self.camera_controls)
+		print(self.controls)
+		print(self.capture_metadata())
+		
+		#self.load_params(initial_values)
+		#print(self.capture_metadata())
 
-		print("[bold yellow] Properties after load_params(...)")
-		print(self.get_camera_props())
+		#print("[bold yellow] Properties after load_params(...)")
+		#print(self.get_camera_props())
 
 		# Set the max pulse width from the framerate and readout time
 		ZionLEDs.set_max_pulsetime(math.floor(1000 / self.framerate))
@@ -216,71 +235,50 @@ class ZionCamera(Picamera2):
 
 	def load_params(self, params_in : ZionCameraParameters):
 		for param in PARAMS_LOAD_ORDER:
-			if param == 'ColourGains':
+			#if param == 'AnalogueGain':
+			#	print(f"Setting {param} to {getattr(params_in, param)}")
+			#	if params_in.AnalogueGain > 0:
+			#		self.set_analog_gain(params_in.AnalogueGain)
+			#	else:
+			#		print(f"Skipping setting analog_gain of {params_in.AnalogueGain} since it's <= 0")
+			if param == 'DigitalGain':
+				print(f"Setting {param} to {getattr(params_in, param)}")
+			#	if params_in.DigitalGain > 0:
+			#		self.set_digital_gain(params_in.DigitalGain)
+			#	else:
+			#		print(f"Skipping setting digital_gain of {params_in.DigitalGain} since it's <= 0")
+			#elif param == 'AeEnable':
+			#	# Wait a maximum of 5 seconds for all the values to take a hold, to be sure the gains are correct before fixing them in place
+			#	sleep(1)
+			##	for _ in range(5):
+			#		settings_ok = True
+			#		if self.controls.AnalogueGain != params_in.AnalogueGain:
+			#			print(f"WARNING: Analog gain does not match expected value!  expected: {params_in.AnalogueGain}  actual: {self.controls.AnalogueGain}")
+			#			settings_ok = False
+#
+			#		if self.controls.DigitalGain != params_in.DigitalGain:
+			#			print(f"WARNING: Digital gain does not match expected value!  expected: {params_in.DigitalGain}  actual: {self.controls.DigitalGain}")
+			#			settings_ok = False
+			#			
+			#		if settings_ok:
+			#			break
+			#			
+			#		print("Sleeping another second for settings to propogate...")
+			#		sleep(1)
+					
+			#	if not settings_ok:
+			#		# By skipping the `AeEnable` settings if we failed, then we will pop a error to the user
+			#		print("ERROR: Setting the camera settings failed!!!")
+			#	else:
+			#		self.controls.AeEnable = params_in.AeEnable
+					
+			elif param == "ColourGains":
 				print(f"Setting {param} to {(params_in.RedGain, params_in.BlueGain)}")
 				self.set_controls({param: (params_in.RedGain, params_in.BlueGain)})
-			elif param == 'AnalogueGain':
-				print(f"Setting {param} to {getattr(params_in, param)}")
-				if params_in.AnalogueGain > 0:
-					self.set_analog_gain(params_in.AnalogueGain)
-				else:
-					print(f"Skipping setting analog_gain of {params_in.AnalogueGain} since it's <= 0")
-			elif param == 'DigitalGain':
-				print(f"Setting {param} to {getattr(params_in, param)}")
-				if params_in.DigitalGain > 0:
-					self.set_digital_gain(params_in.DigitalGain)
-				else:
-					print(f"Skipping setting digital_gain of {params_in.DigitalGain} since it's <= 0")
-			elif param == 'AeEnable':
-				# Wait a maximum of 5 seconds for all the values to take a hold, to be sure the gains are correct before fixing them in place
-				sleep(1)
-				for _ in range(5):
-					settings_ok = True
-					if self.controls.AnalogueGain != params_in.AnalogueGain:
-						print(f"WARNING: Analog gain does not match expected value!  expected: {params_in.AnalogueGain}  actual: {self.controls.AnalogueGain}")
-						settings_ok = False
-
-					if self.controls.DigitalGain != params_in.DigitalGain:
-						print(f"WARNING: Digital gain does not match expected value!  expected: {params_in.DigitalGain}  actual: {self.controls.DigitalGain}")
-						settings_ok = False
-						
-					if settings_ok:
-						break
-						
-					print("Sleeping another second for settings to propogate...")
-					sleep(1)
-					
-				if not settings_ok:
-					# By skipping the `AeEnable` settings if we failed, then we will pop a error to the user
-					print("ERROR: Setting the camera settings failed!!!")
-				else:
-					self.controls.AeEnable = params_in.AeEnable
-					
-			elif param == 'AwbEnable':
-				# Wait a maximum of 5 seconds for all the values to take a hold, to be sure the gains are correct before fixing them in place
-				sleep(1)
-				for _ in range(5):
-					settings_ok = True
-					expected_awb_gains = (params_in.RedGain, params_in.BlueGain)
-					print(self.controls.get_libcamera_controls())
-					if self.controls.ColourGains != expected_awb_gains:
-						print(f"WARNING: AWB gains do not match expected values!  expected: {expected_awb_gains}  actual: {self.controls.ColourGains}")
-						settings_ok = False
-
-					if settings_ok:
-						break
-
-					print("Sleeping another second for settings to propogate...")
-					sleep(1)
-
-				if not settings_ok:
-					# By skipping the `AwbEnable` settings if we failed, then we will pop a error to the user
-					print("ERROR: Setting the camera settings failed!!!")
-				else:
-					self.controls.AwbEnable = params_in.AwbEnable
 			else:
 				print(f"Setting {param} to {getattr(params_in, param)}")
-				setattr(self, param, getattr(params_in, param))
+				#setattr(self, param, getattr(params_in, param))
+				self.set_controls({param: getattr(params_in, param)})
 
 	def is_fixed_capture(self) -> Tuple[bool, dict]:
 		""" Routine to return if the parameters correspond with
