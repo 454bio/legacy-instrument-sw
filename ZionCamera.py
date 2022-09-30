@@ -154,13 +154,14 @@ class ZionCamera(Picamera2):
 		for param in PARAMS_LOAD_ORDER:
 			if param == "ColourGains":
 				controls_obj[param] = (initial_values.RedGain, initial_values.BlueGain)
+				controls_obj["AwbEnable"] = False
 			elif param == "DigitalGain":
 				#don't include for now
 				pass
 			else:
 				controls_obj[param] = getattr(initial_values, param)
 
-		print(controls_obj)
+		#print(controls_obj)
 		clock_mode = 'raw'
 		#super().__init__(resolution=resolution, framerate = initial_values.framerate, sensor_mode=sensor_mode, clock_mode=clock_mode)
 		
@@ -169,7 +170,7 @@ class ZionCamera(Picamera2):
 
 		#TODO: choose XBGR8888 or BGR888 (affects choice of preview)
 		self.config = super().create_preview_configuration({"size": resolution, "format": "XBGR8888"}, buffer_count=2, transform=Transform(hflip = initial_values.hflip, vflip = initial_values.vflip), controls=controls_obj, raw=super().sensor_modes[sensor_mode])
-		#self.config = super().create_preview_configuration({"size": resolution, "format": "BGR888"}, buffer_count=2, transform=Transform(hflip = initial_values.hflip, vflip = initial_values.vflip), controls=controls_obj, raw=super().sensor_modes[sensor_mode])
+		#self.config = super().create_preview_configuration({"size": resolution, "format": "BGR888"}, buffer_count=3, transform=Transform(hflip = initial_values.hflip, vflip = initial_values.vflip), controls=controls_obj, raw=super().sensor_modes[sensor_mode])
 		super().configure(self.config)
 		
 		self.parent = parent
@@ -177,9 +178,13 @@ class ZionCamera(Picamera2):
 		super().start()
 		sleep(2)
 		
-		print(self.camera_controls)
-		print(self.controls)
-		print(self.capture_metadata())
+		#print(self.camera_controls)
+		#print(f"Controls = {self.controls}")
+		metadata = self.capture_metadata()
+		print(f"Initial Metadata = {self.capture_metadata()}")
+		self.exposure_speed = metadata["ExposureTime"]
+		self.analog_gain = metadata["AnalogueGain"]
+		self.digital_gain = metadata["DigitalGain"]
 		
 		#self.load_params(initial_values)
 		#print(self.capture_metadata())
@@ -286,15 +291,19 @@ class ZionCamera(Picamera2):
 
 		# Comparison func, Param name, Good value
 		fixed_capture_params = (
-			(eq, "AwbEnable", False),
-			(eq, "AeEnable", False),
+			#(eq, "AwbEnable", False),
+			#(eq, "AeEnable", False),
 			#(gt, "shutter_speed", 0),
 			#(eq, "iso", 0),
 		)
 
 		nonfixed_capture_params = {}
+		
+		metadata = self.capture_metadata()
+		print(f"Controls = {self.controls}")
+		print(f"Current metadata = {metadata}")
 		for (comp_func, param_name, good_value) in fixed_capture_params:
-			cur_value = getattr(self, param_name)
+			cur_value = metadata[param_name]
 			if not comp_func(cur_value, good_value):
 				nonfixed_capture_params[param_name] = cur_value
 
@@ -367,6 +376,7 @@ class ZionCamera(Picamera2):
 		print('\nSetting exposure compensation to '+str(val))
 
 	def set_shutter_speed(self, val):
+		#TODO update camera control AND property
 		self.shutter_speed = val
 		if val==0:
 			print('\nSetting exposure time to auto')
@@ -414,9 +424,11 @@ class ZionCamera(Picamera2):
 			raise exc.PiCameraMMALError(ret)
 
 	def set_analog_gain(self, val):
+		#todo: set self.analog_gain as well
 		self.set_gain(MMAL_PARAMETER_ANALOG_GAIN, val)
 	
 	def set_digital_gain(self, val):
+		#todo writable?
 		self.set_gain(MMAL_PARAMETER_DIGITAL_GAIN, val)
 		
 	def set_framerate(self, val):
@@ -452,7 +464,8 @@ class ZionCamera(Picamera2):
 		# 		self.exposure_mode = 'off'
 
 	def start_preview(self, fullscreen=False, window=(560,75,640,480)):
-		super(ZionCamera,self).start_preview(fullscreen=False, window=window)
+		#super(ZionCamera,self).start_preview(fullscreen=False, window=window)
+		super().start_preview(Preview.QTGL, x=window[0], y=window[1], width=window[2], height=window[3])
 
 	def get_camera_props(self, props=PARAMS_LOAD_ORDER):
 		print(f"getting properities {props}")

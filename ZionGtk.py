@@ -31,33 +31,33 @@ class ZionGUI():
         self.parent = parent        # type: 'ZionSession'
 
         #define default values
-        self.Default_Brightness = initial_values.brightness
-        self.Default_Contrast = initial_values.contrast
-        self.Default_Saturation = initial_values.saturation
-        self.Default_Sharpness = initial_values.sharpness
+        self.Default_Brightness = initial_values.Brightness
+        self.Default_Contrast = initial_values.Contrast
+        self.Default_Saturation = initial_values.Saturation
+        self.Default_Sharpness = initial_values.Sharpness
 
         self.BrightnessScale = self.builder.get_object("brightness_scale")
         self.BrightnessEntry = self.builder.get_object("brightness_entry")
-        self.BrightnessScale.set_value(initial_values.brightness)
+        self.BrightnessScale.set_value(initial_values.Brightness)
         self.ContrastScale = self.builder.get_object("contrast_scale")
         self.ContrastEntry = self.builder.get_object("contrast_entry")
-        self.ContrastScale.set_value(initial_values.contrast)
+        self.ContrastScale.set_value(initial_values.Contrast)
         self.SaturationScale = self.builder.get_object("saturation_scale")
         self.SaturationEntry = self.builder.get_object("saturation_entry")
-        self.SaturationScale.set_value(initial_values.saturation)
+        self.SaturationScale.set_value(initial_values.Saturation)
         self.SharpnessScale = self.builder.get_object("sharpness_scale")
         self.SharpnessEntry = self.builder.get_object("sharpness_entry")
-        self.SharpnessScale.set_value(initial_values.sharpness)
+        self.SharpnessScale.set_value(initial_values.Sharpness)
 
         self.AutoAwbButton = self.builder.get_object("auto_wb_switch")
         self.redGainEntry = self.builder.get_object("red_gain_entry")
         self.redGainScale = self.builder.get_object("red_gain_scale")
-        self.redGainScale.set_value(initial_values.red_gain)
+        self.redGainScale.set_value(initial_values.RedGain)
         self.blueGainEntry = self.builder.get_object("blue_gain_entry")
         self.blueGainScale = self.builder.get_object("blue_gain_scale")
-        self.blueGainScale.set_value(initial_values.blue_gain)
+        self.blueGainScale.set_value(initial_values.BlueGain)
 
-        if initial_values.awb_mode == 'off':
+        if not initial_values.AwbEnable:
             self.AutoAwbButton.set_active(False)
             self.redGainScale.set_sensitive(True)
             self.blueGainScale.set_sensitive(True)
@@ -108,7 +108,7 @@ class ZionGUI():
         self.suffixBox = self.builder.get_object("suffix_entry")
 
 
-        if initial_values.exposure_mode == 'off':
+        if not initial_values.AeEnable:
             self.expModeLockButton.set_active(True)
             self.isoButtonBox.set_sensitive(False)
             self.expCompScale.set_sensitive(False)
@@ -120,7 +120,8 @@ class ZionGUI():
             self.expCompScale.set_sensitive(True)
             listStore = self.expModeComboBox.get_model()
             rowList = [row[0] for row in listStore]
-            self.Def_row_idx = rowList.index(initial_values.exposure_mode)
+            #self.Def_row_idx = rowList.index(initial_values.exposure_mode)
+            self.Def_row_idx = rowList.index(0)
             self.expModeComboBox.set_active(self.Def_row_idx)
 
         self.paramFileChooser = self.builder.get_object('param_file_chooser_dialog')
@@ -158,7 +159,7 @@ class ZionGUI():
 
         self.parent.Protocol.gtk_initialize_treeview(self.EventTreeViewGtk)
         # self.parent.Protocol.load_from_file(filename="brett_testing_protocol.txt")
-        self.parent.Protocol.load_from_file(filename="example_v2_protocol.txt")
+        # self.parent.Protocol.load_from_file(filename="example_v2_protocol.txt")
         # self.EventTreeViewGtk.get_selection().set_mode(Gtk.SelectionMode.SINGLE)
         self.EventTreeViewGtk.show_all()
         self.EventTreeViewGtk.expand_all()

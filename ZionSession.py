@@ -371,6 +371,7 @@ class ZionSession():
 
     def InteractivePreview(self, window):
         self.Camera.start_preview(fullscreen=False, window=window)
+        #self.Camera.start_preview(Preview.QtGL, x=window[0], y=window[1], width=window[2], height=window[3])
         Gtk.main()
         self.Camera.stop_preview()
 

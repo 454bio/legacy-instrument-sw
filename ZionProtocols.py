@@ -65,11 +65,11 @@ class ZionProtocol():
         self.Entries: List[Union[ZionEvent, ZionEventGroup]] = []
         self._protocoltree = None # type: ZionProtocolTree
 
-        min_cycle_time = max(int(camera_parameters.exposure_speed / 1000), int(1000 / camera_parameters.framerate))
+        min_cycle_time = max(int(camera_parameters.ExposureTime / 1000), int(1000 / camera_parameters.FrameRate))
         ZionEvent.set_minimum_cycle_time(min_cycle_time)
         # Set the minimum event time based on the camera parameters
-        if filename:
-            self.load_from_file(filename, flatten=False)
+        #if filename:
+       #     self.load_from_file(filename, flatten=False)
 
     def _load_v1(self, json_ns: dict):
         print(f"ERROR: Loading a Version 1 protocol not supported!")
