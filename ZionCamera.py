@@ -10,6 +10,7 @@ from ZionLED import ZionLEDs, ZionLEDTimings
 #from picamera.mmalobj import to_rational
 
 from picamera2 import Picamera2, Preview
+import libcamera
 from libcamera import Transform, controls
 
 import pigpio
@@ -58,7 +59,7 @@ class ZionCameraParametersEncoder(json.JSONEncoder):
 class ZionCameraParameters:
 	
 	#todo: move this somewhere else?
-	FrameRate: float = 2.0          # min 0.1 max 42 if binning, else min 0.05 max 10
+	FrameRate: float = 1.0          # min 0.1 max 42 if binning, else min 0.05 max 10
 	
 	Brightness: float = 0.0			# -1.0 <-> 1.0
 	Contrast: float = 1.0			# 0.0 <-> 32.0
@@ -76,8 +77,8 @@ class ZionCameraParameters:
 	DigitalGain: float = 1.0        # unity gain for avoiding quantization error
 	
 	AwbEnable: bool = False			#Awb affects color gains
-	RedGain: float = 1.0			# 0.0 <-> 32.0
-	BlueGain: float = 1.0           # 0.0 <-> 32.0
+	RedGain: float = 2.0			# 0.0 <-> 32.0
+	BlueGain: float = 2.0           # 0.0 <-> 32.0
 	#AwbMode: controls.AwbModeEnum = controls.AwbModeEnum.Auto
 
 	NoiseReductionMode: controls.draft.NoiseReductionModeEnum = controls.draft.NoiseReductionModeEnum.Off
@@ -150,6 +151,7 @@ class ZionCamera(Picamera2):
 		frameduration = int(1000000/initial_values.FrameRate)
 		self.framerate = initial_values.FrameRate
 		controls_obj = {"FrameDurationLimits": (frameduration, frameduration), "NoiseReductionMode": initial_values.NoiseReductionMode}
+		self.transform = Transform(hflip = initial_values.hflip, vflip = initial_values.vflip)
 		#TODO: add initial values to control object here
 		for param in PARAMS_LOAD_ORDER:
 			if param == "ColourGains":
@@ -169,7 +171,9 @@ class ZionCamera(Picamera2):
 		
 
 		#TODO: choose XBGR8888 or BGR888 (affects choice of preview)
-		self.config = super().create_preview_configuration({"size": resolution, "format": "XBGR8888"}, buffer_count=2, transform=Transform(hflip = initial_values.hflip, vflip = initial_values.vflip), controls=controls_obj, raw=super().sensor_modes[sensor_mode])
+		#self.config = super().create_preview_configuration({"size": resolution, "format": "XBGR8888"}, buffer_count=2, transform=self.transform, controls=controls_obj, raw=super().sensor_modes[sensor_mode])
+		print(self.sensor_modes)
+		self.config = self.create_zion_configuration({"size": resolution, "format": "BGR888"}, buffer_count=2, transform=self.transform, controls=controls_obj, raw=super().sensor_modes[sensor_mode])
 		#self.config = super().create_preview_configuration({"size": resolution, "format": "BGR888"}, buffer_count=3, transform=Transform(hflip = initial_values.hflip, vflip = initial_values.vflip), controls=controls_obj, raw=super().sensor_modes[sensor_mode])
 		super().configure(self.config)
 		
@@ -218,6 +222,30 @@ class ZionCamera(Picamera2):
 		self.stop_preview()
 		self.close()
 		print('\nCamera Closed')
+		
+	def create_zion_configuration(self, main={}, lores=None, raw=None, transform=libcamera.Transform(), colour_space=libcamera.ColorSpace.Sycc(), buffer_count=1, controls={}, display="main", encode=None):
+		"""Make a configuration suitable for Zion applications.."""
+		if self.camera is None:
+			raise RunTimeError("Camera not opened")
+		main = self._make_initial_stream_config({"format": "BGR888", "size": self.camera_properties_["PixelArraySize"]}, main)
+		self.align_stream(main, optimal=False)
+		lores = self._make_initial_stream_config({"format": "YUV420", "size": main["size"]}, lores)
+		if lores is not None:
+			self.align_stream(lores, optimal=False)
+		raw = self._make_initial_stream_config({"format": self.sensor_format, "size":main["size"]}, raw, self._raw_stream_ignore_list)
+		# Let the framerate vary?
+		controls = {"NoiseReductionMode": libcamera.controls.draft.NoiseReductionModeEnum.Off,
+					"FrameDurationLimits": (1000000//self.framerate, 1000000//self.framerate)} | controls
+		config = {"use_case": "still",
+				  "transform": transform,
+				  "colour_space": colour_space,
+				  "buffer_count": buffer_count,
+				  "main": main,
+				  "lores": lores,
+				  "raw": raw,
+				  "controls": controls}
+		self._add_display_and_encode(config, display, encode)
+		return config
 
 	@property
 	def exposure_speed_ms(self):
@@ -464,8 +492,9 @@ class ZionCamera(Picamera2):
 		# 		self.exposure_mode = 'off'
 
 	def start_preview(self, fullscreen=False, window=(560,75,640,480)):
-		#super(ZionCamera,self).start_preview(fullscreen=False, window=window)
-		super().start_preview(Preview.QTGL, x=window[0], y=window[1], width=window[2], height=window[3])
+		#super().start_preview(Preview.DRM, x=window[0], y=window[1], width=window[2], height=window[3], transform=self.transform)
+		super().start_preview(Preview.NULL)
+
 
 	def get_camera_props(self, props=PARAMS_LOAD_ORDER):
 		print(f"getting properities {props}")
