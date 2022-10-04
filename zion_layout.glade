@@ -11,9 +11,9 @@
     <property name="page-increment">0.5</property>
   </object>
   <object class="GtkAdjustment" id="brightness_adjust">
-    <property name="upper">100</property>
-    <property name="value">50</property>
-    <property name="step-increment">1</property>
+    <property name="lower">-1</property>
+    <property name="upper">1</property>
+    <property name="step-increment">0.01</property>
     <property name="page-increment">1</property>
   </object>
   <object class="GtkImage" id="capture_button_image">
@@ -22,10 +22,9 @@
     <property name="icon-name">camera-photo-symbolic</property>
   </object>
   <object class="GtkAdjustment" id="contrast_adjust">
-    <property name="lower">-100</property>
-    <property name="upper">100</property>
-    <property name="value">50</property>
-    <property name="step-increment">1</property>
+    <property name="upper">32</property>
+    <property name="value">1</property>
+    <property name="step-increment">0.01</property>
     <property name="page-increment">1</property>
   </object>
   <object class="GtkImage" id="crop_button_image">
@@ -40,9 +39,9 @@
   </object>
   <object class="GtkTextBuffer" id="digital_gain_buffer"/>
   <object class="GtkAdjustment" id="exp_comp_adjust">
-    <property name="lower">-25</property>
-    <property name="upper">25</property>
-    <property name="step-increment">1</property>
+    <property name="lower">-8</property>
+    <property name="upper">8</property>
+    <property name="step-increment">0.10</property>
     <property name="page-increment">1</property>
   </object>
   <object class="GtkTextBuffer" id="exposure_time_buffer"/>
@@ -146,16 +145,15 @@
     <property name="icon-name">media-playback-start-symbolic</property>
   </object>
   <object class="GtkAdjustment" id="saturation_adjust">
-    <property name="lower">-100</property>
-    <property name="upper">100</property>
-    <property name="value">100</property>
-    <property name="step-increment">1</property>
+    <property name="upper">32</property>
+    <property name="value">32</property>
+    <property name="step-increment">0.01</property>
     <property name="page-increment">1</property>
   </object>
   <object class="GtkAdjustment" id="sharpness_adjust">
-    <property name="lower">-100</property>
-    <property name="upper">100</property>
-    <property name="step-increment">1</property>
+    <property name="upper">16</property>
+    <property name="value">1</property>
+    <property name="step-increment">0.01</property>
     <property name="page-increment">1</property>
   </object>
   <object class="GtkImage" id="stop_button_image">
@@ -216,6 +214,7 @@
                                   <object class="GtkCheckButton" id="denoise_button">
                                     <property name="label" translatable="yes">Denoise</property>
                                     <property name="visible">True</property>
+                                    <property name="sensitive">False</property>
                                     <property name="can-focus">True</property>
                                     <property name="receives-default">False</property>
                                     <property name="draw-indicator">True</property>
@@ -334,9 +333,9 @@
                                             <property name="inverted">True</property>
                                             <property name="show-fill-level">True</property>
                                             <property name="restrict-to-fill-level">False</property>
-                                            <property name="fill-level">50</property>
-                                            <property name="round-digits">0</property>
-                                            <property name="digits">0</property>
+                                            <property name="fill-level">0</property>
+                                            <property name="round-digits">2</property>
+                                            <property name="digits">2</property>
                                             <property name="has-origin">False</property>
                                             <property name="value-pos">bottom</property>
                                             <signal name="value-changed" handler="on_brightness_scale_value_changed" swapped="no"/>
@@ -410,9 +409,9 @@
                                             <property name="inverted">True</property>
                                             <property name="show-fill-level">True</property>
                                             <property name="restrict-to-fill-level">False</property>
-                                            <property name="fill-level">50</property>
-                                            <property name="round-digits">0</property>
-                                            <property name="digits">0</property>
+                                            <property name="fill-level">1</property>
+                                            <property name="round-digits">2</property>
+                                            <property name="digits">2</property>
                                             <property name="has-origin">False</property>
                                             <property name="value-pos">bottom</property>
                                             <signal name="value-changed" handler="on_contrast_scale_value_changed" swapped="no"/>
@@ -483,9 +482,9 @@
                                             <property name="adjustment">saturation_adjust</property>
                                             <property name="inverted">True</property>
                                             <property name="restrict-to-fill-level">False</property>
-                                            <property name="fill-level">0</property>
-                                            <property name="round-digits">0</property>
-                                            <property name="digits">0</property>
+                                            <property name="fill-level">1</property>
+                                            <property name="round-digits">2</property>
+                                            <property name="digits">2</property>
                                             <property name="has-origin">False</property>
                                             <property name="value-pos">bottom</property>
                                             <signal name="value-changed" handler="on_saturation_scale_value_changed" swapped="no"/>
@@ -557,9 +556,9 @@
                                             <property name="inverted">True</property>
                                             <property name="show-fill-level">True</property>
                                             <property name="restrict-to-fill-level">False</property>
-                                            <property name="fill-level">0</property>
-                                            <property name="round-digits">0</property>
-                                            <property name="digits">0</property>
+                                            <property name="fill-level">1</property>
+                                            <property name="round-digits">2</property>
+                                            <property name="digits">2</property>
                                             <property name="has-origin">False</property>
                                             <property name="value-pos">bottom</property>
                                             <signal name="value-changed" handler="on_sharpness_scale_value_changed" swapped="no"/>
@@ -659,6 +658,7 @@
                                 <property name="orientation">vertical</property>
                                 <child>
                                   <object class="GtkFrame">
+                                    <property name="sensitive">False</property>
                                     <property name="can-focus">False</property>
                                     <property name="label-xalign">0</property>
                                     <property name="shadow-type">none</property>
@@ -841,6 +841,7 @@
                                                 <child>
                                                   <object class="GtkBox">
                                                     <property name="visible">True</property>
+                                                    <property name="sensitive">False</property>
                                                     <property name="can-focus">False</property>
                                                     <property name="halign">center</property>
                                                     <property name="margin-right">3</property>
@@ -937,8 +938,8 @@
                                                         <property name="show-fill-level">True</property>
                                                         <property name="restrict-to-fill-level">False</property>
                                                         <property name="fill-level">0</property>
-                                                        <property name="round-digits">0</property>
-                                                        <property name="digits">0</property>
+                                                        <property name="round-digits">2</property>
+                                                        <property name="digits">2</property>
                                                         <property name="has-origin">False</property>
                                                         <property name="value-pos">left</property>
                                                         <signal name="value-changed" handler="on_exposure_comp_scale_value_changed" swapped="no"/>
