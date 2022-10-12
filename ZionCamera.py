@@ -236,8 +236,8 @@ class ZionCamera(PiCamera):
 					if settings_ok:
 						break
 
-					print("Sleeping another second for settings to propogate...")
-					sleep(1)
+					print("Sleeping another two second for settings to propogate...")
+					sleep(2)
 
 				if not settings_ok:
 					# By skipping the `exposure_mode` settings if we failed, then we will pop a error to the user
