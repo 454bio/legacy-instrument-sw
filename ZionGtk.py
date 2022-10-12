@@ -213,14 +213,17 @@ class Handlers:
         self.recent_params_file = None
 
     def _update_camera_preview(self, force=False):
-        (x,y,w,h) = self.parent.cameraPreviewWrapper.get_bbox()
+        # (x,y,w,h) = self.parent.cameraPreviewWrapper.get_bbox()
 
-        if self.camera_preview_window != (x, y, w, h) or force:
-            # print(f"Updating preview to (x,y): ({x}, {y})  (w,h): ({w}, {h})")
-            self.camera_preview_window = (x, y, w, h)
-            # self.camera_preview_window = self.parent.cameraPreviewWrapper.get_bbox()
-            if not self.is_program_running() or force:
-                self.parent.parent.Camera.start_preview(fullscreen=False, window=self.camera_preview_window)
+        # if self.camera_preview_window != (x, y, w, h) or force:
+            # # print(f"Updating preview to (x,y): ({x}, {y})  (w,h): ({w}, {h})")
+            # self.camera_preview_window = (x, y, w, h)
+            # # self.camera_preview_window = self.parent.cameraPreviewWrapper.get_bbox()
+            # if not self.is_program_running() or force:
+                # self.parent.parent.Camera.start_preview(fullscreen=False, window=self.camera_preview_window)
+        #img = self.parent.parent.Camera.capture_image("main")
+        #pixbuf = Gtk.gdk.pixbuf_
+        return
 
     def on_window1_delete_event(self, *args):
         if self.is_program_running():
@@ -241,13 +244,13 @@ class Handlers:
         return self.run_thread and self.run_thread.is_alive()
 
     def on_window1_focus_in_event(self, *args):
-        if not self.is_program_running():
-            self.parent.parent.Camera.start_preview(fullscreen=False, window=self.camera_preview_window)
+        #if not self.is_program_running():
+            #self.parent.parent.Camera.start_preview(fullscreen=False, window=self.camera_preview_window)
         return False
 
     def on_window1_focus_out_event(self, *args):
-        if not self.is_program_running():
-            self.parent.parent.Camera.stop_preview()
+        #if not self.is_program_running():
+            #self.parent.parent.Camera.stop_preview()
         return False
 
     def on_window1_configure_event(self, widget, event):
@@ -337,38 +340,38 @@ class Handlers:
             self.parent.parent.Camera.set_image_denoising(False)
             
     def on_brightness_scale_value_changed(self, scale):
-        newval = int(scale.get_value())
+        newval = float(scale.get_value())
         self.parent.parent.Camera.set_brightness(newval)
         self.parent.printToLog('Brightness set to '+str(newval))
     
     def on_brightness_entry_activate(self, entry):
         newval = entry.get_text()
         try:
-            newval = int(entry.get_text())
+            newval = float(entry.get_text())
         except ValueError:
-            self.parent.printToLog('Brightness must be an integer!')
+            self.parent.printToLog('Brightness must be a number!')
             return
-        if newval >= 0 and newval <= 100:
+        if newval >= -1.0 and newval <= 1.0:
             self.parent.BrightnessScale.set_value(newval)
         else:
-            self.parent.printToLog('Brightness must be between 0 and 100!')
+            self.parent.printToLog('Brightness must be between -1.0 and 1.0!')
 
     def on_contrast_scale_value_changed(self, scale):
-        newval = int(scale.get_value())
+        newval = float(scale.get_value())
         self.parent.parent.Camera.set_contrast(newval)
         self.parent.printToLog('Contrast set to '+str(newval))
     
     def on_contrast_entry_activate(self, entry):
         newval = entry.get_text()
         try:
-            newval = int(entry.get_text())
+            newval = float(entry.get_text())
         except ValueError:
-            self.parent.printToLog('Contrast must be an integer!')
+            self.parent.printToLog('Contrast must be a number!')
             return
-        if newval >= -100 and newval <= 100:
+        if newval >= 0.0 and newval <= 32.0:
             self.parent.ContrastScale.set_value(newval)
         else:
-            self.parent.printToLog('Brightness must be between -100 and +100!')
+            self.parent.printToLog('Brightness must be between 0.0 and 32.0!')
 
     def on_saturation_scale_value_changed(self, scale):
         newval = int(scale.get_value())
@@ -378,31 +381,31 @@ class Handlers:
     def on_saturation_entry_activate(self, entry):
         newval = entry.get_text()
         try:    
-            newval = int(entry.get_text())
+            newval = float(entry.get_text())
         except ValueError:
-            self.parent.printToLog('Saturation must be an integer!')
+            self.parent.printToLog('Saturation must be a number!')
             return
-        if newval >= -100 and newval <= 100:
+        if newval >= 0.0 and newval <= 32.0:
             self.parent.SaturationScale.set_value(newval)
         else:
-            self.parent.printToLog('Saturation must be between -100 and +100!')
+            self.parent.printToLog('Saturation must be between 0.0 and 32.0!')
 
     def on_sharpness_scale_value_changed(self, scale):
-        newval = int(scale.get_value())
+        newval = float(scale.get_value())
         self.parent.parent.Camera.set_sharpness(newval)
         self.parent.printToLog('Sharpness set to '+str(newval))
 
     def on_sharpness_entry_activate(self, entry):
         newval = entry.get_text()
         try:
-            newval = int(entry.get_text())
+            newval = float(entry.get_text())
         except ValueError:
-            self.parent.printToLog('Sharpness must be an integer!')
+            self.parent.printToLog('Sharpness must be a number!')
             return
-        if newval >= -100 and newval <= 100:
+        if newval >= 0.0 and newval <= 16.0:
             self.parent.SharpnessScale.set_value(newval)
         else:
-            self.parent.printToLog('Sharpness must be between -100 and +100!')
+            self.parent.printToLog('Sharpness must be between 0.0 and 16.0!')
 
     # LED Control Section
     def on_blue_led_button_toggled(self, switch):
@@ -559,7 +562,7 @@ class Handlers:
             self.parent.parent.Camera.set_iso(800)
 
     def on_exposure_comp_scale_value_changed(self, scale):
-        newval = int(scale.get_value())
+        newval = float(scale.get_value())
         self.parent.parent.Camera.set_exp_comp(newval)
         self.parent.printToLog('Exposure compensation set to '+str(newval))
 
@@ -573,23 +576,22 @@ class Handlers:
         else:
             self.parent.printToLog(f"Requesting exposure time of {newval:.0f} ms")
             
-        if newval==0:
-            # self.parent.parent.Camera.shutter_speed = 0
-            self.parent.parent.Camera.set_shutter_speed(0)
-            self.parent.printToLog('Exposure time set to auto')
-        else:
+        #if newval==0:
+         #   # self.parent.parent.Camera.shutter_speed = 0
+         #   self.parent.parent.Camera.set_shutter_speed(0)
+         #   self.parent.printToLog('Exposure time set to auto')
+        #else:
             # self.parent.parent.Camera.shutter_speed = round(1000*newval)
             self.parent.parent.Camera.set_shutter_speed(round(1000*newval))
             self.parent.printToLog('Exposure time set to '+str(newval)+' ms')
-        
-        self.updateExpParams()
+            self.updateExpParams()
 
     def on_framerate_entry_activate(self, entry):
         newval = entry.get_text()
         try:
             newval = float(newval)
         except ValueError: 
-            self.parent.printToLog('Requested exposure time must be a number!')
+            self.parent.printToLog('Requested framerate must be a number!')
             return
         if newval==0:
             self.parent.parent.Camera.framerate_range=(0.05, 10)
@@ -691,10 +693,10 @@ class Handlers:
         except ValueError:
             self.parent.printToLog('Red Gain must be a number!')
             return
-        if newval<=8.0 and newval>=0:
+        if newval<=32.0 and newval>=0:
             self.parent.redGainScale.set_value(newval)
         else:
-            self.parent.printToLog('Red Gain must be between 0 and 8.0!')
+            self.parent.printToLog('Red Gain must be between 0 and 32.0!')
             return
 
     def on_blue_gain_scale_value_changed(self, scale):
@@ -709,10 +711,10 @@ class Handlers:
         except ValueError:
             self.parent.printToLog('Blue Gain must be a number!')
             return
-        if newval<=8.0 and newval>=0:
+        if newval<=32.0 and newval>=0:
             self.parent.blueGainScale.set_value(newval)
         else:
-            self.parent.printToLog('Blue Gain must be between 0 and 8.0!')
+            self.parent.printToLog('Blue Gain must be between 0 and 32.0!')
             return
 
     #Capturing, Running, Etc.

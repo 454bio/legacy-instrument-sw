@@ -1,5 +1,5 @@
 
-from gi.repository import GObject, GdkPixbuf, Gdk
+from gi.repository import GLib, GObject, GdkPixbuf, Gdk
 
 class PictureView(GObject.Object):
     
@@ -125,3 +125,11 @@ class PictureView(GObject.Object):
             print('Invalid surface')
 
         return False
+        
+    def draw_pillow_image(self, im):
+        data = im.tobytes()
+        w,h = im.size
+        data = GLib.Bytes.new(data)
+        self._pixbuf = GdkPixbuf.Pixbuf.new_from_bytes(data, GdkPixbuf.Colorspace.RGB, False, 8, w, h, w*3)
+        self.init_surface()
+        self._area.queue_draw()

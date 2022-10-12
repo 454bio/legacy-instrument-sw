@@ -1,7 +1,7 @@
 from typing import Tuple
 from fractions import Fraction
 from operator import eq, gt
-from dataclasses import dataclass,  asdict, fields, is_dataclass
+from dataclasses import dataclass, asdict, fields, is_dataclass
 import json
 from ZionLED import ZionLEDs, ZionLEDTimings
 
@@ -34,18 +34,35 @@ from gi.repository import GLib
 # THEN we can set the analog/digital gains with mmal
 # Then we can turn exposure_mode to 'off' to lock them in....
 PARAMS_LOAD_ORDER = [
+	'NoiseReductionMode',
+	'Brightness',
+	'Contrast',
+	'Saturation',
+	'Sharpness',
+	'AeExposureMode',
+	'AeMeteringMode',
+	'AeConstraintMode',
+	'AeEnable',
+	'ExposureValue',
+	'ExposureTime',
+	'AnalogueGain',
+	'AwbMode',
+	'AwbEnable',
+	'ColourGains',
+	#'ScalerCrop',
+]
+CONTROLS_WRITE_ORDER = [
 	'Brightness',
 	'Contrast',
 	'Saturation',
 	'Sharpness',
 	'ExposureValue',
 	'ExposureTime',
-	'AwbEnable',
-	'ColourGains',
 	'AnalogueGain',
-	'DigitalGain',
-	'AeEnable',
-]
+	'ColourGains',
+	'FrameRate',
+	#'ScalerCrop',
+	]
 
 class ZionCameraParametersEncoder(json.JSONEncoder):
 	def default(self, obj):
@@ -66,22 +83,25 @@ class ZionCameraParameters:
 	Saturation: float = 1.0         # 0.0 <-> 32.0
 	Sharpness: float = 1.0          # 0.0 <-> 16.0
 	
+	AeExposureMode: controls.AeExposureModeEnum = controls.AeExposureModeEnum.Normal
+	AeConstraintMode: controls.AeConstraintModeEnum = controls.AeConstraintModeEnum.Normal
+	AeMeteringMode: controls.AeMeteringModeEnum = controls.AeMeteringModeEnum.Spot
 	AeEnable: bool = False			#Auto-exposure / auto-gain
 	ExposureValue: float = 0.0  	# -8.0 <-> 8.0 This is exposure "compensation"
 	ExposureTime: int = 250000		# Microseconds
-	#AeConstraintMode: controls.AeConstraintModeEnum = controls.AeConstraintModeEnum.Normal
-	#AeExposureMode: controls.AeExposureModeEnum = controls.AeExposureModeEnum.Normal
-	#AeMeteringMode: controls.AeMeteringModeEnum = controls.AeMeteringModeEnum.Spot
-	#todo change to 8
-	AnalogueGain: float = 8.0       # max is 16?
-	DigitalGain: float = 1.0        # unity gain for avoiding quantization error
 	
+	AnalogueGain: float = 8.0       # max is 16? (or twenty something?)
+	#DigitalGain: float = 1.0        # unity gain for avoiding quantization error
+	
+	AwbMode: controls.AwbModeEnum = controls.AwbModeEnum.Auto	
 	AwbEnable: bool = False			#Awb affects color gains
 	RedGain: float = 2.0			# 0.0 <-> 32.0
-	BlueGain: float = 2.0           # 0.0 <-> 32.0
-	#AwbMode: controls.AwbModeEnum = controls.AwbModeEnum.Auto
+	BlueGain: float = 2.0			# 0.0 <-> 32.0
 
 	NoiseReductionMode: controls.draft.NoiseReductionModeEnum = controls.draft.NoiseReductionModeEnum.Off
+	
+	#todo: add digital crop if necessary
+	#ScalerCrop: libcamera.Rectangle = (x_offset, y_offset, width, height) 
 
 	#Todo: move following to Transform for preview and _____ for stream/capture
 	vflip: bool = True
@@ -123,6 +143,23 @@ class ZionCameraParameters:
 
 	def to_dict(self):
 		return asdict(self)
+		
+	def to_config_dicts(self):
+		d_controls = dict()
+		d_config = self.to_dict()
+		transform = Transform(hflip = self.hflip, vflip = self.vflip)
+		del(d_config['hflip'])
+		del(d_config['vflip'])
+		for param in CONTROLS_WRITE_ORDER:
+			if param == "ColourGains":
+				d_controls["ColourGains"] = (self.RedGain, self.BlueGain)
+				del(d_config["RedGain"])
+				del(d_config["BlueGain"])
+			else:
+				d_controls[param] = getattr(self, param)
+				del(d_config[param])
+		#print(f"\ncontrols = {d_controls}\nconfig = {d_config}")
+		return d_config, transform, d_controls
 
 	def save_to_file(self, filename: str):
 		if not filename.endswith(".txt"):
@@ -140,7 +177,14 @@ class ZionCamera(Picamera2):
 		print(f"\nCamera Initializing...")
 		print(f"\tbinning: {binning}")
 		print(f"\tinitial_values: {initial_values}")
-
+		
+		# Split camera setup into configuration and controls:
+		
+		# Set up Configuration:
+		
+		self.ConfigDict, self.transform, self.ControlsDict = initial_values.to_config_dicts()
+		
+		#TODO: Change for different camera (eg e-con, arducam, etc) - only valid for imx477!
 		if binning:
 			resolution = (2028, 1520)
 			sensor_mode = 2
@@ -148,44 +192,33 @@ class ZionCamera(Picamera2):
 			resolution = (4056, 3040)
 			sensor_mode = 3
 		
-		frameduration = int(1000000/initial_values.FrameRate)
 		self.framerate = initial_values.FrameRate
-		controls_obj = {"FrameDurationLimits": (frameduration, frameduration), "NoiseReductionMode": initial_values.NoiseReductionMode}
-		self.transform = Transform(hflip = initial_values.hflip, vflip = initial_values.vflip)
-		#TODO: add initial values to control object here
-		for param in PARAMS_LOAD_ORDER:
-			if param == "ColourGains":
-				controls_obj[param] = (initial_values.RedGain, initial_values.BlueGain)
-				controls_obj["AwbEnable"] = False
-			elif param == "DigitalGain":
-				#don't include for now
-				pass
-			else:
-				controls_obj[param] = getattr(initial_values, param)
-
-		#print(controls_obj)
+		frameduration = int(1000000/initial_values.FrameRate)
+		
+		
 		clock_mode = 'raw'
 		#super().__init__(resolution=resolution, framerate = initial_values.framerate, sensor_mode=sensor_mode, clock_mode=clock_mode)
 		
 		super().__init__()
 		
-
 		#TODO: choose XBGR8888 or BGR888 (affects choice of preview)
-		#self.config = super().create_preview_configuration({"size": resolution, "format": "XBGR8888"}, buffer_count=2, transform=self.transform, controls=controls_obj, raw=super().sensor_modes[sensor_mode])
-		print(self.sensor_modes)
-		self.config = self.create_zion_configuration({"size": resolution, "format": "BGR888"}, buffer_count=2, transform=self.transform, controls=controls_obj, raw=super().sensor_modes[sensor_mode])
+		#TODO: change the way sensor mode is chosen based on actual camera
+		#self.config = super().create_preview_configuration({"size": resolution, "format": "BGR888"}, buffer_count=2, transform=self.transform, controls=controls_obj, raw=super().sensor_modes[sensor_mode])
+		print(f"\nAvailable Sensor Modes: {self.sensor_modes}")
+		self.config = self.create_zion_configuration({"size": resolution, "format": "BGR888"}, buffer_count=3, transform=self.transform, controls=self.ControlsDict, raw=super().sensor_modes[sensor_mode])
 		#self.config = super().create_preview_configuration({"size": resolution, "format": "BGR888"}, buffer_count=3, transform=Transform(hflip = initial_values.hflip, vflip = initial_values.vflip), controls=controls_obj, raw=super().sensor_modes[sensor_mode])
+		print(f"\nConfiguration = {self.config}")
 		super().configure(self.config)
 		
 		self.parent = parent
 		
 		super().start()
-		sleep(2)
+		sleep(5)
 		
 		#print(self.camera_controls)
 		#print(f"Controls = {self.controls}")
 		metadata = self.capture_metadata()
-		print(f"Initial Metadata = {self.capture_metadata()}")
+		print(f"\nInitial Metadata = {self.capture_metadata()}")
 		self.exposure_speed = metadata["ExposureTime"]
 		self.analog_gain = metadata["AnalogueGain"]
 		self.digital_gain = metadata["DigitalGain"]
@@ -246,6 +279,10 @@ class ZionCamera(Picamera2):
 				  "controls": controls}
 		self._add_display_and_encode(config, display, encode)
 		return config
+		
+	# @property
+	# def exposure_speed(self):
+		# return self.ControlsDict["ExposureTime"]
 
 	@property
 	def exposure_speed_ms(self):
@@ -338,11 +375,21 @@ class ZionCamera(Picamera2):
 		return (not nonfixed_capture_params, nonfixed_capture_params)
 
 	def capture(self, filename, cropping=(0,0,1,1), bayer=True, splitter=0):
-		self.zoom = cropping
+		#self.zoom = cropping
 		fileToWrite = filename+'.jpg'
 		# ~ fileToWrite = filename+'.raw'
 		if self.parent:
 			self.parent.GPIO.camera_trigger()
+			
+		#img = self.capture_array("main")
+		#print(f"Captured image size = {img.shape}")
+		
+		#raw = self.capture_array("raw")
+		#print(f"Captured raw image size = {raw.shape}")
+		
+		pil_img = self.capture_image("main")
+		self.parent.gui.cameraPreviewWrapper.draw_pillow_image(pil_img)
+		
 		if bayer:
 			print('\nWriting image to file '+fileToWrite)
 			# ret = super(ZionCamera,self).capture(fileToWrite, use_video_port=False)
@@ -355,11 +402,12 @@ class ZionCamera(Picamera2):
 			# ~ ret = super(ZionCamera,self).capture_sequence([fileToWrite], use_video_port=True, splitter_port=splitter)
 			# ~ ret = super(ZionCamera,self).capture_sequence([fileToWrite], use_video_port=False, bayer=False, burst=True)
 
-		if self.parent:
-			GLib.idle_add(self.parent.update_last_capture, fileToWrite)
+#		if self.parent:
+#			GLib.idle_add(self.parent.update_last_capture, fileToWrite)
 
-		self.zoom=(0,0,1,1)
-		return ret
+#		self.zoom=(0,0,1,1)
+#		return ret
+		return
 
 	def stream_preview(self):
 		stream = BytesIO()
@@ -380,19 +428,31 @@ class ZionCamera(Picamera2):
 			print('\nTurning denoising on')
 
 	def set_brightness(self, val):
-		self.brightness = val
+		#self.brightness = val
+		with self.controls as controls:
+			controls.Brightness = val
+		self.ControlsDict["Brightness"] = val
 		print('\nSetting brightness to '+str(val))
 
 	def set_contrast(self, val):
-		self.contrast = val
-		print('\nSetting contrast to '+str(val))
+		#self.contrast = val
+		with self.controls as controls:
+			controls.Contrast = val
+		self.ControlsDict["Contrast"] = val
+		('\nSetting contrast to '+str(val))
 
 	def set_saturation(self, val):
-		self.saturation = val
+		#self.saturation = val
+		with self.controls as controls:
+			controls.Saturation = val
+		self.ControlsDict["Saturation"] = val
 		print('\nSetting saturation to '+str(val))
 
 	def set_sharpness(self, val):
-		self.sharpness = val
+		#self.sharpness = val
+		with self.controls as controls:
+			controls.Sharpness = val
+		self.ControlsDict["Sharpness"] = val
 		print('\nSetting sharpness to '+str(val))
 
 	def set_iso(self, val):
@@ -400,19 +460,28 @@ class ZionCamera(Picamera2):
 		print('\nSetting ISO to '+str(val))
 
 	def set_exp_comp(self, val):
-		self.exposure_compensation = val
+		#self.exposure_compensation = val
+		with self.controls as controls:
+			controls.ExposureValue = val
+		self.ControlsDict["ExposureValue"] = val
 		print('\nSetting exposure compensation to '+str(val))
 
 	def set_shutter_speed(self, val):
 		#TODO update camera control AND property
-		self.shutter_speed = val
-		if val==0:
-			print('\nSetting exposure time to auto')
-		else:
-			print('\nSetting exposure time to '+str(val))
+		#self.shutter_speed = val
+		#if val==0:
+		#	print('\nSetting exposure time to auto')
+		#else:
+		#	print('\nSetting exposure time to '+str(val))
+		
+		with self.controls as controls:
+			controls.ExposureTime = val
+		self.ControlsDict["ExposureTime"] = val
+		#self.exposure_speed = val
 
+		#todo check?
 		print(f"Actual exposure time: {self.exposure_speed / 1000:.3f} ms")
-		print(f"shutter_speed: {self.shutter_speed}")
+		#print(f"shutter_speed: {self.shutter_speed}")
 
 	def set_exp_mode(self, val):
 		self.exposure_mode = val
@@ -433,13 +502,21 @@ class ZionCamera(Picamera2):
 		return ret
 
 	def set_red_gain(self, val):
-		awb_gains = self.awb_gains
-		self.awb_gains = (val, awb_gains[1])
+		#awb_gains = self.awb_gains
+		#self.awb_gains = (val, awb_gains[1])
+		with self.controls as controls:
+			controls.ColourGains = (val, self.ControlsDict["ColourGains"][1])
+		#todo check?
+		self.ControlsDict["ColourGains"] = (val, self.ControlsDict["ColourGains"][1])
 		print('\nSetting AWB red gain to '+str(val))
 
 	def set_blue_gain(self, val):
-		awb_gains = self.awb_gains
-		self.awb_gains = (awb_gains[0], val)
+		#awb_gains = self.awb_gains
+		#self.awb_gains = (awb_gains[0], val)
+		with self.controls as controls:
+			controls.ColourGains = (self.ControlsDict["ColourGains"][0], val)
+		#todo check?
+		self.ControlsDict["ColourGains"] = (self.ControlsDict["ColourGains"][0], val)
 		print('\nSetting AWB blue gain to '+str(val))
 
 	def set_gain(self, gain, val):
@@ -452,12 +529,17 @@ class ZionCamera(Picamera2):
 			raise exc.PiCameraMMALError(ret)
 
 	def set_analog_gain(self, val):
-		#todo: set self.analog_gain as well
-		self.set_gain(MMAL_PARAMETER_ANALOG_GAIN, val)
+		#todo range check
+		with self.controls as controls:
+			controls.AnalogueGain = val
+		#todo: check value?
+		self.ControlsDict["AnalogueGain"] = val
+		sleep(1)
 	
 	def set_digital_gain(self, val):
-		#todo writable?
-		self.set_gain(MMAL_PARAMETER_DIGITAL_GAIN, val)
+		#not writable!
+		#self.set_gain(MMAL_PARAMETER_DIGITAL_GAIN, val)
+		return
 		
 	def set_framerate(self, val):
 		print("!!!!!!!!!!! ENTERED SET_FRAMERATE !!!!!!!!!!!!")

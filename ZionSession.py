@@ -94,8 +94,8 @@ class ZionSession():
         self.SplitterCount += 1
         self.Camera.capture(filename, cropping=cropping, splitter=self.SplitterCount % 4, bayer=bayer)
         ret = 0
-        if not protocol:
-            self.SaveParameterFile(comment, False, timestamp_ms)
+#        if not protocol:
+#            self.SaveParameterFile(comment, False, timestamp_ms)
         # ~ except PiCameraValueError or PiCameraAlreadyRecording:
             # ~ print('Camera Busy! '+filename+' not written!')
             # ~ if verbose:
