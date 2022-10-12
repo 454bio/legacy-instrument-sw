@@ -2340,7 +2340,7 @@
                               </packing>
                             </child>
                             <child>
-                              <object class="GtkCheckButton" id="south_led_switch1">
+                              <object class="GtkCheckButton" id="south_led_switch">
                                 <property name="visible">True</property>
                                 <property name="can-focus">True</property>
                                 <property name="receives-default">False</property>
