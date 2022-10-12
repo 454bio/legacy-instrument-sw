@@ -79,13 +79,16 @@ class ZionGUI():
         self.frBuffer = self.builder.get_object("framerate_buffer")
         self.frEntry = self.builder.get_object("framerate_entry")
 
-        self.blueManualEntry = self.builder.get_object("blue_led_manual_entry")
-        self.orangeManualEntry = self.builder.get_object("orange_led_manual_entry")
-        self.uvManualEntry = self.builder.get_object("uv_led_manual_entry")
+        self.northManualEntry = self.builder.get_object("north_led_manual_entry")
+        self.eastManualEntry = self.builder.get_object("east_led_manual_entry")
+        self.southManualEntry = self.builder.get_object("south_led_manual_entry")
+        self.westManualEntry = self.builder.get_object("west_led_manual_entry")
+        
         #TODO: blue and orange named switches
-        self.blueSwitch = self.builder.get_object("blue_led_switch")
-        self.orangeSwitch = self.builder.get_object("orange_led_switch")
-        self.uvSwitch = self.builder.get_object("uv_led_switch")
+        self.northSwitch = self.builder.get_object("north_led_switch")
+        self.eastSwitch = self.builder.get_object("east_led_switch")
+        self.southSwitch = self.builder.get_object("south_led_switch")
+        self.westSwitch = self.builder.get_object("west_led_switch")
 
         self.logBuffer = self.builder.get_object("textbuffer_log")
         self.logView = self.builder.get_object("textview_log")
@@ -404,25 +407,25 @@ class Handlers:
             self.parent.printToLog('Sharpness must be between -100 and +100!')
 
     # LED Control Section
-    def on_blue_led_button_toggled(self, switch):
+    def on_north_led_button_toggled(self, switch):
         if switch.get_active():
             try:
-                pw = int(self.parent.blueManualEntry.get_text())
+                pw = int(self.parent.northManualEntry.get_text())
             except ValueError:
                 self.parent.printToLog("Pulse width must be an integer!")
                 return
             #TODO: condition this following printToLog on the success of the pulse width setting (exception handled in a different thread)
-            self.parent.printToLog(f"Blue LED on, set to {pw} pulse width")
-            self.parent.parent.GPIO.enable_toggle_led(ZionLEDColor.BLUE, pw)
+            self.parent.printToLog(f"North LED on, set to {pw} pulse width")
+            self.parent.parent.GPIO.enable_toggle_led(ZionLEDColor.NORTH, pw)
         else:
-            self.parent.printToLog("Blue LED off")
-            self.parent.parent.GPIO.disable_toggle_led(ZionLEDColor.BLUE)
+            self.parent.printToLog("North LED off")
+            self.parent.parent.GPIO.disable_toggle_led(ZionLEDColor.NORTH)
 
-    def on_blue_led_manual_entry_focus_out_event(self, entry, _):
-        self.on_blue_led_manual_entry_activate(entry)
+    def on_north_led_manual_entry_focus_out_event(self, entry, _):
+        self.on_north_led_manual_entry_activate(entry)
 
-    def on_blue_led_manual_entry_activate(self, entry):
-        if self.parent.blueSwitch.get_active():
+    def on_north_led_manual_entry_activate(self, entry):
+        if self.parent.northSwitch.get_active():
             # Treat this like we toggled the switch
             try:
                 pw = int(entry.get_text())
@@ -430,28 +433,28 @@ class Handlers:
                 self.parent.printToLog("Pulse width must be an integer!")
                 return
             #TODO: condition this following printToLog on the success of the pulse width setting (exception handled in a different thread)
-            self.parent.printToLog(f"Changing Blue LED pulse width to {pw}")
-            self.parent.parent.GPIO.enable_toggle_led(ZionLEDColor.BLUE, pw)
+            self.parent.printToLog(f"Changing North LED pulse width to {pw}")
+            self.parent.parent.GPIO.enable_toggle_led(ZionLEDColor.NORTH, pw)
 
-    def on_orange_led_button_toggled(self, switch):
+    def on_east_led_button_toggled(self, switch):
         if switch.get_active():
             try:
-                pw = int(self.parent.orangeManualEntry.get_text())
+                pw = int(self.parent.eastManualEntry.get_text())
             except ValueError:
                 self.parent.printToLog("Pulse width must be an integer!")
                 return
             #TODO: condition this following printToLog on the success of the pulse width setting (exception handled in a different thread)
-            self.parent.printToLog(f"Orange LED on, set to {pw} pulse width")
-            self.parent.parent.GPIO.enable_toggle_led(ZionLEDColor.ORANGE, pw)
+            self.parent.printToLog(f"East LED on, set to {pw} pulse width")
+            self.parent.parent.GPIO.enable_toggle_led(ZionLEDColor.EAST, pw)
         else:
-            self.parent.printToLog("Orange LED off")
-            self.parent.parent.GPIO.disable_toggle_led(ZionLEDColor.ORANGE)
+            self.parent.printToLog("East LED off")
+            self.parent.parent.GPIO.disable_toggle_led(ZionLEDColor.EAST)
 
-    def on_orange_led_manual_entry_focus_out_event(self, entry, _):
-        self.on_orange_led_manual_entry_activate(entry)
+    def on_east_led_manual_entry_focus_out_event(self, entry, _):
+        self.on_east_led_manual_entry_activate(entry)
 
-    def on_orange_led_manual_entry_activate(self, entry):
-        if self.parent.orangeSwitch.get_active():
+    def on_east_led_manual_entry_activate(self, entry):
+        if self.parent.eastSwitch.get_active():
             # Treat this like we toggled the switch
             try:
                 pw = int(entry.get_text())
@@ -459,28 +462,28 @@ class Handlers:
                 self.parent.printToLog("Pulse width must be an integer!")
                 return
             #TODO: condition this following printToLog on the success of the pulse width setting (exception handled in a different thread)
-            self.parent.printToLog(f"Changing Orange LED pulse width to {pw}")
-            self.parent.parent.GPIO.enable_toggle_led(ZionLEDColor.ORANGE, pw)
+            self.parent.printToLog(f"Changing East LED pulse width to {pw}")
+            self.parent.parent.GPIO.enable_toggle_led(ZionLEDColor.EAST, pw)
 
-    def on_uv_led_button_toggled(self, switch):
+    def on_south_led_button_toggled(self, switch):
         if switch.get_active():
             try:
-                pw = int(self.parent.uvManualEntry.get_text())
+                pw = int(self.parent.southManualEntry.get_text())
             except ValueError:
                 self.parent.printToLog("Pulse width must be an integer!")
                 return
             #TODO: condition this following printToLog on the success of the pulse width setting (exception handled in a different thread)
-            self.parent.printToLog(f"UV LED on, set to {pw} pulse width")
-            self.parent.parent.GPIO.enable_toggle_led(ZionLEDColor.UV, pw)
+            self.parent.printToLog(f"South LED on, set to {pw} pulse width")
+            self.parent.parent.GPIO.enable_toggle_led(ZionLEDColor.SOUTH, pw)
         else:
-            self.parent.printToLog("UV LED off")
-            self.parent.parent.GPIO.disable_toggle_led(ZionLEDColor.UV)
+            self.parent.printToLog("South LED off")
+            self.parent.parent.GPIO.disable_toggle_led(ZionLEDColor.SOUTH)
 
-    def on_uv_led_manual_entry_focus_out_event(self, entry, _):
-        self.on_uv_led_manual_entry_activate(entry)
+    def on_south_led_manual_entry_focus_out_event(self, entry, _):
+        self.on_south_led_manual_entry_activate(entry)
 
-    def on_uv_led_manual_entry_activate(self, entry):
-        if self.parent.uvSwitch.get_active():
+    def on_south_led_manual_entry_activate(self, entry):
+        if self.parent.southSwitch.get_active():
             # Treat this like we toggled the switch
             try:
                 pw = int(entry.get_text())
@@ -488,8 +491,37 @@ class Handlers:
                 self.parent.printToLog("Pulse width must be an integer!")
                 return
             #TODO: condition this following printToLog on the success of the pulse width setting (exception handled in a different thread)
-            self.parent.printToLog(f"Changing UV LED pulse width to {pw}")
-            self.parent.parent.GPIO.enable_toggle_led(ZionLEDColor.UV, pw)
+            self.parent.printToLog(f"Changing South LED pulse width to {pw}")
+            self.parent.parent.GPIO.enable_toggle_led(ZionLEDColor.SOUTH, pw)
+            
+    def on_west_led_button_toggled(self, switch):
+        if switch.get_active():
+            try:
+                pw = int(self.parent.westManualEntry.get_text())
+            except ValueError:
+                self.parent.printToLog("Pulse width must be an integer!")
+                return
+            #TODO: condition this following printToLog on the success of the pulse width setting (exception handled in a different thread)
+            self.parent.printToLog(f"West LED on, set to {pw} pulse width")
+            self.parent.parent.GPIO.enable_toggle_led(ZionLEDColor.WEST, pw)
+        else:
+            self.parent.printToLog("West LED off")
+            self.parent.parent.GPIO.disable_toggle_led(ZionLEDColor.WEST)
+
+    def on_west_led_manual_entry_focus_out_event(self, entry, _):
+        self.on_west_led_manual_entry_activate(entry)
+
+    def on_west_led_manual_entry_activate(self, entry):
+        if self.parent.westSwitch.get_active():
+            # Treat this like we toggled the switch
+            try:
+                pw = int(entry.get_text())
+            except ValueError:
+                self.parent.printToLog("Pulse width must be an integer!")
+                return
+            #TODO: condition this following printToLog on the success of the pulse width setting (exception handled in a different thread)
+            self.parent.printToLog(f"Changing West LED pulse width to {pw}")
+            self.parent.parent.GPIO.enable_toggle_led(ZionLEDColor.WEST, pw)
 
     # ~ def on_uv_switch_safety_button(self, button):
         # ~ if button.get_active():
@@ -519,9 +551,10 @@ class Handlers:
 
     def on_led_off_button_clicked(self, button):
         # TODO: this should probably call self.parent.parent.GPIO.disable_all_leds() instead
-        self.parent.uvSwitch.set_active(False)
-        self.parent.blueSwitch.set_active(False)
-        self.parent.orangeSwitch.set_active(False)
+        self.parent.southSwitch.set_active(False)
+        self.parent.eastSwitch.set_active(False)
+        self.parent.northSwitch.set_active(False)
+        self.parent.westSwitch.set_active(False)
 
     #Exposure Stuff
     def on_iso_auto_button(self, button):
@@ -732,12 +765,14 @@ class Handlers:
         button.set_sensitive(False)
 
         # Turn off and disable the led toggles
-        self.parent.blueSwitch.set_active(False)
-        self.parent.orangeSwitch.set_active(False)
-        self.parent.uvSwitch.set_active(False)
-        self.parent.blueSwitch.set_sensitive(False)
-        self.parent.orangeSwitch.set_sensitive(False)
-        self.parent.uvSwitch.set_sensitive(False)
+        self.parent.northSwitch.set_active(False)
+        self.parent.eastSwitch.set_active(False)
+        self.parent.southSwitch.set_active(False)
+        self.parent.westSwitch.set_active(False)
+        self.parent.northSwitch.set_sensitive(False)
+        self.parent.eastSwitch.set_sensitive(False)
+        self.parent.southSwitch.set_sensitive(False)
+        self.parent.westSwitch.set_sensitive(False)
 
         self.parent.expModeComboBox.set_active(0)
         comment = self.parent.commentBox.get_text()
@@ -770,9 +805,10 @@ class Handlers:
         self.run_thread = None
         self.parent.parent.GPIO.disable_event_leds()
         self.parent.runProgramButton.set_sensitive(True)
-        self.parent.blueSwitch.set_sensitive(True)
-        self.parent.orangeSwitch.set_sensitive(True)
-        self.parent.uvSwitch.set_sensitive(True)
+        self.parent.northSwitch.set_sensitive(True)
+        self.parent.eastSwitch.set_sensitive(True)
+        self.parent.southSwitch.set_sensitive(True)
+        self.parent.westSwitch.set_sensitive(True)
 
     def on_stop_program_button_clicked(self, button):
         if self.is_program_running():
