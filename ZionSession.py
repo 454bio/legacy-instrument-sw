@@ -365,10 +365,11 @@ class ZionSession():
             GLib.idle_add(partial(self.gui.handlers._update_camera_preview, force=True))
             GLib.idle_add(self.gui.runProgramButton.set_sensitive, True)
             GLib.idle_add(self.gui.stopProgramButton.set_sensitive, False)
-            #TODO: blue and orange switches named here
-            GLib.idle_add(self.gui.blueSwitch.set_sensitive, True)
-            GLib.idle_add(self.gui.orangeSwitch.set_sensitive, True)
-            GLib.idle_add(self.gui.uvSwitch.set_sensitive, True)
+            #TODO: led switches named here
+            GLib.idle_add(self.gui.northSwitch.set_sensitive, True)
+            GLib.idle_add(self.gui.eastSwitch.set_sensitive, True)
+            GLib.idle_add(self.gui.southSwitch.set_sensitive, True)
+            GLib.idle_add(self.gui.westSwitch.set_sensitive, True)
 
     def InteractivePreview(self, window):
         self.Camera.start_preview(fullscreen=False, window=window)
