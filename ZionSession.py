@@ -52,7 +52,8 @@ class ZionSession():
         self.Dir = os.path.join(mod_path, "sessions", f"{filename}_{lastSuffix+1:04d}")
         print('Creating directory '+str(self.Dir))
         os.makedirs(self.Dir)
-
+        
+        self.Temperature = None
         self.Camera = ZionCamera(Binning, Initial_Values, parent=self)
         self.GPIO = ZionGPIO(parent=self)
         self.CaptureCount = 0
@@ -396,3 +397,6 @@ class ZionSession():
             self.update_last_capture_path = None
             self.gui.cameraPreviewWrapper.image_path = t_path
         # self.gui.cameraPreview.get_parent().queue_draw()
+
+    def get_temperature(self):
+        self.Temperature = self.GPIO.read_temperature()
