@@ -21,6 +21,8 @@ Binning = False
     # w/  binning: 0.1 < framerate < 42
     # w/o binning: 0.05 < framerate < 10 fps
 
+Heat_Ctrl_Freq = 10
+
 #Default Values:
 Initial_Values = ZionCameraParameters(
     brightness=    50,

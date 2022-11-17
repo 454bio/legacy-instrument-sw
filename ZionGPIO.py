@@ -635,7 +635,81 @@ class ZionGPIO():
 
     #     self.update_pwm_settings()
 
-    # def send_uv_pulse(self, pulsetime : float, dc : int):
-    #     self.enable_led(ZionLEDColor.UV, dc)
-    #     time.sleep(pulsetime / 1000.)
-    #     self.enable_led(ZionLEDColor.UV, 0)
+class ZionPID():
+	def __init__(self, parent, gpio, frequency=10, P=10, I=2, D=0, delta_t=1, ramp_threshold=10, target_temp=60):
+		self.parent = parent
+		self.gpio = gpio
+		if GpioPins[gpio][1]:
+			self.parent.set_mode(gpio, pigpio.PUD_DOWN)
+			self.parent.set_PWM_range(gpio, 100)
+			self.parent.set_PWM_frequency(gpio,frequency)
+		else:
+			raise ValueError('Chosen GPIO is not enabled!')
+		
+		self.P = P
+		self.I = I
+		self.D = D
+		
+		self.delta_t = delta_t
+		self.ramp_threshold = ramp_threshold
+		self.target_temp = target_temp
+		
+		self.init_vars()
+		self.set_dc(0)
+		self.update_temp()
+		
+		
+	def init_vars(self):
+		self.error = 0
+		self.interror = 0
+		self.dc_cnt = 1
+		self.dc_tot = 0
+	
+	def set_P(self, p):
+		self.P = p
+	
+	def set_I(self, i):
+		self.I = i
+	
+	def set_D(self, d):
+		self.D = d
+		
+	def set_target_temp(self, temp):
+		self.target_temp = temp
+		
+	def set_frequency(self, freq):
+		self.parent.set_PWM_frequency(self.gpio,frequency)
+		
+	def set_dc(self, dc):
+		self.parent.set_PWM_dutycycle(self.gpio,dc)
+		self.dc = dc
+	
+	def update_temp(self):
+		self.temperature = self.parent.read_temperature()
+		
+	def pid_control_loop(self, bias=0):
+		self.update_temp()
+		print('starting initial ramp, temp = '+str(self.temperature))
+		self.set_dc(100)
+		while self.target_temp - self.temperature > self.ramp_threshold:
+			update_temp()
+			time.sleep(self.delta_t)
+
+		print('control loop started')
+		prev_time = time.time()
+		self.init_vars()
+		while True:
+			self.update_temp()
+			curr_time = time.time()
+			self.error = self.target_temp-self.temperature
+			self.interror += error*(curr_time-prev_time)
+			new_dc_value = bias + (self.P*self.error + self.I*self.interror) #todo add D term?
+			# ~ print(str(curr_temp)+ ', power = '+str(power)+', error = '+str(error)+', interror = '+str(interror))
+			if new_dc_value>0:
+				self.dc_tot += new_dc_value
+			self.dc_avg = self.dc_tot/self.dc_cnt
+			self.dc_cnt += 1
+			# ~ print('pwr_avg = '+str(pwr_avg))
+			pi.set_dc(max(min( int(new_dc_value), 100 ),0))
+			prev_time = curr_time
+			time.sleep(self.delta_t)
