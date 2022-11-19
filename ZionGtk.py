@@ -237,7 +237,10 @@ class Handlers:
             self.parent.PID_DeltaT_Entry.set_text(str(delta_t))
         else:
             self.parent.PID_DeltaT_Entry.set_text('-')
+            
         self.parent.PID_EnableButton.set_active(False)
+        if self.parent.parent.GPIO.pigpio_process.Temp_1W_device is None:
+           self.parent.PID_EnableButton.set_sensitive(False)
 
     def _update_camera_preview(self, force=False):
         (x,y,w,h) = self.parent.cameraPreviewWrapper.get_bbox()
