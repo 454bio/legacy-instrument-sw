@@ -39,10 +39,11 @@ Initial_Values = ZionCameraParameters(
 )
 
 PID_Params = {
-'Frequency': 10,
-'P': 12,
+'Target_Temperature': 50,
+'PWM_Frequency': 10,
+'P': 60,
 'I': 2,
-'delta_t': 1,
+'delta_t': 1, #makes no difference as of now (TODO: speed up)
 'bias': 0,
 }
 
