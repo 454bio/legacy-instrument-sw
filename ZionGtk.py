@@ -241,6 +241,8 @@ class Handlers:
         self.parent.PID_EnableButton.set_active(False)
         if self.parent.parent.GPIO.pigpio_process.Temp_1W_device is None:
            self.parent.PID_EnableButton.set_sensitive(False)
+        else:
+            self.parent.PID_EnableButton.set_sensitive(True)
 
     def _update_camera_preview(self, force=False):
         (x,y,w,h) = self.parent.cameraPreviewWrapper.get_bbox()

@@ -141,6 +141,16 @@ class ZionPigpioProcess(multiprocessing.Process):
             self.mp_namespace.pid_delta_t = 1 #PID_Params['delta_t']
             self.pid_freq = PID_Params['PWM_Frequency']
         self.pid_ramp_threshold = None
+        
+        #No check for Temperature Input GPIO pin, this is done in boot config file (including GPIO choice)
+        print('checking for 1-wire interface')
+        base_dir = '/sys/bus/w1/devices/'
+        try:
+            self.Temp_1W_device = glob.glob(base_dir + '28*')[0]
+            print('1-wire interface found at '+ self.Temp_1W_device)
+        except IndexError:
+            print('Warning: 1-Wire interface not connected.')
+            self.Temp_1W_device = None
 
     def run(self):
         self._init_pigpio()
@@ -177,16 +187,6 @@ class ZionPigpioProcess(multiprocessing.Process):
                 self.pi.set_mode(g, pigpio.INPUT)
             else:
                 print(f"GPIO Pin {g} not enabled!")
-                
-        #No check for Temperature Input GPIO pin, this is done in boot config file (including GPIO choice)
-        print('checking for 1-wire interface')
-        base_dir = '/sys/bus/w1/devices/'
-        try:
-            self.Temp_1W_device = glob.glob(base_dir + '28*')[0]
-            print('1-wire interface found at '+ self.Temp_1W_device)
-        except IndexError:
-            print('Warning: 1-Wire interface not connected.')
-            self.Temp_1W_device = None
 
         # Add the callbacks
         self._fstrobe_cb_handle = self.pi.callback(FSTROBE, pigpio.RISING_EDGE, self.fstrobe_cb)
