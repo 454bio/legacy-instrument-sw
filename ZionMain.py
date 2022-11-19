@@ -21,8 +21,6 @@ Binning = False
     # w/  binning: 0.1 < framerate < 42
     # w/o binning: 0.05 < framerate < 10 fps
 
-Heat_Ctrl_Freq = 10
-
 #Default Values:
 Initial_Values = ZionCameraParameters(
     brightness=    50,
@@ -39,6 +37,14 @@ Initial_Values = ZionCameraParameters(
     framerate=     1,
     vflip=         True,
 )
+
+PID_Params = {
+'Frequency': 10,
+'P': 12,
+'I': 2,
+'delta_t': 1,
+'bias': 0,
+}
 
 # Initial_Values = {
 #     'brightness':    50,      # between 0 and 100
@@ -61,7 +67,7 @@ Initial_Values = ZionCameraParameters(
 ########################################################################
 
 # Initialization Block:
-mySession = ZionSession(Session_Name, Binning, Initial_Values)
+mySession = ZionSession(Session_Name, Binning, Initial_Values, PID_Params)
 
 #Next line perform events defined above:
 # ~ mySession.RunProgram()

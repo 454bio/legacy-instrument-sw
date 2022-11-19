@@ -34,7 +34,7 @@ class ZionSession():
     protocolCountDigits = 3
     captureCountPerProtocolDigits = 5
 
-    def __init__(self, session_name, Binning, Initial_Values, overwrite=False):
+    def __init__(self, session_name, Binning, Initial_Values, PID_Params=None, overwrite=False):
 
         self.Name=session_name
         now = datetime.now()
@@ -55,7 +55,7 @@ class ZionSession():
         
         self.Temperature = None
         self.Camera = ZionCamera(Binning, Initial_Values, parent=self)
-        self.GPIO = ZionGPIO(parent=self)
+        self.GPIO = ZionGPIO(parent=self, PID_Params=PID_Params)
         self.CaptureCount = 0
         self.SplitterCount = 0
         self.ProtocolCount = 0

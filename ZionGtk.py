@@ -79,6 +79,12 @@ class ZionGUI():
         self.frBuffer = self.builder.get_object("framerate_buffer")
         self.frEntry = self.builder.get_object("framerate_entry")
 
+        self.P_Entry = self.builder.get_object("pid_P_entry")
+        self.I_Entry = self.builder.get_object("pid_I_entry")
+        self.TargetTempEntry = self.builder.get_object("pid_temperature_entry")
+        self.PID_DeltaT_Entry = self.builder.get_object("pid_tDelta_entry")
+        self.PID_EnableButton = self.builder.get_object("pid_enable_button")
+
         self.blueManualEntry = self.builder.get_object("blue_led_manual_entry")
         self.orangeManualEntry = self.builder.get_object("orange_led_manual_entry")
         self.uvManualEntry = self.builder.get_object("uv_led_manual_entry")
@@ -203,13 +209,35 @@ class Handlers:
         self.updateExpParams()
         self.update_exp_params_sourceid = GObject.timeout_add(2000, self.updateExpParams)
         self.updateTemp()
-        self.update_temp_sourceid = GObject.timeout_add(5000, self.updateTemp)
+        self.update_temp_sourceid = GObject.timeout_add(2500, self.updateTemp)
         self.lastShutterTime = self.parent.parent.Camera.exposure_speed
         self.run_thread = None
         self.stop_run_thread = threading.Event()
         self.camera_preview_window = (1172, 75, 720, 540)
         self.recent_protocol_file = None
         self.recent_params_file = None
+        
+        P = self.parent.parent.GPIO.pigpio_process.mp_namespace.P
+        I = self.parent.parent.GPIO.pigpio_process.mp_namespace.I
+        target_temp = self.parent.parent.GPIO.pigpio_process.mp_namespace.target_temp
+        delta_t = self.parent.parent.GPIO.pigpio_process.mp_namespace.pid_delta_t
+        if P is not None:
+            self.parent.P_Entry.set_text(str(P))
+        else:
+            self.parent.P_Entry.set_text('-')
+        if I is not None:
+            self.parent.I_Entry.set_text(str(I))
+        else:
+            self.parent.I_Entry.set_text('-')
+        if target_temp is not None:
+            self.parent.TargetTempEntry.set_text(str(target_temp))
+        else:
+            self.parent.TargetTempEntry.set_text('-')
+        if delta_t is not None:
+            self.parent.PID_DeltaT_Entry.set_text(str(delta_t))
+        else:
+            self.parent.PID_DeltaT_Entry.set_text('-')
+        self.parent.PID_EnableButton.set_active(False)
 
     def _update_camera_preview(self, force=False):
         (x,y,w,h) = self.parent.cameraPreviewWrapper.get_bbox()
@@ -232,8 +260,6 @@ class Handlers:
         # Added following line to resolve stopping toggle led thread too early
         # TODO: change this? thread-safe?
         time.sleep(1)
-        GObject.source_remove(self.source_id)
-        
         GObject.source_remove(self.update_exp_params_sourceid)
         GObject.source_remove(self.update_temp_sourceid)
         
@@ -309,14 +335,69 @@ class Handlers:
         return True
         
     def updateTemp(self):
-        get_temp_thread = threading.Thread(target=self.parent.parent.get_temperature)
-        get_temp_thread.daemon = True
-        get_temp_thread.start()
-        if self.parent.parent.Temperature:
-            self.parent.temperatureBuffer.set_text("{:02.1f}".format(self.parent.parent.Temperature))
+        #get_temp_thread = threading.Thread(target=self.parent.parent.get_temperature)
+        #get_temp_thread.daemon = True
+        #get_temp_thread.start()
+        temperature = self.parent.parent.GPIO.pigpio_process.mp_namespace.temperature
+        if temperature is not None:
+            self.parent.temperatureBuffer.set_text("{:02.1f}".format(temperature))
         else:
             self.parent.temperatureBuffer.set_text("-")
         return True
+        
+    def on_pid_enable_button_toggled(self, button):
+        if button.get_active():
+            self.parent.printToLog("Enabling PID")
+            self.parent.parent.GPIO.enable_PID(True)
+        else:
+            self.parent.printToLog("Disabling PID")
+            self.parent.parent.GPIO.enable_PID(False)
+            
+    def on_pid_temperature_entry_activate(self, entry):
+        try:
+            val = int(entry.get_text())
+        except ValueError:
+            self.parent.printToLog("Temperature must be integer!")
+            return
+        # ~ self.parent.parent.GPIO.pigpio_process.mp_namespace.target_temp = val
+        self.parent.parent.GPIO.set_target_temperature(val)
+        
+    def on_pid_P_entry_activate(self, entry):
+        try:
+            val = float(entry.get_text())
+        except ValueError:
+            self.parent.printToLog("P Value must be non-negative and numeric!")
+            return
+        self.parent.parent.GPIO.pigpio_process.mp_namespace.P = val
+        if val<0:
+            self.parent.printToLog("P Value must be non-negative numeric!")
+            return
+    def on_pid_I_entry_activate(self, entry):
+        try:
+            val = float(entry.get_text())
+        except ValueError:
+            self.parent.printToLog("I Value must be non-negative numeric!")
+            return
+        if val<0:
+            self.parent.printToLog("I Value must be non-negative numeric!")
+            return
+        self.parent.parent.GPIO.pigpio_process.mp_namespace.I = val
+        
+    def on_pid_tDelta_entry_activate(self, entry):
+        try:
+            val = float(entry.get_text())
+        except ValueError:
+            self.parent.printToLog("t_delta Value must be numeric!")
+            return
+        self.parent.parent.GPIO.pigpio_process.mp_namespace.pid_t_delta = val
+        
+    def on_pid_threshold_entry_activate(self, entry):
+        try:
+            val = int(entry.get_text())
+        except ValueError:
+            self.parent.printToLog("Ramp Threshold Value must be an integer!")
+            return
+        self.parent.parent.GPIO.pigpio_process.pid_ramp_threshold = val
                         
     def reset_button_click(self, *args):
         self.parent.printToLog('Setting Video Params to Defaults')
