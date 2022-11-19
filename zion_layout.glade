@@ -1711,6 +1711,7 @@
                                     <child>
                                       <object class="GtkEntry" id="pid_tDelta_entry">
                                         <property name="visible">True</property>
+                                        <property name="sensitive">False</property>
                                         <property name="can-focus">True</property>
                                         <property name="margin-right">6</property>
                                         <property name="width-chars">4</property>

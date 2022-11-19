@@ -389,7 +389,7 @@ class Handlers:
         except ValueError:
             self.parent.printToLog("t_delta Value must be numeric!")
             return
-        self.parent.parent.GPIO.pigpio_process.mp_namespace.pid_t_delta = val
+        self.parent.parent.GPIO.pigpio_process.mp_namespace.pid_delta_t = val
         
     def on_pid_threshold_entry_activate(self, entry):
         try:
