@@ -615,8 +615,14 @@ class ZionPigpioProcess(multiprocessing.Process):
             f = open(self.Temp_1W_device+'/w1_slave', 'r')
             lines = f.readlines()
             f.close()
+            try:
+                test_lines = lines[0][-4:-1]
+            except IndexError:
+                print('Serial communications issue!')
+                return None
             if not lines[0][-4:-1]=='YES':
                 print('Serial communications issue!')
+                return None
             else:
                 equals_pos = lines[1].find('t=')
                 temp_c = float(lines[1][equals_pos+2:])/1000.
