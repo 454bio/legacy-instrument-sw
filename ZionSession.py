@@ -34,7 +34,7 @@ class ZionSession():
     protocolCountDigits = 3
     captureCountPerProtocolDigits = 5
 
-    def __init__(self, session_name, Binning, Initial_Values, overwrite=False):
+    def __init__(self, session_name, Binning, Initial_Values, PID_Params=None, overwrite=False):
 
         self.Name=session_name
         now = datetime.now()
@@ -52,9 +52,10 @@ class ZionSession():
         self.Dir = os.path.join(mod_path, "sessions", f"{filename}_{lastSuffix+1:04d}")
         print('Creating directory '+str(self.Dir))
         os.makedirs(self.Dir)
-
+        
+        self.Temperature = None
         self.Camera = ZionCamera(Binning, Initial_Values, parent=self)
-        self.GPIO = ZionGPIO(parent=self)
+        self.GPIO = ZionGPIO(parent=self, PID_Params=PID_Params)
         self.CaptureCount = 0
         self.SplitterCount = 0
         self.ProtocolCount = 0
@@ -397,3 +398,6 @@ class ZionSession():
             self.update_last_capture_path = None
             self.gui.cameraPreviewWrapper.image_path = t_path
         # self.gui.cameraPreview.get_parent().queue_draw()
+
+    def get_temperature(self):
+        self.Temperature = self.GPIO.read_temperature()
