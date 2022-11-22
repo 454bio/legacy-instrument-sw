@@ -2466,13 +2466,13 @@
                             <property name="visible">True</property>
                             <property name="can-focus">False</property>
                             <child>
-                              <object class="GtkEntry" id="north_led_manual_entry">
+                              <object class="GtkEntry" id="blue_led_manual_entry">
                                 <property name="visible">True</property>
                                 <property name="can-focus">True</property>
                                 <property name="width-chars">3</property>
                                 <property name="text" translatable="yes">10</property>
-                                <signal name="activate" handler="on_north_led_manual_entry_activate" swapped="no"/>
-                                <signal name="focus-out-event" handler="on_north_led_manual_entry_focus_out_event" swapped="no"/>
+                                <signal name="activate" handler="on_blue_led_manual_entry_activate" swapped="no"/>
+                                <signal name="focus-out-event" handler="on_blue_led_manual_entry_focus_out_event" swapped="no"/>
                               </object>
                               <packing>
                                 <property name="expand">False</property>
@@ -2481,12 +2481,12 @@
                               </packing>
                             </child>
                             <child>
-                              <object class="GtkCheckButton" id="north_led_switch">
+                              <object class="GtkCheckButton" id="blue_led_switch">
                                 <property name="visible">True</property>
                                 <property name="can-focus">True</property>
                                 <property name="receives-default">False</property>
                                 <property name="draw-indicator">True</property>
-                                <signal name="toggled" handler="on_north_led_button_toggled" swapped="no"/>
+                                <signal name="toggled" handler="on_blue_led_button_toggled" swapped="no"/>
                               </object>
                               <packing>
                                 <property name="expand">False</property>
@@ -2502,7 +2502,7 @@
                       <object class="GtkLabel">
                         <property name="visible">True</property>
                         <property name="can-focus">False</property>
-                        <property name="label" translatable="yes">Toggle North</property>
+                        <property name="label" translatable="yes">Blue</property>
                       </object>
                     </child>
                   </object>
@@ -2528,15 +2528,15 @@
                             <property name="visible">True</property>
                             <property name="can-focus">False</property>
                             <child>
-                              <object class="GtkEntry" id="east_led_manual_entry">
+                              <object class="GtkEntry" id="green_led_manual_entry">
                                 <property name="visible">True</property>
                                 <property name="can-focus">True</property>
                                 <property name="activates-default">True</property>
                                 <property name="width-chars">3</property>
                                 <property name="text" translatable="yes">10</property>
                                 <property name="input-purpose">digits</property>
-                                <signal name="activate" handler="on_east_led_manual_entry_activate" swapped="no"/>
-                                <signal name="focus-out-event" handler="on_east_led_manual_entry_focus_out_event" swapped="no"/>
+                                <signal name="activate" handler="on_green_led_manual_entry_activate" swapped="no"/>
+                                <signal name="focus-out-event" handler="on_green_led_manual_entry_focus_out_event" swapped="no"/>
                               </object>
                               <packing>
                                 <property name="expand">False</property>
@@ -2545,12 +2545,12 @@
                               </packing>
                             </child>
                             <child>
-                              <object class="GtkCheckButton" id="east_led_switch">
+                              <object class="GtkCheckButton" id="green_led_switch">
                                 <property name="visible">True</property>
                                 <property name="can-focus">True</property>
                                 <property name="receives-default">False</property>
                                 <property name="draw-indicator">True</property>
-                                <signal name="toggled" handler="on_east_led_button_toggled" swapped="no"/>
+                                <signal name="toggled" handler="on_green_led_button_toggled" swapped="no"/>
                               </object>
                               <packing>
                                 <property name="expand">False</property>
@@ -2566,7 +2566,7 @@
                       <object class="GtkLabel">
                         <property name="visible">True</property>
                         <property name="can-focus">False</property>
-                        <property name="label" translatable="yes">Toggle East</property>
+                        <property name="label" translatable="yes">Green</property>
                       </object>
                     </child>
                   </object>
@@ -2592,13 +2592,13 @@
                             <property name="visible">True</property>
                             <property name="can-focus">False</property>
                             <child>
-                              <object class="GtkEntry" id="south_led_manual_entry">
+                              <object class="GtkEntry" id="orange_led_manual_entry">
                                 <property name="visible">True</property>
                                 <property name="can-focus">True</property>
                                 <property name="width-chars">3</property>
                                 <property name="text" translatable="yes">10</property>
-                                <signal name="activate" handler="on_south_led_manual_entry_activate" swapped="no"/>
-                                <signal name="focus-out-event" handler="on_south_led_manual_entry_focus_out_event" swapped="no"/>
+                                <signal name="activate" handler="on_orange_led_manual_entry_activate" swapped="no"/>
+                                <signal name="focus-out-event" handler="on_orange_led_manual_entry_focus_out_event" swapped="no"/>
                               </object>
                               <packing>
                                 <property name="expand">False</property>
@@ -2607,29 +2607,17 @@
                               </packing>
                             </child>
                             <child>
-                              <object class="GtkCheckButton" id="south_led_switch">
+                              <object class="GtkCheckButton" id="orange_led_switch">
                                 <property name="visible">True</property>
                                 <property name="can-focus">True</property>
                                 <property name="receives-default">False</property>
                                 <property name="draw-indicator">True</property>
-                                <signal name="toggled" handler="on_south_led_button_toggled" swapped="no"/>
+                                <signal name="toggled" handler="on_orange_led_button_toggled" swapped="no"/>
                               </object>
                               <packing>
                                 <property name="expand">False</property>
                                 <property name="fill">True</property>
                                 <property name="position">1</property>
-                              </packing>
-                            </child>
-                            <child>
-                              <object class="GtkButton" id="uv_led_pulse_button1">
-                                <property name="label" translatable="yes">Pulse!</property>
-                                <property name="can-focus">True</property>
-                                <property name="receives-default">True</property>
-                              </object>
-                              <packing>
-                                <property name="expand">False</property>
-                                <property name="fill">True</property>
-                                <property name="position">2</property>
                               </packing>
                             </child>
                           </object>
@@ -2641,7 +2629,7 @@
                         <property name="visible">True</property>
                         <property name="can-focus">False</property>
                         <property name="halign">center</property>
-                        <property name="label" translatable="yes">Toggle South</property>
+                        <property name="label" translatable="yes">Orange</property>
                       </object>
                     </child>
                   </object>
@@ -2668,13 +2656,13 @@
                             <property name="visible">True</property>
                             <property name="can-focus">False</property>
                             <child>
-                              <object class="GtkEntry" id="west_led_manual_entry">
+                              <object class="GtkEntry" id="red_led_manual_entry">
                                 <property name="visible">True</property>
                                 <property name="can-focus">True</property>
                                 <property name="width-chars">3</property>
                                 <property name="text" translatable="yes">10</property>
-                                <signal name="activate" handler="on_west_led_manual_entry_activate" swapped="no"/>
-                                <signal name="focus-out-event" handler="on_west_led_manual_entry_focus_out_event" swapped="no"/>
+                                <signal name="activate" handler="on_red_led_manual_entry_activate" swapped="no"/>
+                                <signal name="focus-out-event" handler="on_red_led_manual_entry_focus_out_event" swapped="no"/>
                               </object>
                               <packing>
                                 <property name="expand">False</property>
@@ -2683,12 +2671,76 @@
                               </packing>
                             </child>
                             <child>
-                              <object class="GtkCheckButton" id="west_led_switch">
+                              <object class="GtkCheckButton" id="red_led_switch">
                                 <property name="visible">True</property>
                                 <property name="can-focus">True</property>
                                 <property name="receives-default">False</property>
                                 <property name="draw-indicator">True</property>
-                                <signal name="toggled" handler="on_west_led_button_toggled" swapped="no"/>
+                                <signal name="toggled" handler="on_red_led_button_toggled" swapped="no"/>
+                              </object>
+                              <packing>
+                                <property name="expand">False</property>
+                                <property name="fill">True</property>
+                                <property name="position">1</property>
+                              </packing>
+                            </child>
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+                    <child type="label">
+                      <object class="GtkLabel">
+                        <property name="visible">True</property>
+                        <property name="can-focus">False</property>
+                        <property name="halign">center</property>
+                        <property name="label" translatable="yes">Red</property>
+                      </object>
+                    </child>
+                  </object>
+                  <packing>
+                    <property name="expand">False</property>
+                    <property name="fill">True</property>
+                    <property name="padding">6</property>
+                    <property name="position">6</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkFrame">
+                    <property name="visible">True</property>
+                    <property name="can-focus">False</property>
+                    <property name="label-xalign">0</property>
+                    <property name="shadow-type">none</property>
+                    <child>
+                      <object class="GtkAlignment">
+                        <property name="visible">True</property>
+                        <property name="can-focus">False</property>
+                        <property name="left-padding">5</property>
+                        <child>
+                          <object class="GtkBox">
+                            <property name="visible">True</property>
+                            <property name="can-focus">False</property>
+                            <child>
+                              <object class="GtkEntry" id="uv_led_manual_entry">
+                                <property name="visible">True</property>
+                                <property name="can-focus">True</property>
+                                <property name="width-chars">3</property>
+                                <property name="text" translatable="yes">10</property>
+                                <signal name="activate" handler="on_uv_led_manual_entry_activate" swapped="no"/>
+                                <signal name="focus-out-event" handler="on_uv_led_manual_entry_focus_out_event" swapped="no"/>
+                              </object>
+                              <packing>
+                                <property name="expand">False</property>
+                                <property name="fill">True</property>
+                                <property name="position">0</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <object class="GtkCheckButton" id="uv_led_switch">
+                                <property name="visible">True</property>
+                                <property name="can-focus">True</property>
+                                <property name="receives-default">False</property>
+                                <property name="draw-indicator">True</property>
+                                <signal name="toggled" handler="on_uv_led_button_toggled" swapped="no"/>
                               </object>
                               <packing>
                                 <property name="expand">False</property>
@@ -2701,8 +2753,6 @@
                                 <property name="label" translatable="yes">Pulse!</property>
                                 <property name="can-focus">True</property>
                                 <property name="receives-default">True</property>
-                                <property name="margin-left">5</property>
-                                <signal name="clicked" handler="on_uv_led_pulse_button" swapped="no"/>
                               </object>
                               <packing>
                                 <property name="expand">False</property>
@@ -2719,7 +2769,7 @@
                         <property name="visible">True</property>
                         <property name="can-focus">False</property>
                         <property name="halign">center</property>
-                        <property name="label" translatable="yes">Toggle West</property>
+                        <property name="label" translatable="yes">UV</property>
                       </object>
                     </child>
                   </object>
@@ -2727,7 +2777,7 @@
                     <property name="expand">False</property>
                     <property name="fill">True</property>
                     <property name="padding">6</property>
-                    <property name="position">6</property>
+                    <property name="position">7</property>
                   </packing>
                 </child>
                 <child>
@@ -2742,7 +2792,7 @@
                   <packing>
                     <property name="expand">False</property>
                     <property name="fill">True</property>
-                    <property name="position">7</property>
+                    <property name="position">8</property>
                   </packing>
                 </child>
               </object>
