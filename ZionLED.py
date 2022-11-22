@@ -11,12 +11,11 @@ from ZionErrors import (
 )
 
 class ZionLEDColor(IntEnum):
-    WEST = 0
-    NORTH = 1
-    SOUTH = 2
-    # TODO define color names here?
-    EAST = 3
-    COLOR4 = 4
+    UV = 0
+    BLUE = 1
+    GREEN = 2
+    ORANGE = 3
+    RED = 4
     COLOR5 = 5
     COLOR6 = 6
     COLOR7 = 7

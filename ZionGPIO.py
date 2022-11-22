@@ -55,12 +55,11 @@ GpioPins = (
 # 2 GPIOs for each LED:
 LED_GPIOS = {
     # TODO: Need to add assert that the keys of LED_GPIOS are ZionLEDColor
-    ZionLEDColor.WEST: [18,19], #LED_ENs 2,3 gpio hw pins 12,35
-    ZionLEDColor.NORTH: [20,21], #LED_ENs 4,5 gpio hw pins 38,40
-    ZionLEDColor.SOUTH: [16,17], #LED_ENs 0,1 gpio hw pins 36,11
-    # TODO: update color names here and/or assign multiple GPIOs to colors
-    ZionLEDColor.EAST: [22,23], #LED_ENs 6,7 gpio hw pins 15,16
-    ZionLEDColor.COLOR4: [],
+    ZionLEDColor.UV:     [18,19,22,23], #LED_ENs 2,3,6,7 gpio hw pins 12,35,15,16
+    ZionLEDColor.BLUE:   [16], #LED_EN 0 gpio hw pin 36
+    ZionLEDColor.GREEN:  [17], #LED_EN 1 gpio hw pin 11
+    ZionLEDColor.ORANGE: [20], #LED_EN 4 gpio hw pin 38
+    ZionLEDColor.RED:    [21], #LED_EN 5 gpio hw pin 40
     ZionLEDColor.COLOR5: [],
     ZionLEDColor.COLOR6: [],
     ZionLEDColor.COLOR7: [],
