@@ -287,7 +287,7 @@ class ZionCamera(PiCamera):
 			# ~ ret = super(ZionCamera,self).capture_sequence([fileToWrite], use_video_port=False, bayer=False, burst=True)
 
 		if self.parent:
-			GLib.idle_add(self.parent.update_last_capture, fileToWrite)
+			GLib.idle_add(self.parent.update_last_capture)
 
 		self.zoom=(0,0,1,1)
 		return ret

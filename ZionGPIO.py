@@ -1,4 +1,5 @@
 import glob
+import time
 import multiprocessing
 import multiprocessing.synchronize
 from operator import methodcaller, attrgetter
@@ -98,7 +99,8 @@ FAN_TACH = 9 #pin 21
 class ZionPigpioProcess(multiprocessing.Process):
     def __init__(self, xvs_delay_ms: float = 0.0, led_gpios=LED_GPIOS,
                 temp_out_gpio=TEMP_OUTPUT, temp_in_gpio=TEMP_INPUT_1W,
-                camera_trigger_gpio=CAMERA_TRIGGER, debug_trigger_gpio=DEBUG_TRIGGER):
+                camera_trigger_gpio=CAMERA_TRIGGER, debug_trigger_gpio=DEBUG_TRIGGER,
+                PID_Params=None):
         super().__init__()
         self.led_gpios = led_gpios
         self.temp_out_gpio = temp_out_gpio
@@ -122,6 +124,33 @@ class ZionPigpioProcess(multiprocessing.Process):
         self.event_led_wave_ids = self._mp_manager.dict()
         self.mp_namespace.num_event_frames = 0
         self.mp_namespace.num_fstrobes = 0
+
+
+        self.Temp_1W_device = None
+        # ~ P=10, I=2, D=0, delta_t=1, ramp_threshold=10, target_temp=25
+        self.mp_namespace.temperature = None
+        
+        self.mp_namespace.pid_reset = True
+        self.mp_namespace.pid_enable = False
+        if PID_Params is not None:
+            self.mp_namespace.target_temp = PID_Params['Target_Temperature']
+            self.pid_bias = PID_Params['bias']
+            self.mp_namespace.P = PID_Params['P']
+            self.mp_namespace.I = PID_Params['I']
+            # ~ self.mp_namespace.D = PID_Params['D']
+            self.mp_namespace.pid_delta_t = 1 #PID_Params['delta_t']
+            self.pid_freq = PID_Params['PWM_Frequency']
+        self.pid_ramp_threshold = None
+        
+        #No check for Temperature Input GPIO pin, this is done in boot config file (including GPIO choice)
+        print('checking for 1-wire interface')
+        base_dir = '/sys/bus/w1/devices/'
+        try:
+            self.Temp_1W_device = glob.glob(base_dir + '28*')[0]
+            print('1-wire interface found at '+ self.Temp_1W_device)
+        except IndexError:
+            print('Warning: 1-Wire interface not connected.')
+            self.Temp_1W_device = None
 
     def run(self):
         self._init_pigpio()
@@ -162,6 +191,13 @@ class ZionPigpioProcess(multiprocessing.Process):
         # Add the callbacks
         self._fstrobe_cb_handle = self.pi.callback(FSTROBE, pigpio.RISING_EDGE, self.fstrobe_cb)
         self._xvs_cb_handle = self.pi.callback(XVS, pigpio.RISING_EDGE, self.xvs_cb)
+        
+        #print(self.Temp_1W_device)
+        #if self.Temp_1W_device is not None:
+        #    self.PID = ZionPID(self, self.temp_out_gpio)
+        #else:
+        #    print('no 1W device, not creating PID')
+
 
     def _start_child_threads(self):
         self._toggle_led_handle = threading.Thread(
@@ -191,6 +227,13 @@ class ZionPigpioProcess(multiprocessing.Process):
         )
         self._debug_trigger_handle.daemon = True
         self._debug_trigger_handle.start()
+        
+        self._pid_loop = threading.Thread(
+			target=self._pid_control_thread,
+			args = (self.mp_namespace, self.pid_freq, self.pid_bias, self.pid_ramp_threshold, self.temp_out_gpio, self.pi)
+		)
+        self._pid_loop.daemon = True
+        self._pid_loop.start()
 
     def _cleanup(self):
         """ Cleanup pigpio and signal the child threads to quit """
@@ -215,9 +258,17 @@ class ZionPigpioProcess(multiprocessing.Process):
         self._debug_trigger_handle.join(1.0)
         if self._debug_trigger_handle.is_alive():
             print("_debug_trigger_thread is still alive!")
+        
+        #TODO: necessary? it'll always be still alive
+        self.mp_namespace.pid_enable = False
+        self.pi.set_PWM_dutycycle(self.temp_out_gpio,0)
+        # ~ self._pid_loop.join(1.0)
+        # ~ if self._pid_loop.is_alive():
+            # ~ print("_pid_control_thread is still alive!")
 
         self.pi.wave_tx_stop()
         self.pi.wave_clear()
+        
         self.pi.stop()
         print("ZionPigpioProcess done!")
 
@@ -261,6 +312,79 @@ class ZionPigpioProcess(multiprocessing.Process):
     def enable_toggle_led(self, color : ZionLEDColor, amt : int, timings : list=None, levels : list=None):
         """ Will send the color/pulse_width to _toggle_led_thread so it can add it to pigpio. """
         self.toggle_led_queue.put((color, amt, timings, levels))
+        
+    def enable_PID(self, bEnable):
+        if bEnable:
+            self.mp_namespace.pid_reset = True
+            self.mp_namespace.pid_enable = True
+        else:
+            self.mp_namespace.pid_enable = False
+
+    def _pid_control_thread(self, mp_namespace : Namespace, freq, bias, pid_ramp_threshold : int,  gpio, pi : pigpio.pi):
+        #First initialize/configure loop:
+        pi.set_PWM_frequency(gpio, freq)
+        pi.set_PWM_range(gpio, 1000)
+        mp_namespace.temperature = self._read_temperature()
+        error = 0
+        interror = 0
+        roundoff = 0
+        
+        #Now turn on ramp 100% if we're far away
+        # ~ if mp_namespace.pid_enable and pid_ramp_threshold is not None:
+            # ~ if mp_namespace.target_temp - mp_namespace.temperature > pid_ramp_threshold:
+                # ~ pi.set_PWM_dutycycle(gpio, 100)
+                # ~ print('starting initial ramp, temp = '+str(mp_namespace.temperature ))
+                # ~ while mp_namespace.target_temp - mp_namespace.temperature > pid_ramp_threshold:
+                    # ~ mp_namespace.temperature = self._read_temperature()
+                    # ~ time.sleep(mp_namespace.pid_delta_t)
+                    
+        while True:
+            t0 = time.perf_counter()
+            mp_namespace.temperature = self._read_temperature()
+            if mp_namespace.pid_enable:
+                if mp_namespace.pid_reset:
+                    print('control loop started')
+                    timer_time = int(0)
+                    prev_time = time.time()
+                    roundoff = 0
+                    #dc_cnt = 1
+                    #dc_tot = 0
+                    mp_namespace.pid_reset = False
+
+                curr_time = time.time()
+                delta_t = curr_time-prev_time
+                timer_time += int(1000*delta_t)
+                error = mp_namespace.target_temp-mp_namespace.temperature
+                interror += mp_namespace.I*error*delta_t
+                pid_value = bias + (mp_namespace.P*error + interror) #todo add D term?
+                
+                #print(f'temp={mp_namespace.temperature}, target={mp_namespace.target_temp},\nP={mp_namespace.P}, I={mp_namespace.I},\nerr={error}, ierr={interror},\ndc={mp_namespace.P}*{error}+{mp_namespace.I}*{interror} ~= {max(min( int(new_dc_value), 100 ),0)}')
+                #if new_dc_value>0:
+                #    dc_tot += new_dc_value
+                #dc_avg = dc_tot/dc_cnt
+                #dc_cnt += 1
+                # ~ print('pwr_avg = '+str(pwr_avg))
+                
+                new_dc_value = int(pid_value + roundoff)
+                if 0 <= new_dc_value <= 1000:
+                    pi.set_PWM_dutycycle(gpio, new_dc_value)
+                    roundoff = pid_value - new_dc_value
+                elif new_dc_value < 0:
+                    roundoff = 0
+                    pi.set_PWM_dutycycle(gpio, 0)
+                    new_dc_value = 0
+                else: #new_dc_value > 1000
+                    roundoff = 0
+                    pi.set_PWM_dutycycle(gpio, 1000)
+                    new_dc_value = 1000
+                print(f'{timer_time:010}, {mp_namespace.P:6.2f}, {mp_namespace.I:5.2f}, {mp_namespace.target_temp:3}, {mp_namespace.temperature:6.2f}, {pid_value:9.3f}, {0.1*new_dc_value:5.1f}')
+                prev_time = curr_time
+                
+            else:
+                pi.set_PWM_dutycycle(gpio, 0)
+            t = time.perf_counter()-t0
+            time.sleep( max([mp_namespace.pid_delta_t - t,0]) )
+
 
     @staticmethod
     def _add_led_waveform(led : ZionLEDs, pi : pigpio.pi, delay : int = 0) -> bool:
@@ -485,23 +609,34 @@ class ZionPigpioProcess(multiprocessing.Process):
     def send_debug_trigger(self):
         """ Send a pulse on the debug_trigger pin """
         self.debug_trigger_event.set()
-
+        
+    def _read_temperature(self):
+        if self.Temp_1W_device is not None:
+            f = open(self.Temp_1W_device+'/w1_slave', 'r')
+            lines = f.readlines()
+            f.close()
+            try:
+                test_lines = lines[0][-4:-1]
+            except IndexError:
+                print('Serial communications issue!')
+                return None
+            if not lines[0][-4:-1]=='YES':
+                print('Serial communications issue!')
+                return None
+            else:
+                equals_pos = lines[1].find('t=')
+                temp_c = float(lines[1][equals_pos+2:])/1000.
+                #print('\nTemperature = '+str(temp_c)+' C')
+            return temp_c
+        else:
+            return None
 
 class ZionGPIO():
     def __init__(
         self, led_gpios=LED_GPIOS, temp_out_gpio=TEMP_OUTPUT, temp_in_gpio=TEMP_INPUT_1W, 
-        camera_trigger_gpio=CAMERA_TRIGGER, parent : Optional['ZionSession'] = None
+        camera_trigger_gpio=CAMERA_TRIGGER, PID_Params=None, parent : Optional['ZionSession'] = None
     ):
         self.parent=parent
-
-        #TODO: implement heat control output
-        #No check for Temperature Input GPIO pin, this is done in boot config file (including GPIO choice)
-        base_dir = '/sys/bus/w1/devices/'
-        try:
-            self.Temp_1W_device = glob.glob(base_dir + '28*')[0]
-        except IndexError:
-            print('Warning: 1-Wire interface not connected.')
-            self.Temp_1W_device = None
 
         print(f"ZionGPIO -- get_start_method: {multiprocessing.get_start_method()}")
         if parent:
@@ -509,7 +644,10 @@ class ZionGPIO():
         else:
             xvs_delay = 86.8422816
 
-        self.pigpio_process = ZionPigpioProcess(led_gpios=led_gpios, temp_out_gpio=temp_out_gpio, temp_in_gpio=temp_in_gpio, camera_trigger_gpio=camera_trigger_gpio, xvs_delay_ms=(1000/self.parent.Camera.framerate)+xvs_delay-(self.parent.Camera.exposure_speed/1000))
+        self.pigpio_process = ZionPigpioProcess(led_gpios=led_gpios,
+                                                temp_out_gpio=temp_out_gpio, temp_in_gpio=temp_in_gpio,
+                                                camera_trigger_gpio=camera_trigger_gpio, xvs_delay_ms=(1000/self.parent.Camera.framerate)+xvs_delay-(self.parent.Camera.exposure_speed/1000),
+                                                PID_Params=PID_Params)
         self.pigpio_process.start()
 
     def camera_trigger(self):
@@ -518,20 +656,7 @@ class ZionGPIO():
     def debug_trigger(self):
         self.pigpio_process.send_debug_trigger()
 
-    def read_temperature(self):
-        if self.Temp_1W_device:
-            f = open(self.Temp_1W_device+'/w1_slave', 'r')
-            lines = f.readlines()
-            f.close()
-            if not lines[0][-4:-1]=='YES':
-                print('Serial communications issue!')
-            else:
-                equals_pos = lines[1].find('t=')
-                temp_c = float(lines[1][equals_pos+2:])/1000.
-                # ~ print('\nTemperature = '+str(temp_c)+' C')
-            return temp_c
-        else:
-            return None
+
 
     def get_num_fstrobes(self):
         return self.pigpio_process.get_num_fstrobes()
@@ -634,8 +759,97 @@ class ZionGPIO():
     #         self.parent.gui.printToLog(f"{color.name} set to {amt}")
 
     #     self.update_pwm_settings()
+    
+    def read_temperature(self):
+        return self.pigpio_process._read_temperature()
+    
+    def set_target_temperature(self, temp):
+        self.pigpio_process.mp_namespace.pid_reset = True
+        self.pigpio_process.mp_namespace.target_temp = temp
 
-    # def send_uv_pulse(self, pulsetime : float, dc : int):
-    #     self.enable_led(ZionLEDColor.UV, dc)
-    #     time.sleep(pulsetime / 1000.)
-    #     self.enable_led(ZionLEDColor.UV, 0)
+    def enable_PID(self, bEnable):
+        self.pigpio_process.enable_PID(bEnable)
+
+# ~ class ZionPID():
+	# ~ def __init__(self, parent, gpio, frequency=10, P=10, I=2, D=0, delta_t=1, ramp_threshold=10, target_temp=25):
+		# ~ self.parent = parent
+		# ~ self.gpio = gpio
+		# ~ if GpioPins[gpio][1]:
+			# ~ self.parent.pi.set_mode(gpio, pigpio.PUD_DOWN)
+			# ~ self.parent.pi.set_PWM_range(gpio, 100)
+			# ~ self.parent.pi.set_PWM_frequency(gpio,frequency)
+		# ~ else:
+			# ~ raise ValueError('Chosen GPIO is not enabled!')
+		
+		# ~ self.P = P
+		# ~ self.I = I
+		# ~ self.D = D
+		
+		# ~ self.delta_t = delta_t
+		# ~ self.ramp_threshold = ramp_threshold
+		# ~ self.target_temp = target_temp
+		
+		# ~ self.init_vars()
+		# ~ self.set_dc(0)
+		# ~ self.update_temp()
+		
+		# ~ self.Enable = False
+		
+	# ~ def enable_PID(self, bEnable):
+		# ~ self.Enable = bEnable
+		
+	# ~ def init_vars(self):
+		# ~ self.error = 0
+		# ~ self.interror = 0
+		# ~ self.dc_cnt = 1
+		# ~ self.dc_tot = 0
+	
+	# ~ def set_P(self, p):
+		# ~ self.P = p
+	
+	# ~ def set_I(self, i):
+		# ~ self.I = i
+	
+	# ~ def set_D(self, d):
+		# ~ self.D = d
+		
+	# ~ def set_target_temp(self, temp):
+		# ~ self.target_temp = temp
+		
+	# ~ def set_frequency(self, freq):
+		# ~ self.parent.pi.set_PWM_frequency(self.gpio,frequency)
+		
+	# ~ def set_dc(self, dc):
+		# ~ self.parent.pi.set_PWM_dutycycle(self.gpio,dc)
+		# ~ self.dc = dc
+	
+	# ~ def update_temp(self):
+		# ~ self.temperature = self.parent._read_temperature()
+		
+	# ~ def pid_control_loop(self, bias=0):
+		# ~ if self.Enable:
+			# ~ self.update_temp()
+			# ~ print('starting initial ramp, temp = '+str(self.temperature))
+			# ~ self.set_dc(100)
+			# ~ while self.target_temp - self.temperature > self.ramp_threshold:
+				# ~ update_temp()
+				# ~ time.sleep(self.delta_t)
+
+			# ~ print('control loop started')
+			# ~ prev_time = time.time()
+			# ~ self.init_vars()
+			# ~ while True:
+				# ~ self.update_temp()
+				# ~ curr_time = time.time()
+				# ~ self.error = self.target_temp-self.temperature
+				# ~ self.interror += error*(curr_time-prev_time)
+				# ~ new_dc_value = bias + (self.P*self.error + self.I*self.interror) #todo add D term?
+				# ~ print(str(curr_temp)+ ', power = '+str(power)+', error = '+str(error)+', interror = '+str(interror))
+				# ~ if new_dc_value>0:
+					# ~ self.dc_tot += new_dc_value
+				# ~ self.dc_avg = self.dc_tot/self.dc_cnt
+				# ~ self.dc_cnt += 1
+				# ~ print('pwr_avg = '+str(pwr_avg))
+				# ~ self.parent.pi.set_dc(max(min( int(new_dc_value), 100 ),0))
+				# ~ prev_time = curr_time
+				# ~ time.sleep(self.delta_t)
