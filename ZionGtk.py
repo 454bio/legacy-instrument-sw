@@ -832,8 +832,9 @@ class Handlers:
 
         self.parent.expModeComboBox.set_active(0)
         comment = self.parent.commentBox.get_text()
+        suffix = self.parent.suffixBox.get_text()
         self.parent.parent.SaveParameterFile(comment, True)
-        self.parent.parent.SaveProtocolFile(comment=comment)
+        self.parent.parent.SaveProtocolFile(comment=comment, suffix=suffix)
 
         self.stop_run_thread.clear()
         self.parent.parent.Camera.stop_preview()

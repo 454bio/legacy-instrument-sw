@@ -133,14 +133,14 @@ class ZionSession():
         self.Camera.load_params(params)
         return params
 
-    def SaveProtocolFile(self, filename : str = None, comment : str = ""):
+    def SaveProtocolFile(self, filename : str = None, comment : str = "", suffix : str = ""):
         if not filename:
             self.ProtocolCount += 1
             self.captureCountThisProtocol = 0
             filename = os.path.join(self.Dir, str(self.CaptureCount).zfill(ZionSession.captureCountDigits)+'_'+str(self.ProtocolCount).zfill(ZionSession.protocolCountDigits)+'A_Protocol')
 
         self.Protocol.Parameters = self.Camera.get_all_params(comment=comment)
-        self.Protocol.save_to_file(filename)
+        self.Protocol.save_to_file(filename+"_"+suffix)
 
     def LoadProtocolFromFile(self, filename):
         # TODO: Add error handling and notify user
