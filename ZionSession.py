@@ -296,7 +296,7 @@ class ZionSession():
                     capture_busy_event = self.GPIO.get_capture_busy_event()
                     bayer = True
                     quality = 85
-                    for frame_ind, (event, _) in enumerate(zip(flat_events, self.Camera.capture_continuous(seq_stream, format='jpeg', burst=False, bayer=bayer, thumbnail=None, quality=quality))):
+                    for frame_ind, (event, _) in enumerate(zip(flat_events, self.Camera.capture_continuous(seq_stream, format='jpeg', burst=True, bayer=bayer, thumbnail=None, quality=quality))):
                         # print(f"stream_size: {seq_stream.tell()}")
                         # stream_size = seq_stream.tell()
                         # seq_stream.seek(0)
