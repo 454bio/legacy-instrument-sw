@@ -511,8 +511,6 @@ class Handlers:
             #TODO: condition this following printToLog on the success of the pulse width setting (exception handled in a different thread)
             self.parent.printToLog(f"UV LED on, set to {pw} pulse width")
             self.parent.parent.GPIO.enable_toggle_led(ZionLEDColor.UV, pw)
-            #TODO: remove this line once issue is resolved
-            self.parent.runProgramButton.set_sensitive(False)
         else:
             self.parent.printToLog("UV LED off")
             self.parent.parent.GPIO.disable_toggle_led(ZionLEDColor.UV)
@@ -542,8 +540,6 @@ class Handlers:
             #TODO: condition this following printToLog on the success of the pulse width setting (exception handled in a different thread)
             self.parent.printToLog(f"BLUE LED on, set to {pw} pulse width")
             self.parent.parent.GPIO.enable_toggle_led(ZionLEDColor.BLUE, pw)
-            #TODO: remove this line once issue is resolved
-            self.parent.runProgramButton.set_sensitive(False)
         else:
             self.parent.printToLog("BLUE LED off")
             self.parent.parent.GPIO.disable_toggle_led(ZionLEDColor.BLUE)
@@ -573,8 +569,6 @@ class Handlers:
             #TODO: condition this following printToLog on the success of the pulse width setting (exception handled in a different thread)
             self.parent.printToLog(f"GREEN LED on, set to {pw} pulse width")
             self.parent.parent.GPIO.enable_toggle_led(ZionLEDColor.GREEN, pw)
-            #TODO: remove this line once issue is resolved
-            self.parent.runProgramButton.set_sensitive(False)
         else:
             self.parent.printToLog("GREEN LED off")
             self.parent.parent.GPIO.disable_toggle_led(ZionLEDColor.GREEN)
@@ -604,8 +598,6 @@ class Handlers:
             #TODO: condition this following printToLog on the success of the pulse width setting (exception handled in a different thread)
             self.parent.printToLog(f"ORANGE LED on, set to {pw} pulse width")
             self.parent.parent.GPIO.enable_toggle_led(ZionLEDColor.ORANGE, pw)
-            #TODO: remove this line once issue is resolved
-            self.parent.runProgramButton.set_sensitive(False)
         else:
             self.parent.printToLog("ORANGE LED off")
             self.parent.parent.GPIO.disable_toggle_led(ZionLEDColor.ORANGE)
@@ -635,8 +627,6 @@ class Handlers:
             #TODO: condition this following printToLog on the success of the pulse width setting (exception handled in a different thread)
             self.parent.printToLog(f"RED LED on, set to {pw} pulse width")
             self.parent.parent.GPIO.enable_toggle_led(ZionLEDColor.RED, pw)
-            #TODO: remove this line once issue is resolved
-            self.parent.runProgramButton.set_sensitive(False)
         else:
             self.parent.printToLog("RED LED off")
             self.parent.parent.GPIO.disable_toggle_led(ZionLEDColor.RED)
