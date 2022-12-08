@@ -94,22 +94,22 @@ class ZionLEDs(UserDict):
     def clear_wave_id(self):
         self.__pigpio_wave_id = -1
 
-    # ~ def set_pulsetime(
-        # ~ self,
-        # ~ led : Optional[ZionLEDsKT] = None,
-        # ~ pulsetime : Optional[ZionLEDsVT] = None,
-        # ~ led_dict : Optional[Dict[ZionLEDsKT, ZionLEDsVT]] = None):
+    def set_pulsetime(
+        self,
+        led : Optional[ZionLEDsKT] = None,
+        pulsetime : Optional[ZionLEDsVT] = None,
+        led_dict : Optional[Dict[ZionLEDsKT, ZionLEDsVT]] = None):
 
-        # ~ # Check valid arguments
-        # ~ if led is not None or pulsetime is not None:
-            # ~ if led is None:
-                # ~ raise TypeError(f"Missing 'led' parameter for 'pulsetime={pulsetime}'!")
-            # ~ if pulsetime is None:
-                # ~ raise TypeError(f"Can't set 'led={led}' without a 'pulsetime' argument!")
-            # ~ self[led] = pulsetime
+        # Check valid arguments
+        if led is not None or pulsetime is not None:
+            if led is None:
+                raise TypeError(f"Missing 'led' parameter for 'pulsetime={pulsetime}'!")
+            if pulsetime is None:
+                raise TypeError(f"Can't set 'led={led}' without a 'pulsetime' argument!")
+            self[led] = pulsetime
 
-        # ~ if led_dict is not None:
-            # ~ self.update(led_dict)
+        if led_dict is not None:
+            self.update(led_dict)
 
 class ZionLEDTimings(UserDict):
     _colors = list(map(attrgetter('name'), ZionLEDColor))

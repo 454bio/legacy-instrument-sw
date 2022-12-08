@@ -91,8 +91,8 @@ class ZionSession():
         filename = filename+'_'+suffix if ( (not protocol) and (suffix) ) else filename
         if verbose:
             GLib.idle_add(self.gui.printToLog, f"Writing image to file {filename}.jpg")
-
         # ~ try:
+        self.update_last_capture_path = filename+'.jpg'
         self.SplitterCount += 1
         self.Camera.capture(filename, cropping=cropping, splitter=self.SplitterCount % 4, bayer=bayer)
         ret = 0
@@ -252,6 +252,9 @@ class ZionSession():
 
             # rprint("[bold yellow]Grouped Flat Events[/bold yellow]")
             # rprint(grouped_flat_events)
+            
+            #Disable toggle led waveforms:
+            self.GPIO.disable_all_toggle_wf()
 
             # Pre-allocate enough space
             seq_stream = io.BytesIO()
