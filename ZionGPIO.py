@@ -468,24 +468,29 @@ class ZionPigpioProcess(multiprocessing.Process):
 
         while True:
             led, pulse_width, timings, levels = toggle_led_queue.get()
-            if led is None:
-                print("toggle_led_thread -- received stop signal!")
-                break
-
-            print(f"toggle_led_thread -- Received command -- led: {led}  pulse_width: {pulse_width}")
             
-            ##TODO: update the checking necessary...
-            try:
-                #toggle_leds_pw[led] = pulse_width
-                toggle_leds_pw.set_pulsetimings(led, (timings, levels))
-            except ZionInvalidLEDColor:
-                print(f"ERROR: {led} is not a valid LED color!")
-                continue
-            except ZionInvalidLEDPulsetime:
-                print(f"ERROR: {pulse_width} is not a valid pulse width. Valid range is 0-{toggle_leds_pw.max_pulsetime}!")
-                continue
+            if (led, pulse_width, timings, levels) == 4*(None,):
+                added_wf = False
+            else:
+            
+                if led is None:
+                    print("toggle_led_thread -- received stop signal!")
+                    break
 
-            added_wf = self._add_complex_led_waveform(led=toggle_leds_pw, pi=pi) #delays are now embedded in toggle_leds_pw
+                print(f"toggle_led_thread -- Received command -- led: {led}  pulse_width: {pulse_width}")
+            
+                ##TODO: update the checking necessary...
+                try:
+                    #toggle_leds_pw[led] = pulse_width
+                    toggle_leds_pw.set_pulsetimings(led, (timings, levels))
+                except ZionInvalidLEDColor:
+                    print(f"ERROR: {led} is not a valid LED color!")
+                    continue
+                except ZionInvalidLEDPulsetime:
+                    print(f"ERROR: {pulse_width} is not a valid pulse width. Valid range is 0-{toggle_leds_pw.max_pulsetime}!")
+                    continue
+
+                added_wf = self._add_complex_led_waveform(led=toggle_leds_pw, pi=pi) #delays are now embedded in toggle_leds_pw
             old_wave_id = mp_namespace.toggle_led_wave_id
 
             if added_wf:
@@ -730,6 +735,9 @@ class ZionGPIO():
         self.pigpio_process.enable_toggle_led(color, 0, [int(1000000/self.parent.Camera.framerate)], [False])
         if verbose:
             self.parent.gui.printToLog(f"{color.name} set to 0")
+            
+    def disable_all_toggle_wf(self):
+        self.pigpio_process.toggle_led_queue.put(4*(None,))
 
     def load_event_led_wave_ids(self, flat_events : Iterable['ZionEvent']):
         """ Load the LED information into pigpio for the passed in list of events """
