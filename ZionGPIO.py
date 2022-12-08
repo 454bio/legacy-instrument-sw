@@ -312,10 +312,6 @@ class ZionPigpioProcess(multiprocessing.Process):
         """ Will send the color/pulse_width to _toggle_led_thread so it can add it to pigpio. """
         self.toggle_led_queue.put((color, amt, timings, levels))
         
-    def disable_toggle_led(self):#, color : ZionLEDColor, amt : int, timings : list=None, levels : list=None):
-        """ Will send the color/pulse_width to _toggle_led_thread so it can add it to pigpio. """
-        self.toggle_led_queue.put(4*(None,))
-
     def enable_PID(self, bEnable):
         if bEnable:
             self.mp_namespace.pid_reset = True
@@ -471,15 +467,20 @@ class ZionPigpioProcess(multiprocessing.Process):
 
         while True:
             led, pulse_width, timings, levels = toggle_led_queue.get()
+            
             if (led, pulse_width, timings, levels) == 4*(None,):
                 added_wf = False
             else:
+            
                 if led is None:
                     print("toggle_led_thread -- received stop signal!")
                     break
 
                 print(f"toggle_led_thread -- Received command -- led: {led}  pulse_width: {pulse_width}")
+            
+                ##TODO: update the checking necessary...
                 try:
+                    #toggle_leds_pw[led] = pulse_width
                     toggle_leds_pw.set_pulsetimings(led, (timings, levels))
                 except ZionInvalidLEDColor:
                     print(f"ERROR: {led} is not a valid LED color!")
@@ -487,17 +488,17 @@ class ZionPigpioProcess(multiprocessing.Process):
                 except ZionInvalidLEDPulsetime:
                     print(f"ERROR: {pulse_width} is not a valid pulse width. Valid range is 0-{toggle_leds_pw.max_pulsetime}!")
                     continue
+
                 added_wf = self._add_complex_led_waveform(led=toggle_leds_pw, pi=pi) #delays are now embedded in toggle_leds_pw
-            
             old_wave_id = mp_namespace.toggle_led_wave_id
 
             if added_wf:
                 new_wave_id = pi.wave_create()
-                print(f"toggle_led_thread -- New toggle wave_id: {new_wave_id}")
+                print(f"New toggle wave_id: {new_wave_id}")
                 mp_namespace.toggle_led_wave_id = new_wave_id
             else:
                 # We didn't add any waveforms
-                print(f"toggle_led_thread -- No active leds")
+                print(f"No active leds")
                 mp_namespace.toggle_led_wave_id = -1
 
             if old_wave_id > -1:
@@ -730,9 +731,12 @@ class ZionGPIO():
 
     def disable_toggle_led(self, color : ZionLEDColor, verbose : bool = False):
         print(f"\nSetting {color.name} to 0")
-        self.pigpio_process.disable_toggle_led()
+        self.pigpio_process.enable_toggle_led(color, 0, [int(1000000/self.parent.Camera.framerate)], [False])
         if verbose:
             self.parent.gui.printToLog(f"{color.name} set to 0")
+            
+    def disable_all_toggle_wf(self):
+        self.pigpio_process.toggle_led_queue.put(4*(None,))
 
     def load_event_led_wave_ids(self, flat_events : Iterable['ZionEvent']):
         """ Load the LED information into pigpio for the passed in list of events """
