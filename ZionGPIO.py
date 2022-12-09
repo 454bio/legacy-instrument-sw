@@ -325,6 +325,7 @@ class ZionPigpioProcess(multiprocessing.Process):
         pi.set_PWM_range(gpio, 1000)
         mp_namespace.temperature = self._read_temperature()
         read_temperature = mp_namespace.temperature
+        use_temperature = read_temperature
         error = 0
         interror = 0
         roundoff = 0
