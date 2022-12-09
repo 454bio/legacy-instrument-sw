@@ -2,12 +2,12 @@
  "Version": 2,
  "Parameters": {
   "brightness": 50,
-  "contrast": 0,
+  "contrast": -2,
   "saturation": 0,
   "sharpness": 0,
   "awb_mode": "off",
-  "red_gain": 1.0,
-  "blue_gain": 1.0,
+  "red_gain": 2.0,
+  "blue_gain": 2.0,
   "exposure_mode": "off",
   "exposure_speed": 249982,
   "shutter_speed": 249982,
@@ -17,7 +17,7 @@
   "video_denoise": false,
   "analog_gain": 8.0,
   "digital_gain": 1.0,
-  "framerate": 2.0,
+  "framerate": 1.0,
   "vflip": true,
   "hflip": false,
   "comment": ""
@@ -25,144 +25,401 @@
  "Entries": [
   {
    "is_event": false,
-   "name": "All Steps",
-   "cycles": 3,
+   "name": "Whole Experiment",
+   "cycles": 1,
    "requested_cycle_time": 0,
    "entries": [
     {
-     "is_event": false,
-     "name": "Extension",
-     "cycles": 2,
-     "requested_cycle_time": 5000,
-     "entries": [
-      {
-       "is_event": true,
-       "name": "Dark",
-       "cycles": 1,
-       "requested_cycle_time": 0,
-       "capture": true,
-       "group": "D",
-       "leds": {
-        "UV": 0,
-        "BLUE": 0,
-        "ORANGE": 0
-       }
-      },
-      {
-       "is_event": true,
-       "name": "Blue",
-       "cycles": 1,
-       "requested_cycle_time": 0,
-       "capture": true,
-       "group": "B",
-       "leds": {
-        "UV": 0,
-        "BLUE": 100,
-        "ORANGE": 0
-       }
-      },
-      {
-       "is_event": true,
-       "name": "Orange",
-       "cycles": 1,
-       "requested_cycle_time": 0,
-       "capture": true,
-       "group": "O",
-       "leds": {
-        "UV": 0,
-        "BLUE": 0,
-        "ORANGE": 120
-       }
-      }
-     ]
-    },
-    {
      "is_event": true,
-     "name": "Wait",
+     "name": "Dummy Wait",
      "cycles": 1,
-     "requested_cycle_time": 600000,
+     "requested_cycle_time": 1000,
      "capture": false,
      "group": "",
      "leds": {
       "UV": 0,
       "BLUE": 0,
-      "ORANGE": 0
+      "GREEN": 0,
+      "ORANGE": 0,
+      "RED": 0,
+      "COLOR5": 0,
+      "COLOR6": 0,
+      "COLOR7": 0
      }
     },
     {
      "is_event": false,
-     "name": "Cleaving",
-     "cycles": 2,
+     "name": "Reaction Cycle",
+     "cycles": 5,
+     "requested_cycle_time": 0,
+     "entries": [
+      {
+       "is_event": false,
+       "name": "Incorporation",
+       "cycles": 1,
+       "requested_cycle_time": 597000,
+       "entries": [
+        {
+         "is_event": false,
+         "name": "Start of Inc image",
+         "cycles": 1,
+         "requested_cycle_time": 0,
+         "entries": [
+          {
+           "is_event": true,
+           "name": "000",
+           "cycles": 1,
+           "requested_cycle_time": 0,
+           "capture": true,
+           "group": "000",
+           "leds": {
+            "UV": 0,
+            "BLUE": 0,
+            "GREEN": 0,
+            "ORANGE": 0,
+            "RED": 0,
+            "COLOR5": 0,
+            "COLOR6": 0,
+            "COLOR7": 0
+           }
+          },
+          {
+           "is_event": true,
+           "name": "645",
+           "cycles": 1,
+           "requested_cycle_time": 0,
+           "capture": true,
+           "group": "645",
+           "leds": {
+            "UV": 0,
+            "BLUE": 0,
+            "GREEN": 0,
+            "ORANGE": 0,
+            "RED": 50,
+            "COLOR5": 0,
+            "COLOR6": 0,
+            "COLOR7": 0
+           }
+          },
+          {
+           "is_event": true,
+           "name": "590",
+           "cycles": 1,
+           "requested_cycle_time": 0,
+           "capture": true,
+           "group": "590",
+           "leds": {
+            "UV": 0,
+            "BLUE": 0,
+            "GREEN": 0,
+            "ORANGE": 50,
+            "RED": 0,
+            "COLOR5": 0,
+            "COLOR6": 0,
+            "COLOR7": 0
+           }
+          },
+          {
+           "is_event": true,
+           "name": "525",
+           "cycles": 1,
+           "requested_cycle_time": 0,
+           "capture": true,
+           "group": "525",
+           "leds": {
+            "UV": 0,
+            "BLUE": 0,
+            "GREEN": 150,
+            "ORANGE": 0,
+            "RED": 0,
+            "COLOR5": 0,
+            "COLOR6": 0,
+            "COLOR7": 0
+           }
+          },
+          {
+           "is_event": true,
+           "name": "445",
+           "cycles": 1,
+           "requested_cycle_time": 0,
+           "capture": true,
+           "group": "445",
+           "leds": {
+            "UV": 0,
+            "BLUE": 150,
+            "GREEN": 0,
+            "ORANGE": 0,
+            "RED": 0,
+            "COLOR5": 0,
+            "COLOR6": 0,
+            "COLOR7": 0
+           }
+          }
+         ]
+        },
+        {
+         "is_event": true,
+         "name": "Incorporation",
+         "cycles": 1,
+         "requested_cycle_time": 287000,
+         "capture": false,
+         "group": "",
+         "leds": {
+          "UV": 0,
+          "BLUE": 0,
+          "GREEN": 0,
+          "ORANGE": 0,
+          "RED": 0,
+          "COLOR5": 0,
+          "COLOR6": 0,
+          "COLOR7": 0
+         }
+        },
+        {
+         "is_event": false,
+         "name": "End of Inc image",
+         "cycles": 1,
+         "requested_cycle_time": 0,
+         "entries": [
+          {
+           "is_event": true,
+           "name": "000",
+           "cycles": 1,
+           "requested_cycle_time": 0,
+           "capture": true,
+           "group": "000",
+           "leds": {
+            "UV": 0,
+            "BLUE": 0,
+            "GREEN": 0,
+            "ORANGE": 0,
+            "RED": 0,
+            "COLOR5": 0,
+            "COLOR6": 0,
+            "COLOR7": 0
+           }
+          },
+          {
+           "is_event": true,
+           "name": "645",
+           "cycles": 1,
+           "requested_cycle_time": 0,
+           "capture": true,
+           "group": "645",
+           "leds": {
+            "UV": 0,
+            "BLUE": 0,
+            "GREEN": 0,
+            "ORANGE": 0,
+            "RED": 50,
+            "COLOR5": 0,
+            "COLOR6": 0,
+            "COLOR7": 0
+           }
+          },
+          {
+           "is_event": true,
+           "name": "590",
+           "cycles": 1,
+           "requested_cycle_time": 0,
+           "capture": true,
+           "group": "590",
+           "leds": {
+            "UV": 0,
+            "BLUE": 0,
+            "GREEN": 0,
+            "ORANGE": 50,
+            "RED": 0,
+            "COLOR5": 0,
+            "COLOR6": 0,
+            "COLOR7": 0
+           }
+          },
+          {
+           "is_event": true,
+           "name": "525",
+           "cycles": 1,
+           "requested_cycle_time": 0,
+           "capture": true,
+           "group": "525",
+           "leds": {
+            "UV": 0,
+            "BLUE": 0,
+            "GREEN": 150,
+            "ORANGE": 0,
+            "RED": 0,
+            "COLOR5": 0,
+            "COLOR6": 0,
+            "COLOR7": 0
+           }
+          },
+          {
+           "is_event": true,
+           "name": "445",
+           "cycles": 1,
+           "requested_cycle_time": 0,
+           "capture": true,
+           "group": "445",
+           "leds": {
+            "UV": 0,
+            "BLUE": 150,
+            "GREEN": 0,
+            "ORANGE": 0,
+            "RED": 0,
+            "COLOR5": 0,
+            "COLOR6": 0,
+            "COLOR7": 0
+           }
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "is_event": false,
+       "name": "Cleaving",
+       "cycles": 1,
+       "requested_cycle_time": 0,
+       "entries": [
+        {
+         "is_event": true,
+         "name": "CleaveImage",
+         "cycles": 1,
+         "requested_cycle_time": 1000,
+         "capture": true,
+         "group": "365",
+         "leds": {
+          "UV": 999,
+          "BLUE": 0,
+          "GREEN": 0,
+          "ORANGE": 0,
+          "RED": 0,
+          "COLOR5": 0,
+          "COLOR6": 0,
+          "COLOR7": 0
+         }
+        },
+        {
+         "is_event": true,
+         "name": "CleaveNoImage",
+         "cycles": 2,
+         "requested_cycle_time": 0,
+         "capture": false,
+         "group": "",
+         "leds": {
+          "UV": 999,
+          "BLUE": 0,
+          "GREEN": 0,
+          "ORANGE": 0,
+          "RED": 0,
+          "COLOR5": 0,
+          "COLOR6": 0,
+          "COLOR7": 0
+         }
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "is_event": false,
+     "name": "Final Image",
+     "cycles": 1,
      "requested_cycle_time": 0,
      "entries": [
       {
        "is_event": true,
-       "name": "UV",
-       "cycles": 3,
-       "requested_cycle_time": 0,
-       "capture": true,
-       "group": "U",
-       "leds": {
-        "UV": 0,
-        "BLUE": 100,
-        "ORANGE": 0
-       }
-      },
-      {
-       "is_event": true,
-       "name": "Dark",
+       "name": "000",
        "cycles": 1,
        "requested_cycle_time": 0,
        "capture": true,
-       "group": "D",
+       "group": "000",
        "leds": {
         "UV": 0,
         "BLUE": 0,
-        "ORANGE": 0
+        "GREEN": 0,
+        "ORANGE": 0,
+        "RED": 0,
+        "COLOR5": 0,
+        "COLOR6": 0,
+        "COLOR7": 0
        }
       },
       {
        "is_event": true,
-       "name": "Blue",
+       "name": "645",
        "cycles": 1,
        "requested_cycle_time": 0,
        "capture": true,
-       "group": "B",
-       "leds": {
-        "UV": 0,
-        "BLUE": 20,
-        "ORANGE": 0
-       }
-      },
-      {
-       "is_event": true,
-       "name": "Orange",
-       "cycles": 1,
-       "requested_cycle_time": 0,
-       "capture": true,
-       "group": "O",
+       "group": "645",
        "leds": {
         "UV": 0,
         "BLUE": 0,
-        "ORANGE": 120
+        "GREEN": 0,
+        "ORANGE": 0,
+        "RED": 50,
+        "COLOR5": 0,
+        "COLOR6": 0,
+        "COLOR7": 0
+       }
+      },
+      {
+       "is_event": true,
+       "name": "590",
+       "cycles": 1,
+       "requested_cycle_time": 0,
+       "capture": true,
+       "group": "590",
+       "leds": {
+        "UV": 0,
+        "BLUE": 0,
+        "GREEN": 0,
+        "ORANGE": 50,
+        "RED": 0,
+        "COLOR5": 0,
+        "COLOR6": 0,
+        "COLOR7": 0
+       }
+      },
+      {
+       "is_event": true,
+       "name": "525",
+       "cycles": 1,
+       "requested_cycle_time": 0,
+       "capture": true,
+       "group": "525",
+       "leds": {
+        "UV": 0,
+        "BLUE": 0,
+        "GREEN": 150,
+        "ORANGE": 0,
+        "RED": 0,
+        "COLOR5": 0,
+        "COLOR6": 0,
+        "COLOR7": 0
+       }
+      },
+      {
+       "is_event": true,
+       "name": "445",
+       "cycles": 1,
+       "requested_cycle_time": 0,
+       "capture": true,
+       "group": "445",
+       "leds": {
+        "UV": 0,
+        "BLUE": 150,
+        "GREEN": 0,
+        "ORANGE": 0,
+        "RED": 0,
+        "COLOR5": 0,
+        "COLOR6": 0,
+        "COLOR7": 0
        }
       }
      ]
     }
    ]
-  },
-  {
-   "is_event": true,
-   "name": "Final Event",
-   "cycles": 1,
-   "requested_cycle_time": 0,
-   "capture": true,
-   "group": "F",
-   "leds": {
-    "UV": 0,
-    "BLUE": 100,
-    "ORANGE": 0
-   }
   }
  ]
 }

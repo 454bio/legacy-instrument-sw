@@ -324,6 +324,7 @@ class ZionPigpioProcess(multiprocessing.Process):
         pi.set_PWM_frequency(gpio, freq)
         pi.set_PWM_range(gpio, 1000)
         mp_namespace.temperature = self._read_temperature()
+        read_temperature = mp_namespace.temperature
         error = 0
         interror = 0
         roundoff = 0
@@ -339,7 +340,13 @@ class ZionPigpioProcess(multiprocessing.Process):
                     
         while True:
             t0 = time.perf_counter()
-            mp_namespace.temperature = self._read_temperature()
+            #seeing spikes at 85.00C - quick filter out
+            last_read_temperature = read_temperature
+            read_temperature = self._read_temperature()
+            if (abs(read_temperature-last_read_temperature)<3) and (read_temperature!=85):	#in case of spike ignores - also cheat with known 85.00 that comes in doubles sometimes - related to PWM switching		
+                use_temperature=read_temperature
+				
+            mp_namespace.temperature = use_temperature
             if mp_namespace.pid_enable:
                 if mp_namespace.pid_reset:
                     print('control loop started')
@@ -354,7 +361,13 @@ class ZionPigpioProcess(multiprocessing.Process):
                 delta_t = curr_time-prev_time
                 timer_time += int(1000*delta_t)
                 error = mp_namespace.target_temp-mp_namespace.temperature
-                interror += mp_namespace.I*error*delta_t
+                if (abs(error)<3.14159):   #hack
+                    interror += mp_namespace.I*error*delta_t
+                    
+                else:
+                    interror=0  
+                    #hack for now to avoid initial super long windup
+						
                 pid_value = bias + (mp_namespace.P*error + interror) #todo add D term?
                 
                 #print(f'temp={mp_namespace.temperature}, target={mp_namespace.target_temp},\nP={mp_namespace.P}, I={mp_namespace.I},\nerr={error}, ierr={interror},\ndc={mp_namespace.P}*{error}+{mp_namespace.I}*{interror} ~= {max(min( int(new_dc_value), 100 ),0)}')
@@ -376,7 +389,7 @@ class ZionPigpioProcess(multiprocessing.Process):
                     roundoff = 0
                     pi.set_PWM_dutycycle(gpio, 1000)
                     new_dc_value = 1000
-                print(f'{timer_time:010}, {mp_namespace.P:6.2f}, {mp_namespace.I:5.2f}, {mp_namespace.target_temp:3}, {mp_namespace.temperature:6.2f}, {pid_value:9.3f}, {0.1*new_dc_value:5.1f}')
+                print(f'{timer_time:010}, {mp_namespace.P:6.2f}, {mp_namespace.I:5.2f}, {mp_namespace.target_temp:3}, {mp_namespace.temperature:6.2f}, {read_temperature:6.2f}, {interror:9.3f}, {pid_value:9.3f}, {0.1*new_dc_value:5.1f}')
                 prev_time = curr_time
                 
             else:
