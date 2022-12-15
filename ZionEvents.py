@@ -21,6 +21,7 @@ from operator import add, attrgetter
 
 from ZionLED import ZionLEDs
 
+# TODO: make custom capture list class (userlist?)
 # ~ class CaptureList(list):
 
 @dataclass
@@ -160,47 +161,54 @@ class ZionEvent(ZionProtocolEntry):
     def flatten(self) -> List['ZionEvent']:
         """ This will either return just ourselves in a list. Or ourselves plus a filler event that captures the extra cycle time """
 
+        self.captureBool = True if 0 in self.capture else False #init captureBool
+
+        #total number of frames:
         numFrames = self._time_to_cycles
 
-        if len(self.capture)>0:
-            LastBusyFrame = max(self.capture)+1
-        else:
-            LastBusyFrame = 1
-        self.captureBool = True if 0 in self.capture else False
+        #last frame getting captured (1-index):
+        lastCaptureFrame = max(self.capture)+1 if len(self.capture)>0 else 1
+
+        #last frame containing led pulse:
+        max_pw = max([led for led in self.leds.values()])
+        lastPulseFrame = math.ceil(max_pw / ZionEvent._minimum_cycle_time)
+
+        #last frame that is doing SOMETHING (ie not waiting):
+        lastBusyFrame = max([lastCaptureFrame, lastPulseFrame])
 
         equivalent_event = [self,]
         if self._additional_cycle_time:
-            for frame_ind in range(1,numFrames): #TODO: make this LastBusyFrame and take care of rest below
+            for frame_ind in range(1,lastBusyFrame):
                 equivalent_event.append(
                     ZionEvent(
                         captureBool=True if frame_ind in self.capture else False,
                         group=self.group,
                         requested_cycle_time = self._minimum_cycle_time,
-                        name=f"{self.name} piece {frame_ind}"
+                        name=f"{self.name} piece {frame_ind+1}"
                     )
                 )
 
-            #TODO: Bring back long wait events if the time between LastBusyFrame and end is long enough:
-            # ~ if self._additional_cycle_time > self._minimum_wait_event_time:
-                # ~ equivalent_event.append(
-                    # ~ ZionEvent(
-                        # ~ capture=[],
-                        # ~ requested_cycle_time=self._additional_cycle_time,
-                        # ~ name=f"{self.name} long wait",
-                        # ~ _is_wait=True,
-                    # ~ )
-                # ~ )
-            # ~ else:
-                # ~ cycle_filler_event = ZionEvent(
-                    # ~ capture=[],
-                    # ~ requested_cycle_time=ZionEvent._minimum_cycle_time,
-                    # ~ name=f"{self.name} wait"
-                # ~ )
-                # ~ extra_cycles_per_event = self._time_to_cycles - 1
-                # ~ equivalent_event.extend([cycle_filler_event,] * extra_cycles_per_event)
-        # ~ return equivalent_event * self.cycles
+            remaining_cycle_time = (numFrames-lastBusyFrame)*ZionEvent._minimum_cycle_time
+            if remaining_cycle_time < self._minimum_wait_event_time:
+                cycle_filler_event = ZionEvent(
+                    captureBool=False,
+                    requested_cycle_time=remaining_cycle_time,
+                    name=f"{self.name} wait"
+                )
+                extra_cycles_per_event = numFrames-lastBusyFrame
+                equivalent_event.extend([cycle_filler_event,] * extra_cycles_per_event)
 
-        return equivalent_event
+            else:
+                equivalent_event.append(
+                    ZionEvent(
+                        captureBool=False,
+                        requested_cycle_time=remaining_cycle_time,
+                        name=f"{self.name} long wait",
+                        _is_wait=True,
+                    )
+                )
+
+        return equivalent_event * self.cycles
 
 
 @dataclass
