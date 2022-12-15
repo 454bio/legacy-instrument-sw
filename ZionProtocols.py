@@ -175,7 +175,7 @@ class ZionProtocol():
 
         name : str       : Descriptive name for the event (default: "")
         cycles : int     : Number of cycles for the event (default: 1)
-        capture : bool   : Wheter to capture an image for the event (default: True)
+        capture : list   : list of frame indices during which a capture should occur (default: [0] (formerly "True"))
         group : str      : Group string that's added to the image filename (default: "")
         _cycle_time : int: Number of milliseconds the event should take to complete (default: exposure_time)
         leds : ZionLEDs  : Led settings for the new event (default: ZionLEDs())

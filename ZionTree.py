@@ -93,11 +93,11 @@ class ZionProtocolTree():
     # Mapping of visible fields to display names.
     FIELDS : Dict[str, str] = {
         'name': "Name",
-        'cycles': "Cycles",
+        'cycles': "Repeats",
         'cycle_time': "Cycle Time\n(ms)",
         'total_time_sec': "Total Time\n(sec)",
         'capture': "Capture?",
-        'group': "Group",
+        'group': "Label",
         'leds': "$LED_NAME$ Pulse\n(ms)",  # Special field that gets formatted
     }
 
@@ -138,6 +138,7 @@ class ZionProtocolTree():
         _type_to_edit_signal = {str: "edited", int: "edited", bool: "toggled"}
 
         for field, column_title in self.FIELDS.items():
+            print(f"field={field}, title={column_title}")
             ftype = _field_to_type[field]
             if ftype in (str, int, float, bool):
                 cell_data_func = _type_to_func[ftype]
@@ -167,6 +168,15 @@ class ZionProtocolTree():
                         self._treeview.append_column(column)
                         renderer.set_property("editable", True)
                         renderer.connect("edited", partial(self._led_cell_edited, field, led_color))
+
+            elif ftype is list: #TODO: make this capturelist? only dealing with capture lists right now
+                renderer = Gtk.CellRendererText()
+                column = Gtk.TreeViewColumn(column_title, renderer)
+                column.set_cell_data_func(renderer, self.get_event_entry_captures, field)
+                self._treeview.append_column(column)
+                renderer.set_property("editable", True)
+                renderer.connect("edited", partial(self._captures_edited, field))
+
             else:
                 raise RuntimeError(f"Unrecognized field type for field {field}: {ftype}")
 
@@ -325,6 +335,25 @@ class ZionProtocolTree():
         print(f"field: {field}  led_color: {led_color}  widget: {widget}  path: {path}  value: {value}")
         getattr(self._treestore[path][0], field)[led_color] = int(value)
 
+    def _captures_edited(self, field, widget, path, value):
+        # Value should be comma-separated integers. Assumed to not include brackets. Parse:
+        caps_str = value.split(',')
+        if len(caps_str)==1:
+            try:
+                captures = [int(caps_str[0].strip())]
+            except ValueError:
+                captures = []
+        else:
+            captures = []
+            for cap in caps_str:
+                try:
+                    captures.append(int(cap.strip()))
+                except ValueError:
+                    print("Capture values must be integers!")
+                    return
+        print(f"field: {field}  widget: {widget}  path: {path}  value: {captures}")
+        setattr(self._treestore[path][0], field, captures)
+
     def get_event_entry_str(self, treeviewcolumn, cell, model, iter_, event_field):
         event = model[iter_][0]
         cell_value = getattr(event, event_field, None)
@@ -341,6 +370,11 @@ class ZionProtocolTree():
         event = model[iter_][0]
         cell_value = getattr(event, 'leds', {}).get(led_key, None)
 
+        self._set_cell_value_visibility(cell, 'text', cell_value)
+
+    def get_event_entry_captures(self, treeviewcolumn, cell, model, iter_, event_field):
+        event = model[iter_][0]
+        cell_value = getattr(event, event_field, None)
         self._set_cell_value_visibility(cell, 'text', cell_value)
 
     def on_tree_row_inserted(self, model, path, iter_):
