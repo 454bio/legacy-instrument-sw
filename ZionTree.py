@@ -333,7 +333,7 @@ class ZionProtocolTree():
 
     def _led_cell_edited(self, field, led_color, widget, path, value):
         print(f"field: {field}  led_color: {led_color}  widget: {widget}  path: {path}  value: {value}")
-        getattr(self._treestore[path][0], field)[led_color] = int(value)
+        self._treestore[path][0].set_pulsetimes(led_color, int(value))
 
     def _captures_edited(self, field, widget, path, value):
         # Value should be comma-separated integers. Assumed to not include brackets. Parse:

@@ -158,6 +158,12 @@ class ZionEvent(ZionProtocolEntry):
                 progress_bar_func(0)
                 break
 
+    def set_pulsetimes(self, color, value):
+        if value > self.cycle_time:
+            # ~ print(f"Pulsetime {value} is greater than cycle time {self.cycle_time}!")
+            self.requested_cycle_time = value
+        self.leds[color] = value
+
     def flatten(self) -> List['ZionEvent']:
         """ This will either return just ourselves in a list. Or ourselves plus a filler event that captures the extra cycle time """
 
