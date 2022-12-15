@@ -220,7 +220,13 @@ class ZionProtocol():
                 raise RuntimeError(
                     f"Unrecognized type in the event list: {type(event)}"
                 )
-
+        flat_events.append(
+            ZionEvent(
+                captureBool=False,
+                # ~ requested_cycle_time = ZionEvent._minimum_cycle_time,
+                name=f"Final Wait Event"
+            )
+        )
         return flat_events
 
     # The following gtk_* calls are pass through calls from ZionSession or ZionGtk
