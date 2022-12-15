@@ -313,17 +313,16 @@ class ZionSession():
                         stream_size = seq_stream.tell()
                         seq_stream.seek(0)
 
-                        if event.capture:
+                        if event.captureBool:
                             buffer_queue.put_nowait((seq_stream.getvalue(), event))
-                            print(f"Received frame {frame_ind} for event '{event.name}'  capture: {event.capture}  buf size: {stream_size}")
+                            print(f"Received frame {frame_ind} for event '{event.name}'  capture: {event.captureBool}  buf size: {stream_size}")
+                            self.GPIO.debug_trigger()
                         elif frame_ind % 10 == 0:
-                            print(f"Received frame {frame_ind} for event '{event.name}'  capture: {event.capture}")
+                            print(f"Received frame {frame_ind} for event '{event.name}'  capture: {event.captureBool}")
 
                         if stop_event.is_set():
                             print("Received stop!")
                             break
-
-                        self.GPIO.debug_trigger()
 
                     end_fstrobe = self.GPIO.get_num_fstrobes()
 

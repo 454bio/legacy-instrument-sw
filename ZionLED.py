@@ -52,7 +52,7 @@ class ZionLEDs(UserDict):
         if not isinstance(pulsetime, int):
             raise TypeError("Value (pulsetime) must be an integer")
 
-        if pulsetime < 0 or pulsetime > self.__max_pulsetime:
+        if pulsetime < 0 or (pulsetime > self.__max_pulsetime and self.__max_pulsetime != 0):
             raise ZionInvalidLEDPulsetime(f"Pulsetime must be between 0 and {self.__max_pulsetime}")
 
         return super().__setitem__(led_color, pulsetime)
