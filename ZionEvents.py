@@ -252,7 +252,7 @@ class ZionEventGroup(ZionProtocolEntry):
             if self._additional_cycle_time > ZionEvent._minimum_wait_event_time:
                 wait_events = [
                     ZionEvent(
-                        capture=[],
+                        captureBool=False,
                         requested_cycle_time=self._additional_cycle_time,
                         name=f"{self.name} long wait",
                         _is_wait=True,
@@ -260,7 +260,7 @@ class ZionEventGroup(ZionProtocolEntry):
                 ]
             else:
                 cycle_filler_event = ZionEvent(
-                    capture=[],
+                    captureBool=False,
                     requested_cycle_time=ZionEvent._minimum_cycle_time,
                     name=f"{self.name} wait"
                 )
