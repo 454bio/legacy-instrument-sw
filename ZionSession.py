@@ -187,8 +187,8 @@ class ZionSession():
                 out.write(buffer)
 
             try:
-                # Attempt to update the last capture if the event had LED illumination
-                if event.leds.has_wave_id():
+                # Attempt to update the last capture (even dark ones):
+                if event.captureBool:
                     if self.update_last_capture_lock.locked():
                         continue
 
