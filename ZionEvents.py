@@ -167,24 +167,23 @@ class ZionEvent(ZionProtocolEntry):
     def flatten(self) -> List['ZionEvent']:
         """ This will either return just ourselves in a list. Or ourselves plus a filler event that captures the extra cycle time """
 
-        self.captureBool = True if 0 in self.capture else False #init captureBool
+        # initialize captureBool for first (0th) frame
+        self.captureBool = True if 0 in self.capture else False
 
-        #total number of frames:
-        numFrames = self._time_to_cycles
+        #self._time_to_cycles = the total number of frames
 
         #last frame getting captured (1-index):
         lastCaptureFrame = max(self.capture)+1 if len(self.capture)>0 else 1
 
         #last frame containing led pulse:
-        max_pw = max([led for led in self.leds.values()])
-        lastPulseFrame = math.ceil(max_pw / ZionEvent._minimum_cycle_time)
+        lastPulseFrame = math.ceil(max([led for led in self.leds.values()]) / ZionEvent._minimum_cycle_time)
 
         #last frame that is doing SOMETHING (ie not waiting):
         lastBusyFrame = max([lastCaptureFrame, lastPulseFrame])
 
         equivalent_event = [self,]
         if self._additional_cycle_time:
-            for frame_ind in range(1,lastBusyFrame):
+            for frame_ind in range(1,lastBusyFrame): #we already did frame 0
                 equivalent_event.append(
                     ZionEvent(
                         captureBool=True if frame_ind in self.capture else False,
@@ -194,14 +193,14 @@ class ZionEvent(ZionProtocolEntry):
                     )
                 )
 
-            remaining_cycle_time = (numFrames-lastBusyFrame)*ZionEvent._minimum_cycle_time
+            remaining_cycle_time = (self._time_to_cycles-lastBusyFrame)*ZionEvent._minimum_cycle_time
             if remaining_cycle_time < self._minimum_wait_event_time:
                 cycle_filler_event = ZionEvent(
                     captureBool=False,
                     requested_cycle_time=remaining_cycle_time,
                     name=f"{self.name} wait"
                 )
-                extra_cycles_per_event = numFrames-lastBusyFrame
+                extra_cycles_per_event = self._time_to_cycles-lastBusyFrame
                 equivalent_event.extend([cycle_filler_event,] * extra_cycles_per_event)
 
             else:
