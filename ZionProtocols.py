@@ -26,6 +26,7 @@ from ZionLED import (
 from ZionEvents import (
     ZionEvent,
     ZionEventGroup,
+    CaptureList
 )
 from ZionCamera import ZionCameraParameters
 from ZionErrors import ZionProtocolVersionError
@@ -53,6 +54,8 @@ class ZionProtocolEncoder(json.JSONEncoder):
             return float(obj)
         if isinstance(obj, ZionLEDs):
             return {k.name: v for k,v in obj.data.items()}
+        if isinstance(obj, CaptureList):
+            return obj.data
         return json.JSONEncoder.default(self, obj)
 
 
@@ -112,6 +115,9 @@ class ZionProtocol():
         except Exception as e:
             tb = "".join(traceback.format_exception(type(e), e, e.__traceback__))
             print(f"ERROR Loading Protocol File: {filename}\n{tb}")
+        # TODO: are there examples of cycle time not determining requested cycle time?
+        for entry in self.Entries:
+            entry.requested_cycle_time = entry.cycle_time
 
     def save_to_file(self, filename: str):
         if not filename.endswith(".txt"):
