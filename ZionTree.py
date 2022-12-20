@@ -345,16 +345,16 @@ class ZionProtocolTree():
                 if capval >= 0:
                     captures = [capval] #turn into a list
                 else:
-                    captures = []
+                    return
             except ValueError:
-                captures = []
+                return
         else: #comma separated list
             captures = []
             for cap in caps_str:
                 try:
                     captures.append(int(cap.strip())-1)
                 except ValueError:
-                    continue
+                    return
         captureList = CaptureList(captures)
         print(f"field: {field}  widget: {widget}  path: {path}  value: {captureList}")
         self._treestore[path][0].set_captures(captureList)
@@ -379,7 +379,6 @@ class ZionProtocolTree():
 
     def get_event_entry_captures(self, treeviewcolumn, cell, model, iter_, event_field):
         event = model[iter_][0]
-        # TODO: parse here instead?
         if isinstance(event, ZionEvent):
             cell_value = event.capture
             if isinstance(cell_value, CaptureList):

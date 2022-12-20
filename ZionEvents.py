@@ -250,9 +250,12 @@ class ZionEvent(ZionProtocolEntry):
         self.leds[color] = value
 
     def set_captures(self, captureList):
+        capture_old = self.capture.copy()
         captureList.setMax(self._time_to_cycles)
-        self.capture = captureList
-        #print(f"captureList = {self.capture.repr()}")
+        if captureList:
+            self.capture = captureList
+        else:
+            self.capture = capture_old
 
     def flatten(self) -> List['ZionEvent']:
         """ This will either return just ourselves in a list. Or ourselves plus a filler event that captures the extra cycle time """
