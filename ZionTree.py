@@ -13,7 +13,8 @@ from typing import (
 
 from ZionEvents import (
     ZionEvent,
-    ZionEventGroup
+    ZionEventGroup,
+    CaptureList
 )
 
 from ZionLED import (
@@ -169,7 +170,7 @@ class ZionProtocolTree():
                         renderer.set_property("editable", True)
                         renderer.connect("edited", partial(self._led_cell_edited, field, led_color))
 
-            elif ftype is list: #TODO: make this capturelist? only dealing with capture lists right now
+            elif ftype is CaptureList:
                 renderer = Gtk.CellRendererText()
                 column = Gtk.TreeViewColumn(column_title, renderer)
                 column.set_cell_data_func(renderer, self.get_event_entry_captures, field)
@@ -338,21 +339,25 @@ class ZionProtocolTree():
     def _captures_edited(self, field, widget, path, value):
         # Value should be comma-separated integers. Assumed to not include brackets. Parse:
         caps_str = value.split(',')
-        if len(caps_str)==1:
+        if len(caps_str)==1: #ie no commas or only one element
             try:
-                captures = [int(caps_str[0].strip())]
+                capval = int(caps_str[0].strip())-1
+                if capval >= 0:
+                    captures = [capval] #turn into a list
+                else:
+                    captures = []
             except ValueError:
                 captures = []
-        else:
+        else: #comma separated list
             captures = []
             for cap in caps_str:
                 try:
-                    captures.append(int(cap.strip()))
+                    captures.append(int(cap.strip())-1)
                 except ValueError:
-                    print("Capture values must be integers!")
-                    return
-        print(f"field: {field}  widget: {widget}  path: {path}  value: {captures}")
-        setattr(self._treestore[path][0], field, captures)
+                    continue
+        captureList = CaptureList(captures)
+        print(f"field: {field}  widget: {widget}  path: {path}  value: {captureList}")
+        self._treestore[path][0].set_captures(captureList)
 
     def get_event_entry_str(self, treeviewcolumn, cell, model, iter_, event_field):
         event = model[iter_][0]
@@ -374,8 +379,16 @@ class ZionProtocolTree():
 
     def get_event_entry_captures(self, treeviewcolumn, cell, model, iter_, event_field):
         event = model[iter_][0]
-        cell_value = getattr(event, event_field, None)
-        self._set_cell_value_visibility(cell, 'text', cell_value)
+        # TODO: parse here instead?
+        if isinstance(event, ZionEvent):
+            cell_value = event.capture
+            if isinstance(cell_value, CaptureList):
+                self._set_cell_value_visibility(cell, 'text', cell_value.repr())
+            elif isinstance(cell_value, list):
+                raise TypeError("Capture List is not a CaptureList!")
+        else:
+            cell_value = getattr(event, event_field, None)
+            self._set_cell_value_visibility(cell, 'text', cell_value)
 
     def on_tree_row_inserted(self, model, path, iter_):
         """ A new event as been inserted into the treestore. Check if we need to remove any placeholder row. """

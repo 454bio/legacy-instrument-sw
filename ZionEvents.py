@@ -1,12 +1,14 @@
 import math
 import threading
 import time
+from collections import UserList
 
 from dataclasses import (
     dataclass,
     field,
     asdict
 )
+
 
 from typing import (
     List,
@@ -21,8 +23,91 @@ from operator import add, attrgetter
 
 from ZionLED import ZionLEDs
 
-# TODO: make custom capture list class (userlist?)
-# ~ class CaptureList(list):
+class CaptureList(UserList):
+    def __init__(self, lst:list=None):
+        if lst is None or lst == []:
+            super().__init__(self)
+            self._max = 1
+            self._min = 0
+        else:
+            lst_int = []
+            for item in lst:
+                try:
+                    lst_int.append(int(item))
+                except TypeError:
+                    raise TypeError("Capture Values must be integers!")
+            super().__init__(sorted(set(lst_int)))
+            self.data = [el for el in self.data if el>=0]
+            self._max = max(self.data)+1
+
+    def setMax(self, val):
+        print(f"setting max value to: ceil( {val} )")
+        self._max = math.ceil(val)
+        datanew = []
+        for el in self.data:
+            if el < self._max:
+                datanew.append(el)
+            else:
+                print(f"{el} removed (greater than max frame {self._max})")
+        self.data = datanew
+
+    def __setitem__(self, ind, val):
+        try:
+            newval = int(val)
+        except TypeError:
+            raise TypeError("Capture values must be integers!")
+        if not newval in self.data:
+            if self._max is not None:
+                if 0 <= newval < self._max:
+                    super().__setitem__(ind, newval)
+                else:
+                    raise ValueError(f"Capture value {newval} is not less than max {self._max} (or is negative)!")
+            else:
+                super().__setitem__(ind, newval)
+            self.sort()
+
+    def insert(self, ind, val):
+        try:
+            newval = int(val)
+        except TypeError:
+            raise TypeError("Capture values must be integers!")
+        if not newval in self.data:
+            if self._max is not None:
+                if 0 <= newval < self._max:
+                    super().insert(ind, newval)
+                else:
+                    raise ValueError(f"Capture value {newval} is not less than max {self._max} (or is negative)!")
+            else:
+                super().insert(ind, newval)
+            self.sort()
+
+    def append(self, val):
+        try:
+            newval = int(val)
+        except TypeError:
+            raise TypeError("Capture values must be integers!")
+        if not newval in self.data:
+            if self._max is not None:
+                if 0 <= newval < self._max:
+                    super().append(newval)
+                else:
+                    raise ValueError(f"Capture value {newval} is not less than max {self._max} (or is negative)!")
+            else:
+                super().append(newval)
+            self.sort()
+
+    def extend(self, vals):
+        for val in vals:
+            self.append(val)
+
+    # TODO: flesh out repr details for display
+    def repr(self):
+        chars = ''
+        #print(f"for item in {self.data}:")
+        for item in self.data:
+            #print(f"item is {item}")
+            chars += str(item+1)+','
+        return chars[:-1] #leave off last comma
 
 @dataclass
 class ZionProtocolEntry():
@@ -48,7 +133,7 @@ class ZionProtocolEntry():
 @dataclass
 class ZionEvent(ZionProtocolEntry):
     is_event: bool = True
-    capture: list = field(default_factory=lambda: [])
+    capture: CaptureList = field(default_factory=CaptureList)
     captureBool: bool = False #Used only for when we flatten event
     _is_wait: bool = False
     group: str = ""
@@ -67,11 +152,11 @@ class ZionEvent(ZionProtocolEntry):
         # Convert "leds" from a dictionary to ZionLEDs
         capture_json = json_dict.get("capture", {})
         if isinstance(capture_json, bool):
-            capture_v3 = [0] if capture_json else []
+            capture_v3 = CaptureList([0]) if capture_json else CaptureList([])
         elif isinstance(capture_json, list):
-            capture_v3 = capture_json
+            capture_v3 = CaptureList(capture_json)
         else:
-            raise TypeError("Capture field in protocol file must be bool or list!")
+            raise TypeError(f"Capture field in protocol file must be bool or list! It is {capture_json}")
         json_dict.update({
             "leds": ZionLEDs(**json_dict.get("leds", {})),
             "capture": capture_v3,
@@ -163,6 +248,11 @@ class ZionEvent(ZionProtocolEntry):
             # ~ print(f"Pulsetime {value} is greater than cycle time {self.cycle_time}!")
             self.requested_cycle_time = value
         self.leds[color] = value
+
+    def set_captures(self, captureList):
+        captureList.setMax(self._time_to_cycles)
+        self.capture = captureList
+        #print(f"captureList = {self.capture.repr()}")
 
     def flatten(self) -> List['ZionEvent']:
         """ This will either return just ourselves in a list. Or ourselves plus a filler event that captures the extra cycle time """
