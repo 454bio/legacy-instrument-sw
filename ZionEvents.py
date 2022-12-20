@@ -252,7 +252,7 @@ class ZionEvent(ZionProtocolEntry):
     def set_captures(self, captureList):
         capture_old = self.capture.copy()
         captureList.setMax(self._time_to_cycles)
-        if captureList:
+        if len(captureList) > 0:
             self.capture = captureList
         else:
             self.capture = capture_old
