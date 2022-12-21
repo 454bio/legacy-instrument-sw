@@ -164,6 +164,10 @@ class ZionEvent(ZionProtocolEntry):
         return cls(**json_dict)
 
     @property
+    def max_pw(self):
+        return max(self.leds.values())
+
+    @property
     def total_time(self) -> int:
         return self.cycle_time * self.cycles
 
@@ -198,6 +202,11 @@ class ZionEvent(ZionProtocolEntry):
                 print(f"         Defaulting to minimum cycle time of '{ZionEvent._minimum_cycle_time}'.")
             cycle_time_in = ZionEvent._minimum_cycle_time
             self.requested_cycle_time = 0
+        elif cycle_time_in < self.max_pw:
+            print(f"WARNING: Cannot set 'cycle_time' of '{cycle_time_in}' for the ZionEvent '{self.name}'!")
+            print(f"         Defaulting to max pulse time of '{self.max_pw}'.")
+            cycle_time_in = self.max_pw
+            self.requested_cycle_time = self.max_pw
         else:
             self.requested_cycle_time = cycle_time_in
 
@@ -244,7 +253,7 @@ class ZionEvent(ZionProtocolEntry):
                 break
 
     def set_pulsetimes(self, color, value):
-        if value > self.cycle_time:
+        if value > self.cycle_time and value > self.max_pw:
             # ~ print(f"Pulsetime {value} is greater than cycle time {self.cycle_time}!")
             self.requested_cycle_time = value
         self.leds[color] = value
