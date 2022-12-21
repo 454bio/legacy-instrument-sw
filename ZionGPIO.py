@@ -65,6 +65,11 @@ LED_GPIOS = {
     ZionLEDColor.COLOR7: [],
 }
 
+ALL_COLOR_GPIOBITS = 0
+for led_en_list in LED_GPIOS.values():
+    for led_gpio in led_en_list:
+        ALL_COLOR_GPIOBITS |= 1<<led_gpio
+
 #2 GPIOs for testing camera sync signals:
 FSTROBE = 5 #pin 29
 XVS = 6 #pin 31
@@ -295,6 +300,8 @@ class ZionPigpioProcess(multiprocessing.Process):
             if wave_id < 0:
                 print(f"fstrobe_cb -- No LED this image...")
             else:
+                if self.pi.wave_tx_busy():
+                    print("Warning: Wave was still transmitting, ended pulse early.")
                 ret = self.pi.wave_send_once(wave_id)
                 print(f"fstrobe_cb -- Sent wave_id: {wave_id}  num_frames: {self.mp_namespace.num_frames}")
 
@@ -398,7 +405,6 @@ class ZionPigpioProcess(multiprocessing.Process):
             t = time.perf_counter()-t0
             time.sleep( max([mp_namespace.pid_delta_t - t,0]) )
 
-
     @staticmethod
     def _add_led_waveform(led : ZionLEDs, pi : pigpio.pi, delay : int = 0) -> bool:
         """ Adds waveforms for the pulsewidths/colors in led. Returns True if a wave was added """
@@ -416,6 +422,7 @@ class ZionPigpioProcess(multiprocessing.Process):
                 else:
                     print(f"Appending pulse -- bits: {hex(gpio_bits)}  color: {color.name}  pw: {pw} (ms)")
 
+                led_wf.append(pigpio.pulse(0, ALL_COLOR_GPIOBITS, 0))
                 led_wf.append(pigpio.pulse(gpio_bits, 0, pw * 1000))
                 led_wf.append(pigpio.pulse(0, gpio_bits, 0))
                 pi.wave_add_generic(led_wf)
