@@ -129,11 +129,11 @@ class ZionPigpioProcess(multiprocessing.Process):
         self.mp_namespace.num_event_frames = 0
         self.mp_namespace.num_fstrobes = 0
 
-
         self.Temp_1W_device = None
         # ~ P=10, I=2, D=0, delta_t=1, ramp_threshold=10, target_temp=25
         self.mp_namespace.temperature = None
         
+        self.mp_namespace.pid_verbose = True
         self.mp_namespace.pid_reset = True
         self.mp_namespace.pid_enable = False
         if PID_Params is not None:
@@ -400,7 +400,8 @@ class ZionPigpioProcess(multiprocessing.Process):
                     roundoff = 0
                     pi.set_PWM_dutycycle(gpio, 1000)
                     new_dc_value = 1000
-                print(f'{timer_time:010}, {mp_namespace.P:6.2f}, {mp_namespace.I:5.2f}, {mp_namespace.target_temp:3}, {mp_namespace.temperature:6.2f}, {read_temperature:6.2f}, {interror:9.3f}, {pid_value:9.3f}, {0.1*new_dc_value:5.1f}')
+                if mp_namespace.pid_verbose:
+                    print(f'{timer_time:010}, {mp_namespace.P:6.2f}, {mp_namespace.I:5.2f}, {mp_namespace.target_temp:3}, {mp_namespace.temperature:6.2f}, {read_temperature:6.2f}, {interror:9.3f}, {pid_value:9.3f}, {0.1*new_dc_value:5.1f}')
                 prev_time = curr_time
                 
             else:
