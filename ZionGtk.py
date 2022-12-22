@@ -1133,6 +1133,26 @@ class Handlers:
         # print("on_camera_preview_configure_event: done!")
         return False
 
+    def on_image_processing_display_draw(self, *args):
+        if not self.is_program_running():
+            self.parent.parent.Camera.stop_preview()
+        return False
+        
+    def on_image_processing_display_configure_event(self, *args):
+        return False
+
+    def on_ip_back_button_clicked(self, button):
+        return
+
+    def on_ip_fwd_button_clicked(self, button):
+        return
+
+    def on_ip_seek_back_button_clicked(self, button):
+        return
+
+    def on_ip_seek_fwd_button_clicked(self, button):
+        return
+
     def check_fixed_settings(self):
         is_fixed_capture, bad_params = self.parent.parent.Camera.is_fixed_capture()
         if not is_fixed_capture:
