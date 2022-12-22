@@ -34,7 +34,8 @@
      "name": "Dummy Wait",
      "cycles": 1,
      "requested_cycle_time": 1000,
-     "capture": false,
+     "capture": [],
+     "captureBool": false,
      "group": "",
      "leds": {
       "UV": 0,
@@ -57,7 +58,7 @@
        "is_event": false,
        "name": "Incorporation",
        "cycles": 1,
-       "requested_cycle_time": 597000,
+       "requested_cycle_time": 0,
        "entries": [
         {
          "is_event": false,
@@ -70,7 +71,10 @@
            "name": "000",
            "cycles": 1,
            "requested_cycle_time": 0,
-           "capture": true,
+           "capture": [
+            0
+           ],
+           "captureBool": false,
            "group": "000",
            "leds": {
             "UV": 0,
@@ -88,7 +92,10 @@
            "name": "645",
            "cycles": 1,
            "requested_cycle_time": 0,
-           "capture": true,
+           "capture": [
+            0
+           ],
+           "captureBool": false,
            "group": "645",
            "leds": {
             "UV": 0,
@@ -106,7 +113,10 @@
            "name": "590",
            "cycles": 1,
            "requested_cycle_time": 0,
-           "capture": true,
+           "capture": [
+            0
+           ],
+           "captureBool": false,
            "group": "590",
            "leds": {
             "UV": 0,
@@ -124,7 +134,10 @@
            "name": "525",
            "cycles": 1,
            "requested_cycle_time": 0,
-           "capture": true,
+           "capture": [
+            0
+           ],
+           "captureBool": false,
            "group": "525",
            "leds": {
             "UV": 0,
@@ -142,7 +155,10 @@
            "name": "445",
            "cycles": 1,
            "requested_cycle_time": 0,
-           "capture": true,
+           "capture": [
+            0
+           ],
+           "captureBool": false,
            "group": "445",
            "leds": {
             "UV": 0,
@@ -162,7 +178,8 @@
          "name": "Incorporation",
          "cycles": 1,
          "requested_cycle_time": 287000,
-         "capture": false,
+         "capture": [],
+         "captureBool": false,
          "group": "",
          "leds": {
           "UV": 0,
@@ -186,7 +203,10 @@
            "name": "000",
            "cycles": 1,
            "requested_cycle_time": 0,
-           "capture": true,
+           "capture": [
+            0
+           ],
+           "captureBool": false,
            "group": "000",
            "leds": {
             "UV": 0,
@@ -204,7 +224,10 @@
            "name": "645",
            "cycles": 1,
            "requested_cycle_time": 0,
-           "capture": true,
+           "capture": [
+            0
+           ],
+           "captureBool": false,
            "group": "645",
            "leds": {
             "UV": 0,
@@ -222,7 +245,10 @@
            "name": "590",
            "cycles": 1,
            "requested_cycle_time": 0,
-           "capture": true,
+           "capture": [
+            0
+           ],
+           "captureBool": false,
            "group": "590",
            "leds": {
             "UV": 0,
@@ -240,7 +266,10 @@
            "name": "525",
            "cycles": 1,
            "requested_cycle_time": 0,
-           "capture": true,
+           "capture": [
+            0
+           ],
+           "captureBool": false,
            "group": "525",
            "leds": {
             "UV": 0,
@@ -258,7 +287,10 @@
            "name": "445",
            "cycles": 1,
            "requested_cycle_time": 0,
-           "capture": true,
+           "capture": [
+            0
+           ],
+           "captureBool": false,
            "group": "445",
            "leds": {
             "UV": 0,
@@ -285,11 +317,16 @@
          "is_event": true,
          "name": "CleaveImage",
          "cycles": 1,
-         "requested_cycle_time": 1000,
-         "capture": true,
+         "requested_cycle_time": 3000,
+         "capture": [
+          0,
+          1,
+          2
+         ],
+         "captureBool": false,
          "group": "365",
          "leds": {
-          "UV": 999,
+          "UV": 3000,
           "BLUE": 0,
           "GREEN": 0,
           "ORANGE": 0,
@@ -301,13 +338,14 @@
         },
         {
          "is_event": true,
-         "name": "CleaveNoImage",
-         "cycles": 2,
+         "name": "Wait",
+         "cycles": 1,
          "requested_cycle_time": 0,
-         "capture": false,
+         "capture": [],
+         "captureBool": false,
          "group": "",
          "leds": {
-          "UV": 999,
+          "UV": 0,
           "BLUE": 0,
           "GREEN": 0,
           "ORANGE": 0,
@@ -332,7 +370,10 @@
        "name": "000",
        "cycles": 1,
        "requested_cycle_time": 0,
-       "capture": true,
+       "capture": [
+        0
+       ],
+       "captureBool": false,
        "group": "000",
        "leds": {
         "UV": 0,
@@ -350,7 +391,10 @@
        "name": "645",
        "cycles": 1,
        "requested_cycle_time": 0,
-       "capture": true,
+       "capture": [
+        0
+       ],
+       "captureBool": false,
        "group": "645",
        "leds": {
         "UV": 0,
@@ -368,7 +412,10 @@
        "name": "590",
        "cycles": 1,
        "requested_cycle_time": 0,
-       "capture": true,
+       "capture": [
+        0
+       ],
+       "captureBool": false,
        "group": "590",
        "leds": {
         "UV": 0,
@@ -386,7 +433,10 @@
        "name": "525",
        "cycles": 1,
        "requested_cycle_time": 0,
-       "capture": true,
+       "capture": [
+        0
+       ],
+       "captureBool": false,
        "group": "525",
        "leds": {
         "UV": 0,
@@ -404,7 +454,10 @@
        "name": "445",
        "cycles": 1,
        "requested_cycle_time": 0,
-       "capture": true,
+       "capture": [
+        0
+       ],
+       "captureBool": false,
        "group": "445",
        "leds": {
         "UV": 0,
