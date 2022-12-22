@@ -26,6 +26,7 @@ from ZionLED import (
 from ZionEvents import (
     ZionEvent,
     ZionEventGroup,
+    CaptureList
 )
 from ZionCamera import ZionCameraParameters
 from ZionErrors import ZionProtocolVersionError
@@ -53,6 +54,8 @@ class ZionProtocolEncoder(json.JSONEncoder):
             return float(obj)
         if isinstance(obj, ZionLEDs):
             return {k.name: v for k,v in obj.data.items()}
+        if isinstance(obj, CaptureList):
+            return obj.data
         return json.JSONEncoder.default(self, obj)
 
 
@@ -112,6 +115,9 @@ class ZionProtocol():
         except Exception as e:
             tb = "".join(traceback.format_exception(type(e), e, e.__traceback__))
             print(f"ERROR Loading Protocol File: {filename}\n{tb}")
+        # TODO: are there examples of cycle time not determining requested cycle time?
+        for entry in self.Entries:
+            entry.requested_cycle_time = entry.cycle_time
 
     def save_to_file(self, filename: str):
         if not filename.endswith(".txt"):
@@ -175,7 +181,7 @@ class ZionProtocol():
 
         name : str       : Descriptive name for the event (default: "")
         cycles : int     : Number of cycles for the event (default: 1)
-        capture : bool   : Wheter to capture an image for the event (default: True)
+        capture : list   : list of frame indices during which a capture should occur (default: [0] (formerly "True"))
         group : str      : Group string that's added to the image filename (default: "")
         _cycle_time : int: Number of milliseconds the event should take to complete (default: exposure_time)
         leds : ZionLEDs  : Led settings for the new event (default: ZionLEDs())
@@ -220,7 +226,13 @@ class ZionProtocol():
                 raise RuntimeError(
                     f"Unrecognized type in the event list: {type(event)}"
                 )
-
+        flat_events.append(
+            ZionEvent(
+                captureBool=False,
+                # ~ requested_cycle_time = ZionEvent._minimum_cycle_time,
+                name=f"Final Wait Event"
+            )
+        )
         return flat_events
 
     # The following gtk_* calls are pass through calls from ZionSession or ZionGtk

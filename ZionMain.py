@@ -38,6 +38,15 @@ Initial_Values = ZionCameraParameters(
     vflip=         True,
 )
 
+PID_Params = {
+'Target_Temperature': 53,
+'PWM_Frequency': 10,
+'P': 500,
+'I': 25,
+'delta_t': 1, #makes no difference as of now (TODO: speed up)
+'bias': 0,
+}
+
 # Initial_Values = {
 #     'brightness':    50,      # between 0 and 100
 #     'contrast':      0,      # between -100 and 100
@@ -59,7 +68,7 @@ Initial_Values = ZionCameraParameters(
 ########################################################################
 
 # Initialization Block:
-mySession = ZionSession(Session_Name, Binning, Initial_Values)
+mySession = ZionSession(Session_Name, Binning, Initial_Values, PID_Params)
 
 #Next line perform events defined above:
 # ~ mySession.RunProgram()

@@ -34,7 +34,7 @@ class ZionSession():
     protocolCountDigits = 3
     captureCountPerProtocolDigits = 5
 
-    def __init__(self, session_name, Binning, Initial_Values, overwrite=False):
+    def __init__(self, session_name, Binning, Initial_Values, PID_Params=None, overwrite=False):
 
         self.Name=session_name
         now = datetime.now()
@@ -52,9 +52,10 @@ class ZionSession():
         self.Dir = os.path.join(mod_path, "sessions", f"{filename}_{lastSuffix+1:04d}")
         print('Creating directory '+str(self.Dir))
         os.makedirs(self.Dir)
-
+        
+        self.Temperature = None
         self.Camera = ZionCamera(Binning, Initial_Values, parent=self)
-        self.GPIO = ZionGPIO(parent=self)
+        self.GPIO = ZionGPIO(parent=self, PID_Params=PID_Params)
         self.CaptureCount = 0
         self.SplitterCount = 0
         self.ProtocolCount = 0
@@ -90,8 +91,8 @@ class ZionSession():
         filename = filename+'_'+suffix if ( (not protocol) and (suffix) ) else filename
         if verbose:
             GLib.idle_add(self.gui.printToLog, f"Writing image to file {filename}.jpg")
-
         # ~ try:
+        self.update_last_capture_path = filename+'.jpg'
         self.SplitterCount += 1
         self.Camera.capture(filename, cropping=cropping, splitter=self.SplitterCount % 4, bayer=bayer)
         ret = 0
@@ -132,14 +133,21 @@ class ZionSession():
         self.Camera.load_params(params)
         return params
 
-    def SaveProtocolFile(self, filename : str = None, comment : str = ""):
+    def SaveProtocolFile(self, filename : str = None, comment : str = "", suffix : str = ""):
         if not filename:
             self.ProtocolCount += 1
             self.captureCountThisProtocol = 0
             filename = os.path.join(self.Dir, str(self.CaptureCount).zfill(ZionSession.captureCountDigits)+'_'+str(self.ProtocolCount).zfill(ZionSession.protocolCountDigits)+'A_Protocol')
 
         self.Protocol.Parameters = self.Camera.get_all_params(comment=comment)
-        self.Protocol.save_to_file(filename)
+
+        if filename.endswith(".txt"):
+            filename = os.path.splitext(filename)[0]
+
+        if suffix:
+            self.Protocol.save_to_file(filename+"_"+suffix)
+        else:
+            self.Protocol.save_to_file(filename)
 
     def LoadProtocolFromFile(self, filename):
         # TODO: Add error handling and notify user
@@ -186,8 +194,8 @@ class ZionSession():
                 out.write(buffer)
 
             try:
-                # Attempt to update the last capture if the event had LED illumination
-                if event.leds.has_wave_id():
+                # Attempt to update the last capture (even dark ones):
+                if event.captureBool:
                     if self.update_last_capture_lock.locked():
                         continue
 
@@ -251,6 +259,9 @@ class ZionSession():
 
             # rprint("[bold yellow]Grouped Flat Events[/bold yellow]")
             # rprint(grouped_flat_events)
+            
+            #Disable toggle led waveforms:
+            self.GPIO.disable_all_toggle_wf()
 
             # Pre-allocate enough space
             seq_stream = io.BytesIO()
@@ -295,7 +306,7 @@ class ZionSession():
                     capture_busy_event = self.GPIO.get_capture_busy_event()
                     bayer = True
                     quality = 85
-                    for frame_ind, (event, _) in enumerate(zip(flat_events, self.Camera.capture_continuous(seq_stream, format='jpeg', burst=True, bayer=bayer, thumbnail=None, quality=quality))):
+                    for frame_ind, (event, _) in enumerate(zip(flat_events, self.Camera.capture_continuous(seq_stream, format='jpeg', burst=False, bayer=bayer, thumbnail=None, quality=quality))):
                         # print(f"stream_size: {seq_stream.tell()}")
                         # stream_size = seq_stream.tell()
                         # seq_stream.seek(0)
@@ -309,17 +320,16 @@ class ZionSession():
                         stream_size = seq_stream.tell()
                         seq_stream.seek(0)
 
-                        if event.capture:
+                        if event.captureBool:
                             buffer_queue.put_nowait((seq_stream.getvalue(), event))
-                            print(f"Received frame {frame_ind} for event '{event.name}'  capture: {event.capture}  buf size: {stream_size}")
+                            print(f"Received frame {frame_ind} for event '{event.name}'  capture: {event.captureBool}  buf size: {stream_size}")
+                            self.GPIO.debug_trigger()
                         elif frame_ind % 10 == 0:
-                            print(f"Received frame {frame_ind} for event '{event.name}'  capture: {event.capture}")
+                            print(f"Received frame {frame_ind} for event '{event.name}'  capture: {event.captureBool}")
 
                         if stop_event.is_set():
                             print("Received stop!")
                             break
-
-                        self.GPIO.debug_trigger()
 
                     end_fstrobe = self.GPIO.get_num_fstrobes()
 
@@ -365,10 +375,12 @@ class ZionSession():
             GLib.idle_add(partial(self.gui.handlers._update_camera_preview, force=True))
             GLib.idle_add(self.gui.runProgramButton.set_sensitive, True)
             GLib.idle_add(self.gui.stopProgramButton.set_sensitive, False)
-            #TODO: blue and orange switches named here
-            GLib.idle_add(self.gui.blueSwitch.set_sensitive, True)
-            GLib.idle_add(self.gui.orangeSwitch.set_sensitive, True)
+            #TODO: led switches named here
             GLib.idle_add(self.gui.uvSwitch.set_sensitive, True)
+            GLib.idle_add(self.gui.blueSwitch.set_sensitive, True)
+            GLib.idle_add(self.gui.greenSwitch.set_sensitive, True)
+            GLib.idle_add(self.gui.orangeSwitch.set_sensitive, True)
+            GLib.idle_add(self.gui.redSwitch.set_sensitive, True)
 
     def InteractivePreview(self, window):
         self.Camera.start_preview(fullscreen=False, window=window)
@@ -396,3 +408,6 @@ class ZionSession():
             self.update_last_capture_path = None
             self.gui.cameraPreviewWrapper.image_path = t_path
         # self.gui.cameraPreview.get_parent().queue_draw()
+
+    def get_temperature(self):
+        self.Temperature = self.GPIO.read_temperature()
