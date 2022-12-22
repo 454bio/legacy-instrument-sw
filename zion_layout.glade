@@ -4,6 +4,11 @@
   <requires lib="gtk+" version="3.20"/>
   <object class="GtkTreeStore"/>
   <object class="GtkTextBuffer" id="analog_gain_buffer"/>
+  <object class="GtkImage" id="back_button_image">
+    <property name="visible">True</property>
+    <property name="can-focus">False</property>
+    <property name="icon-name">go-previous</property>
+  </object>
   <object class="GtkAdjustment" id="blue_gain_adjust">
     <property name="upper">8</property>
     <property name="value">1.8999999999999999</property>
@@ -47,10 +52,10 @@
   </object>
   <object class="GtkTextBuffer" id="exposure_time_buffer"/>
   <object class="GtkTextBuffer" id="framerate_buffer"/>
-  <object class="GtkImage" id="gallery_button_image">
-    <property name="sensitive">False</property>
+  <object class="GtkImage" id="fwd_button_image">
+    <property name="visible">True</property>
     <property name="can-focus">False</property>
-    <property name="icon-name">emblem-photos-symbolic</property>
+    <property name="icon-name">go-next</property>
   </object>
   <object class="GtkImage" id="lock_button_image">
     <property name="visible">True</property>
@@ -157,6 +162,15 @@
     <property name="upper">100</property>
     <property name="step-increment">1</property>
     <property name="page-increment">1</property>
+  </object>
+  <object class="GtkImage" id="skip_back_button_image">
+    <property name="visible">True</property>
+    <property name="can-focus">False</property>
+    <property name="icon-name">media-skip-backward</property>
+  </object>
+  <object class="GtkImage" id="skip_fwd_button_image">
+    <property name="can-focus">False</property>
+    <property name="icon-name">media-skip-forward</property>
   </object>
   <object class="GtkImage" id="stop_button_image">
     <property name="visible">True</property>
@@ -2196,32 +2210,197 @@
             <property name="can-focus">False</property>
             <property name="orientation">vertical</property>
             <child>
-              <object class="GtkFrame">
+              <object class="GtkNotebook">
                 <property name="visible">True</property>
-                <property name="can-focus">False</property>
-                <property name="label-xalign">0</property>
-                <property name="label-yalign">0</property>
-                <property name="shadow-type">none</property>
+                <property name="can-focus">True</property>
                 <child>
-                  <object class="GtkDrawingArea" id="camera_preview">
+                  <object class="GtkFrame">
                     <property name="visible">True</property>
                     <property name="can-focus">False</property>
-                    <signal name="button-press-event" handler="on_camera_preview_button_press_event" swapped="no"/>
-                    <signal name="configure-event" handler="on_camera_preview_configure_event" swapped="no"/>
-                    <signal name="draw" handler="on_camera_preview_draw" swapped="no"/>
+                    <property name="label-xalign">0</property>
+                    <property name="label-yalign">0</property>
+                    <property name="shadow-type">none</property>
+                    <child>
+                      <object class="GtkDrawingArea" id="camera_preview">
+                        <property name="visible">True</property>
+                        <property name="can-focus">False</property>
+                        <signal name="button-press-event" handler="on_camera_preview_button_press_event" swapped="no"/>
+                        <signal name="configure-event" handler="on_camera_preview_configure_event" swapped="no"/>
+                        <signal name="draw" handler="on_camera_preview_draw" swapped="no"/>
+                      </object>
+                    </child>
+                    <child type="label">
+                      <object class="GtkLabel">
+                        <property name="visible">True</property>
+                        <property name="can-focus">False</property>
+                      </object>
+                    </child>
                   </object>
                 </child>
-                <child type="label">
-                  <object class="GtkLabel">
+                <child type="tab">
+                  <object class="GtkImage">
                     <property name="visible">True</property>
                     <property name="can-focus">False</property>
+                    <property name="icon-name">utilities-terminal-symbolic</property>
                   </object>
+                  <packing>
+                    <property name="tab-fill">False</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkBox">
+                    <property name="visible">True</property>
+                    <property name="can-focus">False</property>
+                    <property name="orientation">vertical</property>
+                    <child>
+                      <object class="GtkBox">
+                        <property name="visible">True</property>
+                        <property name="can-focus">False</property>
+                        <property name="halign">center</property>
+                        <child>
+                          <object class="GtkButton" id="ip_seek_back_button">
+                            <property name="visible">True</property>
+                            <property name="can-focus">True</property>
+                            <property name="receives-default">True</property>
+                            <property name="image">skip_back_button_image</property>
+                            <signal name="clicked" handler="on_ip_seek_back_button_clicked" swapped="no"/>
+                          </object>
+                          <packing>
+                            <property name="expand">False</property>
+                            <property name="fill">True</property>
+                            <property name="position">0</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <object class="GtkButton" id="ip_seek_fwd_button">
+                            <property name="visible">True</property>
+                            <property name="can-focus">True</property>
+                            <property name="receives-default">True</property>
+                            <property name="image">skip_fwd_button_image</property>
+                            <signal name="clicked" handler="on_ip_seek_fwd_button_clicked" swapped="no"/>
+                          </object>
+                          <packing>
+                            <property name="expand">False</property>
+                            <property name="fill">True</property>
+                            <property name="position">1</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <object class="GtkSeparator">
+                            <property name="visible">True</property>
+                            <property name="can-focus">False</property>
+                            <property name="margin-start">5</property>
+                            <property name="margin-end">5</property>
+                          </object>
+                          <packing>
+                            <property name="expand">False</property>
+                            <property name="fill">True</property>
+                            <property name="position">2</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <object class="GtkButton" id="ip_back_button">
+                            <property name="visible">True</property>
+                            <property name="can-focus">True</property>
+                            <property name="receives-default">True</property>
+                            <property name="image">back_button_image</property>
+                            <property name="always-show-image">True</property>
+                            <signal name="clicked" handler="on_ip_back_button_clicked" swapped="no"/>
+                          </object>
+                          <packing>
+                            <property name="expand">False</property>
+                            <property name="fill">True</property>
+                            <property name="position">3</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <object class="GtkButton" id="ip_fwd_button">
+                            <property name="visible">True</property>
+                            <property name="can-focus">True</property>
+                            <property name="receives-default">True</property>
+                            <property name="image">fwd_button_image</property>
+                            <property name="always-show-image">True</property>
+                            <signal name="clicked" handler="on_ip_fwd_button_clicked" swapped="no"/>
+                          </object>
+                          <packing>
+                            <property name="expand">False</property>
+                            <property name="fill">True</property>
+                            <property name="position">4</property>
+                          </packing>
+                        </child>
+                      </object>
+                      <packing>
+                        <property name="expand">False</property>
+                        <property name="fill">False</property>
+                        <property name="position">0</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <object class="GtkFrame">
+                        <property name="visible">True</property>
+                        <property name="can-focus">False</property>
+                        <property name="label-xalign">0</property>
+                        <property name="label-yalign">0</property>
+                        <property name="shadow-type">none</property>
+                        <child>
+                          <object class="GtkDrawingArea" id="image_processing_display">
+                            <property name="visible">True</property>
+                            <property name="can-focus">False</property>
+                            <signal name="configure-event" handler="on_image_processing_display_configure_event" swapped="no"/>
+                            <signal name="draw" handler="on_image_processing_display_draw" swapped="no"/>
+                          </object>
+                        </child>
+                        <child type="label">
+                          <object class="GtkLabel">
+                            <property name="visible">True</property>
+                            <property name="can-focus">False</property>
+                          </object>
+                        </child>
+                      </object>
+                      <packing>
+                        <property name="expand">True</property>
+                        <property name="fill">True</property>
+                        <property name="position">1</property>
+                      </packing>
+                    </child>
+                  </object>
+                  <packing>
+                    <property name="position">1</property>
+                  </packing>
+                </child>
+                <child type="tab">
+                  <object class="GtkImage">
+                    <property name="visible">True</property>
+                    <property name="can-focus">False</property>
+                    <property name="icon-name">emblem-photos-symbolic</property>
+                  </object>
+                  <packing>
+                    <property name="position">1</property>
+                    <property name="tab-fill">False</property>
+                  </packing>
+                </child>
+                <child>
+                  <placeholder/>
+                </child>
+                <child type="tab">
+                  <placeholder/>
                 </child>
               </object>
               <packing>
                 <property name="expand">True</property>
                 <property name="fill">True</property>
                 <property name="position">0</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkSeparator">
+                <property name="visible">True</property>
+                <property name="can-focus">False</property>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+                <property name="fill">True</property>
+                <property name="position">2</property>
               </packing>
             </child>
             <child>
@@ -2340,7 +2519,6 @@
                 </child>
                 <child>
                   <object class="GtkButton" id="crop_button">
-                    <property name="visible">True</property>
                     <property name="sensitive">False</property>
                     <property name="can-focus">True</property>
                     <property name="receives-default">True</property>
@@ -2353,26 +2531,11 @@
                     <property name="position">8</property>
                   </packing>
                 </child>
-                <child>
-                  <object class="GtkButton" id="gallery_button">
-                    <property name="visible">True</property>
-                    <property name="sensitive">False</property>
-                    <property name="can-focus">True</property>
-                    <property name="receives-default">True</property>
-                    <property name="halign">center</property>
-                    <property name="image">gallery_button_image</property>
-                  </object>
-                  <packing>
-                    <property name="expand">False</property>
-                    <property name="fill">True</property>
-                    <property name="position">9</property>
-                  </packing>
-                </child>
               </object>
               <packing>
                 <property name="expand">False</property>
                 <property name="fill">False</property>
-                <property name="position">1</property>
+                <property name="position">3</property>
               </packing>
             </child>
             <child>
@@ -2383,7 +2546,7 @@
               <packing>
                 <property name="expand">False</property>
                 <property name="fill">True</property>
-                <property name="position">2</property>
+                <property name="position">4</property>
               </packing>
             </child>
             <child>
@@ -2827,7 +2990,7 @@
               <packing>
                 <property name="expand">False</property>
                 <property name="fill">True</property>
-                <property name="position">2</property>
+                <property name="position">5</property>
               </packing>
             </child>
             <child>
@@ -2838,18 +3001,7 @@
               <packing>
                 <property name="expand">False</property>
                 <property name="fill">True</property>
-                <property name="position">2</property>
-              </packing>
-            </child>
-            <child>
-              <object class="GtkSeparator">
-                <property name="visible">True</property>
-                <property name="can-focus">False</property>
-              </object>
-              <packing>
-                <property name="expand">False</property>
-                <property name="fill">True</property>
-                <property name="position">4</property>
+                <property name="position">6</property>
               </packing>
             </child>
             <child>
@@ -2875,7 +3027,7 @@
               <packing>
                 <property name="expand">False</property>
                 <property name="fill">True</property>
-                <property name="position">5</property>
+                <property name="position">7</property>
               </packing>
             </child>
           </object>
