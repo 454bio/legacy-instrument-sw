@@ -364,6 +364,14 @@ class Handlers:
             self.parent.printToLog("Disabling PID")
             self.parent.parent.GPIO.enable_PID(False)
             
+    def on_pid_verbose_button_toggled(self, button):
+        if button.get_active():
+            self.parent.printToLog("PID is verbose")
+            self.parent.parent.GPIO.pigpio_process.mp_namespace.pid_verbose = True
+        else:
+            self.parent.printToLog("PID is not verbose")
+            self.parent.parent.GPIO.pigpio_process.mp_namespace.pid_verbose = False
+            
     def on_pid_temperature_entry_activate(self, entry):
         try:
             val = int(entry.get_text())
@@ -383,6 +391,7 @@ class Handlers:
         if val<0:
             self.parent.printToLog("P Value must be non-negative numeric!")
             return
+            
     def on_pid_I_entry_activate(self, entry):
         try:
             val = float(entry.get_text())
