@@ -67,8 +67,15 @@ class ZionSession():
         self.gui = ZionGUI(Initial_Values, self)
 
         self.TimeOfLife = time.time()
+
         self.update_last_capture_path = None
         self.update_last_capture_lock = threading.Lock()
+
+        self.image_files_queue = multiprocessing.Queue()
+        self.all_image_paths = []
+        self.load_image_paths = []
+        self.load_image_ind = 0
+        self.load_image_lock = threading.Lock()
 
     def CaptureImageThread(self, cropping=(0,0,1,1), group=None, verbose=False, comment='', suffix='', protocol=True):
         """ This is running in a thread. It should not call any GTK functions """
@@ -153,6 +160,13 @@ class ZionSession():
         # TODO: Add error handling and notify user
         self.Protocol.load_from_file(filename)
 
+    def _load_image(self, image_file_queue:Queue):
+        while True:
+            filepath = image_file_queue.get()
+            print(f"\n\nLoading image {filepath}\n\n")
+            time.sleep(3)
+            image_file_queue.task_done()
+
     def _save_event_image(self, image_buffer_event_queue : Queue):
         """ Thread that will consume event buffers and save the files accordingly """
         print("_save_event_image starting...")
@@ -190,6 +204,11 @@ class ZionSession():
                 self.gui.printToLog,
                 f"Writing event image to file {filepath}"
             )
+
+            #Keep record of file saved for loading later in different thread
+            self.image_files_queue.put_nowait((filepath,))
+            self.all_image_paths.append(filepath)
+
             with open(filepath, "wb") as out:
                 out.write(buffer)
 
@@ -206,6 +225,9 @@ class ZionSession():
                     print(f"Sending {filename} to update thread")
                     if call_update:
                         GLib.idle_add(self.update_last_capture)
+
+                    # ~ if event.group and event.group != '000':
+
 
             except Exception as e:
                 tb = "".join(traceback.format_exception(type(e), e, e.__traceback__))
@@ -266,11 +288,16 @@ class ZionSession():
             # Pre-allocate enough space
             seq_stream = io.BytesIO()
             buffer_queue = multiprocessing.Queue()
+            image_files_queue = multiprocessing.Queue()
 
             # self.buffer_thread = multiprocessing.Process(target=self._save_event_image, args=(buffer_queue, ) )
             self.buffer_thread = threading.Thread(target=self._save_event_image, args=(buffer_queue, ) )
             self.buffer_thread.daemon=True  # TODO: Should make this non-daemonic so files get save even if program is shutdown
             self.buffer_thread.start()
+
+            self.load_image_thread = threading.Thread(target=self._load_image, args=(image_files_queue, ) )
+            self.load_image_thread.daemon = True
+            self.load_image_thread.start()
 
             total_number_of_groups = float(len(grouped_flat_events))
             for gow_ind, group_or_wait in enumerate(grouped_flat_events):
@@ -282,6 +309,16 @@ class ZionSession():
                     #     self.gui.printToLog,
                     #     f"Waiting for {group_or_wait.cycle_time / 1000} seconds..."
                     # )
+
+                    # ~ image_files_queue.put_nowait((self.load_image_paths))
+                    # ~ self.all_image_paths.extend(self.load_image_paths)
+                    # ~ with self.load_image_lock:
+                        # ~ self.load_image_paths = []
+
+                    if self.load_image_lock.locked():
+                        print(f"Unlocking _load_image thread")
+                        self.load_image_lock.release()
+
                     group_or_wait.sleep(
                         stop_event=stop_event,
                         progress_log_func=partial(GLib.idle_add, self.gui.printToLog),
@@ -293,6 +330,7 @@ class ZionSession():
                         break
 
                 else:
+                    self.load_image_lock.acquire()
                     flat_events = group_or_wait
 
                     # This will pre-program the pigpio with the waveforms for our LEDs
