@@ -13,10 +13,9 @@ from ZionErrors import (
 class ZionLEDColor(IntEnum):
     UV = 0
     BLUE = 1
-    ORANGE = 2
-    # TODO define color names here?
-    COLOR3 = 3
-    COLOR4 = 4
+    GREEN = 2
+    ORANGE = 3
+    RED = 4
     COLOR5 = 5
     COLOR6 = 6
     COLOR7 = 7
@@ -53,7 +52,7 @@ class ZionLEDs(UserDict):
         if not isinstance(pulsetime, int):
             raise TypeError("Value (pulsetime) must be an integer")
 
-        if pulsetime < 0 or pulsetime > self.__max_pulsetime:
+        if pulsetime < 0 or (pulsetime > self.__max_pulsetime and self.__max_pulsetime != 0):
             raise ZionInvalidLEDPulsetime(f"Pulsetime must be between 0 and {self.__max_pulsetime}")
 
         return super().__setitem__(led_color, pulsetime)

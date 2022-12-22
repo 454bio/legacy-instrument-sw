@@ -1,12 +1,14 @@
 import math
 import threading
 import time
+from collections import UserList
 
 from dataclasses import (
     dataclass,
     field,
     asdict
 )
+
 
 from typing import (
     List,
@@ -21,6 +23,91 @@ from operator import add, attrgetter
 
 from ZionLED import ZionLEDs
 
+class CaptureList(UserList):
+    def __init__(self, lst:list=None):
+        if lst is None or lst == []:
+            super().__init__(self)
+            self._max = 1
+            self._min = 0
+        else:
+            lst_int = []
+            for item in lst:
+                try:
+                    lst_int.append(int(item))
+                except TypeError:
+                    raise TypeError("Capture Values must be integers!")
+            super().__init__(sorted(set(lst_int)))
+            self.data = [el for el in self.data if el>=0]
+            self._max = max(self.data)+1
+
+    def setMax(self, val):
+        print(f"setting max value to: ceil( {val} )")
+        self._max = math.ceil(val)
+        datanew = []
+        for el in self.data:
+            if el < self._max:
+                datanew.append(el)
+            else:
+                print(f"{el} removed (greater than max frame {self._max})")
+        self.data = datanew
+
+    def __setitem__(self, ind, val):
+        try:
+            newval = int(val)
+        except TypeError:
+            raise TypeError("Capture values must be integers!")
+        if not newval in self.data:
+            if self._max is not None:
+                if 0 <= newval < self._max:
+                    super().__setitem__(ind, newval)
+                else:
+                    raise ValueError(f"Capture value {newval} is not less than max {self._max} (or is negative)!")
+            else:
+                super().__setitem__(ind, newval)
+            self.sort()
+
+    def insert(self, ind, val):
+        try:
+            newval = int(val)
+        except TypeError:
+            raise TypeError("Capture values must be integers!")
+        if not newval in self.data:
+            if self._max is not None:
+                if 0 <= newval < self._max:
+                    super().insert(ind, newval)
+                else:
+                    raise ValueError(f"Capture value {newval} is not less than max {self._max} (or is negative)!")
+            else:
+                super().insert(ind, newval)
+            self.sort()
+
+    def append(self, val):
+        try:
+            newval = int(val)
+        except TypeError:
+            raise TypeError("Capture values must be integers!")
+        if not newval in self.data:
+            if self._max is not None:
+                if 0 <= newval < self._max:
+                    super().append(newval)
+                else:
+                    raise ValueError(f"Capture value {newval} is not less than max {self._max} (or is negative)!")
+            else:
+                super().append(newval)
+            self.sort()
+
+    def extend(self, vals):
+        for val in vals:
+            self.append(val)
+
+    # TODO: flesh out repr details for display
+    def repr(self):
+        chars = ''
+        #print(f"for item in {self.data}:")
+        for item in self.data:
+            #print(f"item is {item}")
+            chars += str(item+1)+','
+        return chars[:-1] #leave off last comma
 
 @dataclass
 class ZionProtocolEntry():
@@ -46,7 +133,8 @@ class ZionProtocolEntry():
 @dataclass
 class ZionEvent(ZionProtocolEntry):
     is_event: bool = True
-    capture: bool = True
+    capture: CaptureList = field(default_factory=CaptureList)
+    captureBool: bool = False #Used only for when we flatten event
     _is_wait: bool = False
     group: str = ""
     leds: ZionLEDs = field(default_factory=ZionLEDs)
@@ -62,10 +150,22 @@ class ZionEvent(ZionProtocolEntry):
     @classmethod
     def from_json(cls, json_dict: dict) -> "ZionEvent":
         # Convert "leds" from a dictionary to ZionLEDs
+        capture_json = json_dict.get("capture", {})
+        if isinstance(capture_json, bool):
+            capture_v3 = CaptureList([0]) if capture_json else CaptureList([])
+        elif isinstance(capture_json, list):
+            capture_v3 = CaptureList(capture_json)
+        else:
+            raise TypeError(f"Capture field in protocol file must be bool or list! It is {capture_json}")
         json_dict.update({
             "leds": ZionLEDs(**json_dict.get("leds", {})),
+            "capture": capture_v3,
         })
         return cls(**json_dict)
+
+    @property
+    def max_pw(self):
+        return max(self.leds.values())
 
     @property
     def total_time(self) -> int:
@@ -102,6 +202,11 @@ class ZionEvent(ZionProtocolEntry):
                 print(f"         Defaulting to minimum cycle time of '{ZionEvent._minimum_cycle_time}'.")
             cycle_time_in = ZionEvent._minimum_cycle_time
             self.requested_cycle_time = 0
+        elif cycle_time_in < self.max_pw:
+            print(f"WARNING: Cannot set 'cycle_time' of '{cycle_time_in}' for the ZionEvent '{self.name}'!")
+            print(f"         Defaulting to max pulse time of '{self.max_pw}'.")
+            cycle_time_in = self.max_pw
+            self.requested_cycle_time = self.max_pw
         else:
             self.requested_cycle_time = cycle_time_in
 
@@ -147,28 +252,68 @@ class ZionEvent(ZionProtocolEntry):
                 progress_bar_func(0)
                 break
 
+    def set_pulsetimes(self, color, value):
+        if value > self.cycle_time and value > self.max_pw:
+            # ~ print(f"Pulsetime {value} is greater than cycle time {self.cycle_time}!")
+            self.requested_cycle_time = value
+        self.leds[color] = value
+
+    def set_captures(self, captureList):
+        capture_old = self.capture.copy()
+        captureList.setMax(self._time_to_cycles)
+        if len(captureList) > 0:
+            self.capture = captureList
+        else:
+            self.capture = capture_old
+
     def flatten(self) -> List['ZionEvent']:
         """ This will either return just ourselves in a list. Or ourselves plus a filler event that captures the extra cycle time """
 
+        # initialize captureBool for first (0th) frame
+        self.captureBool = True if 0 in self.capture else False
+
+        #self._time_to_cycles = the total number of frames
+
+        #last frame getting captured (1-index):
+        lastCaptureFrame = max(self.capture)+1 if len(self.capture)>0 else 1
+
+        #last frame containing led pulse:
+        lastPulseFrame = math.ceil(max([led for led in self.leds.values()]) / ZionEvent._minimum_cycle_time)
+
+        #last frame that is doing SOMETHING (ie not waiting):
+        lastBusyFrame = max([lastCaptureFrame, lastPulseFrame])
+
         equivalent_event = [self,]
         if self._additional_cycle_time:
-            if self._additional_cycle_time > self._minimum_wait_event_time:
+            for frame_ind in range(1,lastBusyFrame): #we already did frame 0
                 equivalent_event.append(
                     ZionEvent(
-                        capture=False,
-                        requested_cycle_time=self._additional_cycle_time,
+                        captureBool=True if frame_ind in self.capture else False,
+                        group=self.group,
+                        requested_cycle_time = self._minimum_cycle_time,
+                        name=f"{self.name} piece {frame_ind+1}"
+                    )
+                )
+
+            remaining_cycle_time = (self._time_to_cycles-lastBusyFrame)*ZionEvent._minimum_cycle_time
+            if remaining_cycle_time < self._minimum_wait_event_time:
+                cycle_filler_event = ZionEvent(
+                    captureBool=False,
+                    requested_cycle_time=remaining_cycle_time,
+                    name=f"{self.name} wait"
+                )
+                extra_cycles_per_event = self._time_to_cycles-lastBusyFrame
+                equivalent_event.extend([cycle_filler_event,] * extra_cycles_per_event)
+
+            else:
+                equivalent_event.append(
+                    ZionEvent(
+                        captureBool=False,
+                        requested_cycle_time=remaining_cycle_time,
                         name=f"{self.name} long wait",
                         _is_wait=True,
                     )
                 )
-            else:
-                cycle_filler_event = ZionEvent(
-                    capture=False,
-                    requested_cycle_time=ZionEvent._minimum_cycle_time,
-                    name=f"{self.name} wait"
-                )
-                extra_cycles_per_event = self._time_to_cycles - 1
-                equivalent_event.extend([cycle_filler_event,] * extra_cycles_per_event)
 
         return equivalent_event * self.cycles
 
@@ -209,7 +354,7 @@ class ZionEventGroup(ZionProtocolEntry):
             if self._additional_cycle_time > ZionEvent._minimum_wait_event_time:
                 wait_events = [
                     ZionEvent(
-                        capture=False,
+                        captureBool=False,
                         requested_cycle_time=self._additional_cycle_time,
                         name=f"{self.name} long wait",
                         _is_wait=True,
@@ -217,7 +362,7 @@ class ZionEventGroup(ZionProtocolEntry):
                 ]
             else:
                 cycle_filler_event = ZionEvent(
-                    capture=False,
+                    captureBool=False,
                     requested_cycle_time=ZionEvent._minimum_cycle_time,
                     name=f"{self.name} wait"
                 )

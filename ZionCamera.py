@@ -153,7 +153,7 @@ class ZionCamera(PiCamera):
 		print(self.get_camera_props())
 
 		# Set the max pulse width from the framerate and readout time
-		ZionLEDs.set_max_pulsetime(math.floor(1000 / self.framerate))
+		ZionLEDs.set_max_pulsetime(0)#math.floor(1000 / self.framerate))
 		#TODO: merging ZionLEDs and ZionLEDTimings may make this unnecessary
 		ZionLEDTimings.set_max_pulsetime(math.floor(1000000 / self.framerate))
 
@@ -236,8 +236,8 @@ class ZionCamera(PiCamera):
 					if settings_ok:
 						break
 
-					print("Sleeping another second for settings to propogate...")
-					sleep(1)
+					print("Sleeping another two second for settings to propogate...")
+					sleep(2)
 
 				if not settings_ok:
 					# By skipping the `exposure_mode` settings if we failed, then we will pop a error to the user
@@ -287,7 +287,7 @@ class ZionCamera(PiCamera):
 			# ~ ret = super(ZionCamera,self).capture_sequence([fileToWrite], use_video_port=False, bayer=False, burst=True)
 
 		if self.parent:
-			GLib.idle_add(self.parent.update_last_capture, fileToWrite)
+			GLib.idle_add(self.parent.update_last_capture)
 
 		self.zoom=(0,0,1,1)
 		return ret
