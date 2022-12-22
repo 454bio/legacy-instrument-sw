@@ -332,11 +332,11 @@ class ZionPigpioProcess(multiprocessing.Process):
         pi.set_PWM_range(gpio, 1000)
         mp_namespace.temperature = self._read_temperature()
         read_temperature = mp_namespace.temperature
-        use_temperature = read_temperature
+        use_temperature = mp_namespace.temperature
         error = 0
         interror = 0
         roundoff = 0
-        
+
         #Now turn on ramp 100% if we're far away
         # ~ if mp_namespace.pid_enable and pid_ramp_threshold is not None:
             # ~ if mp_namespace.target_temp - mp_namespace.temperature > pid_ramp_threshold:
@@ -345,16 +345,19 @@ class ZionPigpioProcess(multiprocessing.Process):
                 # ~ while mp_namespace.target_temp - mp_namespace.temperature > pid_ramp_threshold:
                     # ~ mp_namespace.temperature = self._read_temperature()
                     # ~ time.sleep(mp_namespace.pid_delta_t)
-                    
+
         while True:
             t0 = time.perf_counter()
+
             #seeing spikes at 85.00C - quick filter out
             last_read_temperature = read_temperature
             read_temperature = self._read_temperature()
-            if (abs(read_temperature-last_read_temperature)<3) and (read_temperature!=85):	#in case of spike ignores - also cheat with known 85.00 that comes in doubles sometimes - related to PWM switching		
-                use_temperature=read_temperature
-				
-            mp_namespace.temperature = use_temperature
+            #in case of spike ignores - also cheat with known 85.00 that comes in doubles sometimes - related to PWM switching
+            if read_temperature is not None and last_read_temperature is not None:
+                if (abs(read_temperature-last_read_temperature)<3) and (read_temperature!=85):
+                    use_temperature=read_temperature
+                mp_namespace.temperature = use_temperature
+
             if mp_namespace.pid_enable:
                 if mp_namespace.pid_reset:
                     print('control loop started')

@@ -139,7 +139,6 @@ class ZionProtocolTree():
         _type_to_edit_signal = {str: "edited", int: "edited", bool: "toggled"}
 
         for field, column_title in self.FIELDS.items():
-            print(f"field={field}, title={column_title}")
             ftype = _field_to_type[field]
             if ftype in (str, int, float, bool):
                 cell_data_func = _type_to_func[ftype]
