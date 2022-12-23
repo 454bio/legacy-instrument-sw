@@ -73,9 +73,9 @@ class ZionSession():
 
         self.image_files_queue = multiprocessing.Queue()
         self.all_image_paths = []
-        self.load_image_paths = []
-        self.load_image_ind = 0
         self.load_image_lock = threading.Lock()
+        with self.load_image_lock:
+            self.load_image_enable = False
 
     def CaptureImageThread(self, cropping=(0,0,1,1), group=None, verbose=False, comment='', suffix='', protocol=True):
         """ This is running in a thread. It should not call any GTK functions """
@@ -161,11 +161,17 @@ class ZionSession():
         self.Protocol.load_from_file(filename)
 
     def _load_image(self, image_file_queue:Queue):
+        print("Starting load_image thread")
         while True:
             filepath = image_file_queue.get()
-            print(f"\n\nLoading image {filepath}\n\n")
-            time.sleep(3)
-            image_file_queue.task_done()
+            if self.load_image_enable:
+                print(f"\n\nloading image {filepath}\n\n")
+                time.sleep(3)
+            else:
+                while not self.load_image_enable:
+                    continue
+                print(f"\n\nloading image {filepath} after wait\n\n")
+                time.sleep(3)
 
     def _save_event_image(self, image_buffer_event_queue : Queue):
         """ Thread that will consume event buffers and save the files accordingly """
@@ -288,14 +294,14 @@ class ZionSession():
             # Pre-allocate enough space
             seq_stream = io.BytesIO()
             buffer_queue = multiprocessing.Queue()
-            image_files_queue = multiprocessing.Queue()
+            #image_files_queue = multiprocessing.Queue()
 
             # self.buffer_thread = multiprocessing.Process(target=self._save_event_image, args=(buffer_queue, ) )
             self.buffer_thread = threading.Thread(target=self._save_event_image, args=(buffer_queue, ) )
             self.buffer_thread.daemon=True  # TODO: Should make this non-daemonic so files get save even if program is shutdown
             self.buffer_thread.start()
 
-            self.load_image_thread = threading.Thread(target=self._load_image, args=(image_files_queue, ) )
+            self.load_image_thread = threading.Thread(target=self._load_image, args=(self.image_files_queue, ) )
             self.load_image_thread.daemon = True
             self.load_image_thread.start()
 
@@ -315,9 +321,11 @@ class ZionSession():
                     # ~ with self.load_image_lock:
                         # ~ self.load_image_paths = []
 
-                    if self.load_image_lock.locked():
-                        print(f"Unlocking _load_image thread")
-                        self.load_image_lock.release()
+                    # ~ if self.load_image_lock.locked():
+                        # ~ print(f"Unlocking _load_image thread")
+                        # ~ self.load_image_lock.release()
+                    with self.load_image_lock:
+                        self.load_image_enable = True
 
                     group_or_wait.sleep(
                         stop_event=stop_event,
@@ -330,7 +338,8 @@ class ZionSession():
                         break
 
                 else:
-                    self.load_image_lock.acquire()
+                    with self.load_image_lock:
+                        self.load_image_enable = False
                     flat_events = group_or_wait
 
                     # This will pre-program the pigpio with the waveforms for our LEDs
