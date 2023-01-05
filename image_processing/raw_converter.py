@@ -9,6 +9,13 @@ used_bytes_per_line = 6084
 img_W = 4056//2
 img_H = 3040//2
 
+def get_wavelength_from_filename(filepath):
+    return filepath.split('_')[-2]
+
+def get_cycle_from_filename(filepath):
+    return
+    # TODO
+
 #TODO: make all this faster? use C/C++?
 
 def unpack_12_8_raw(line):
@@ -62,3 +69,4 @@ def jpg_to_raw(filepath, target_path, compression=None):
 
     #images available to return if desired:
     return red_image, green_image, blue_image
+

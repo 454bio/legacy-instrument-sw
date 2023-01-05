@@ -25,6 +25,7 @@ from ZionProtocols import ZionProtocol
 from ZionGtk import ZionGUI
 from picamera.exc import mmal
 from ZionEvents import ZionEvent
+from image_processing.ZionImage import ZionImageProcessor
 
 mod_path = os.path.dirname(os.path.abspath(__file__))
 
