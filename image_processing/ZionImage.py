@@ -10,9 +10,6 @@ from tifffile import imread, imwrite
 
 from image_processing.raw_converter import jpg_to_raw, get_wavelength_from_filename, get_cycle_from_filename
 
-class ZionImageProcessor(multiprocessing.Process):
-	pass
-
 class ZionImage:
 	def __init__(self, image_list, cycle=None, wavelengths=None, fromFiles=True):
 		if fromFiles: # image_list is a list of filepaths
@@ -45,7 +42,23 @@ class ZionImage:
 	def as_stack(self):
 		return
 
-class ZionDiffImage(ZionImage):
+	def median_filter(self, wl_idx, kernel_size, method='sk1', inplace=False):
+		in_img = self.data[:,:,wl_idx]
+		if method=='sk1':
+			img_filt = ski.filters.median(in_img, ski.morphology.disk(kernel_size), behavior='ndimage')
+		elif method=='sk2':
+			img_filt = ski.filters.median(in_img, ski.morphology.disk(kernel_size), behavior='rank')
+		elif method=='cv':
+			print("Warning, cv method only allows kernel size of 5")
+			img_filt = cv2.medianBlur(in_img, 5)
+		else:
+			print(f"Invalid Method {method}!")
+			return None
+		if inplace:
+			self.data = img_filt
+		return img_filt
+
+class ZionDifferenceImage(ZionImage):
 	def __init__(self, posImage:ZionImage, negImage:ZionImage, cycle=None):
 
 		if cycle is None:
@@ -64,3 +77,6 @@ class ZionDiffImage(ZionImage):
 
 		#ensure data is unsigned integer:
 		self.data = self.data - np.min(self.data)
+
+class ZionImageProcessor(multiprocessing.Process):
+	pass

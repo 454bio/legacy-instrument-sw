@@ -25,7 +25,8 @@ from ZionProtocols import ZionProtocol
 from ZionGtk import ZionGUI
 from picamera.exc import mmal
 from ZionEvents import ZionEvent
-from image_processing.ZionImage import ZionImageProcessor
+from image_processing.ZionImage import ZionImageProcessor, ZionImage
+from image_processing.raw_converter import jpg_to_raw
 
 mod_path = os.path.dirname(os.path.abspath(__file__))
 
@@ -161,18 +162,29 @@ class ZionSession():
         # TODO: Add error handling and notify user
         self.Protocol.load_from_file(filename)
 
-    def _load_image(self, image_file_queue:Queue):
+    def _convert_jpeg(self, image_file_queue:Queue):
         print("Starting load_image thread")
         while True:
-            filepath = image_file_queue.get()
+            filepath_args = image_file_queue.get()
+            filepath = filepath_args[0]
+            if filepath is None:
+                print("_convert_jpeg thread -- received stop signal!")
+                break
             if self.load_image_enable:
-                print(f"\n\nloading image {filepath}\n\n")
-                time.sleep(3)
+                print(f"\n\nconverting jpeg {filepath}\n\n")
+
+                out_dir = os.path.join(os.path.dirname(filepath), "raws")
+                filename = os.path.splitext(os.path.basename(filepath))[0]
+                rgbs = jpg_to_raw(filepath, os.path.join(out_dir, filename+".tif"))
+
             else:
                 while not self.load_image_enable:
                     continue
-                print(f"\n\nloading image {filepath} after wait\n\n")
-                time.sleep(3)
+                print(f"\n\nconverting jpeg {filepath} after wait\n\n")
+
+                out_dir = os.path.join(os.path.dirname(filepath), "raws")
+                filename = os.path.splitext(os.path.basename(filepath))[0]
+                rgbs = jpg_to_raw(filepath, os.path.join(out_dir, filename+".tif"))
 
     def _save_event_image(self, image_buffer_event_queue : Queue):
         """ Thread that will consume event buffers and save the files accordingly """
@@ -302,7 +314,7 @@ class ZionSession():
             self.buffer_thread.daemon=True  # TODO: Should make this non-daemonic so files get save even if program is shutdown
             self.buffer_thread.start()
 
-            self.load_image_thread = threading.Thread(target=self._load_image, args=(self.image_files_queue, ) )
+            self.load_image_thread = threading.Thread(target=self._convert_jpeg, args=(self.image_files_queue, ) )
             self.load_image_thread.daemon = True
             self.load_image_thread.start()
 
