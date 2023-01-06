@@ -62,6 +62,10 @@ def jpg_to_raw(filepath, target_path, compression=None):
         green_image[img_idx] = (green1<<3) + (green2<<3) #combined averaging and 12 bit to 16 bit
 
     # Now reshape images and write to 16-bit color tiff:
+    target_dir = os.path.dirname(target_path)
+    if not os.path.exists(target_dir):
+        os.mkdir(target_dir)
+        print(f"Creating folder {target_dir}")
     filename =  os.path.splitext(target_path)[0]
     color_image = np.stack([red_image, green_image, blue_image], axis=-1).reshape((img_H, img_W, 3))
     imwrite(filename+".tif", color_image, photometric='rgb', compression=compression)
