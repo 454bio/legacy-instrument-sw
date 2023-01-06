@@ -163,7 +163,7 @@ class ZionSession():
         self.Protocol.load_from_file(filename)
 
     def _convert_jpeg(self, image_file_queue:Queue):
-        print("Starting load_image thread")
+        print("Starting convertjpeg thread")
         while True:
             filepath_args = image_file_queue.get()
             filepath = filepath_args[0]

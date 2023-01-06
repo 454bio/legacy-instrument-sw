@@ -70,7 +70,7 @@ class ZionDifferenceImage(ZionImage):
 		self.nChannels = posImage.nChannels
 		for ind, w in enumerate(self.wavelengths):
 			if w in negImage.wavelengths:
-				negInd = index(negImage.wavelengths, w)
+				negInd = negImage.wavelengths.index(w)
 				self.data[:,:,ind] = posImage.data[:,:,ind]-negImage.data[:,:,negInd]
 			else:
 				self.data[:,:,ind] = posImage.data[:,:,ind]
