@@ -98,7 +98,8 @@ class ZionProtocolTree():
         'cycle_time': "Cycle Time\n(ms)",
         'total_time_sec': "Total Time\n(sec)",
         'capture': "Capture\nFrames",
-        'group': "Label",
+        # ~ 'cycle_ind':"Cycle",
+        'group': "Label\n(nm)",
         'leds': "$LED_NAME$ Pulse\n(ms)",  # Special field that gets formatted
     }
 
