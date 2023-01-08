@@ -137,6 +137,7 @@ class ZionEvent(ZionProtocolEntry):
     captureBool: bool = False #Used only for when we flatten event
     _is_wait: bool = False
     group: str = ""
+    # ~ cycle_ind: str = ""
     leds: ZionLEDs = field(default_factory=ZionLEDs)
     _minimum_cycle_time: ClassVar[int] = 0
     _minimum_wait_event_time: ClassVar[int] = 0

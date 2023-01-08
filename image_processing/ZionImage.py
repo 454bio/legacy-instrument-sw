@@ -1,4 +1,4 @@
-import os
+import os, time
 import multiprocessing
 import threading
 import numpy as np
@@ -42,8 +42,12 @@ class ZionImage:
 	def as_stack(self):
 		return
 
-	def median_filter(self, wl_idx, kernel_size, method='sk1', inplace=False):
+	def median_filter(self, wl_idx, kernel_size, method='sk1', inplace=False, timer=False):
 		in_img = self.data[:,:,wl_idx]
+
+		if timer:
+			t0 = time.perf_counter()
+
 		if method=='sk1':
 			img_filt = ski.filters.median(in_img, ski.morphology.disk(kernel_size), behavior='ndimage')
 		elif method=='sk2':
@@ -54,6 +58,11 @@ class ZionImage:
 		else:
 			print(f"Invalid Method {method}!")
 			return None
+
+		if timer:
+			t1 = time.perf_counter()
+			print(f"Elapsed time for median filtering: {t1-t0}")
+
 		if inplace:
 			self.data = img_filt
 		return img_filt
@@ -79,4 +88,13 @@ class ZionDifferenceImage(ZionImage):
 		self.data = self.data - np.min(self.data)
 
 class ZionImageProcessor(multiprocessing.Process):
-	pass
+	def __init__(self):
+		super().__init__()
+
+		self.bEnable = False
+
+		self._mp_manager = multiprocessing.Manager()
+		self.mp_namespace = self._mp_manager.Namespace()
+
+		self.example_queue = self._mp_manager.Queue()
+		self.example_event = self._mp_manager.Event()

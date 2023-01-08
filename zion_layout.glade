@@ -2328,6 +2328,34 @@
                             <property name="position">4</property>
                           </packing>
                         </child>
+                        <child>
+                          <object class="GtkSeparator">
+                            <property name="visible">True</property>
+                            <property name="can-focus">False</property>
+                            <property name="margin-start">5</property>
+                            <property name="margin-end">5</property>
+                          </object>
+                          <packing>
+                            <property name="expand">False</property>
+                            <property name="fill">True</property>
+                            <property name="position">5</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <object class="GtkCheckButton" id="ip_enable_checkbox">
+                            <property name="label" translatable="yes">IP Enable</property>
+                            <property name="visible">True</property>
+                            <property name="can-focus">True</property>
+                            <property name="receives-default">False</property>
+                            <property name="draw-indicator">True</property>
+                            <signal name="toggled" handler="on_ip_enable_checkbox_toggled" swapped="no"/>
+                          </object>
+                          <packing>
+                            <property name="expand">False</property>
+                            <property name="fill">True</property>
+                            <property name="position">6</property>
+                          </packing>
+                        </child>
                       </object>
                       <packing>
                         <property name="expand">False</property>

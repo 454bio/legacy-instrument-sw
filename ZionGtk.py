@@ -1137,9 +1137,12 @@ class Handlers:
         if not self.is_program_running():
             self.parent.parent.Camera.stop_preview()
         return False
-        
+
     def on_image_processing_display_configure_event(self, *args):
         return False
+
+    def on_ip_enable_checkbox_toggled(self, button):
+        return
 
     def on_ip_back_button_clicked(self, button):
         return
