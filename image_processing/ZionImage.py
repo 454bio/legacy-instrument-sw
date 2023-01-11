@@ -32,7 +32,7 @@ def detect_rois(in_img, median_ks=9, erosion_ks=35, dilation_ks=30):
 
 	# TODO: make in_img a ZionImage and access non-UV channels
 
-	#Convert to grayscale
+	#Convert to grayscale (needs to access UV channel here when above change occurs):
 	img_gs = rgb2gray(in_img)
 
 	img_gs = median_filter(img_gs, median_ks)
@@ -48,39 +48,41 @@ def detect_rois(in_img, median_ks=9, erosion_ks=35, dilation_ks=30):
 
 	spot_ind, nSpots = ski.measure.label(img_bin, return_num=True)
 	print(f"{nSpots} spots found")
+
+	# TODO: get stats, centroids of spots, further invalidate improper spots. (a la cv2.connectedComponentsWithStats)
+
 	return img_bin, spot_ind
 
 def overlay_image(img, labels, color):
 	return ski.segmentation.mark_boundaries(img, labels, color=color, mode='thick')
 
-# TODO: @dataclass? @property?
 class ZionImage(UserDict):
 	def __init__(self, lstImages, lstWavelengths, cycle=None):
 		d = dict()
 		for wavelength, image in zip(listWavelengths, lstImages):
-			#TODO check validity
+			#TODO check validity (uint16, RGB, consistent sizes)
 			d[wavelength] = image
 		super().__init__(d)
 		self.dims = image.shape[0,1]
 		self.nChannels = len(lstWavelengths)
 		self.cycle = cycle
 
-	def as_4D_array(self):
+	@property
+	def view_4D(self):
 		out_arr = np.zeros(shape=self.dims+[self.nChannels]+[3])
 		for ch_idx, wl in enumerate(sorted(self.data.keys())):
 			out_arr[:,:,ch_idx,:] = self.data[wl]
 		return out_arr
 
-	def as_3D_array(self):
+	@property
+	def view_3D(self):
 		out_arr = np.zeros(shape=self.dims+[3*self.nChannels])
 		for ch_idx, wl in enumerate(sorted(self.data.keys())):
 			out_arr[:,:,(3*ch_idx):(3*(ch_idx+1))] = self.data[wl]
 		return out_arr
 
-	def to_8bit_array(self, wl):
-		out_arr = self.data[wl].astype('uint8')
-		#TODO test this. also do we want multiple channels ever?
-		return out_arr
+	def view_8bit_Channel(self, wl):
+		return np.right_shift(self.data[wl], 8).astype('uint8')
 
 	# ~ def median_filter(self, wl_idx, kernel_size, method='sk2', inplace=False, timer=False):
 		# ~ in_img = self.data[:,:,wl_idx]
@@ -132,6 +134,8 @@ class ZionImageProcessor(multiprocessing.Process):
 		super().__init__()
 
 		self.bEnable = False
+		self.showSpots = False
+		self.showBases = False
 
 		self._mp_manager = multiprocessing.Manager()
 		self.mp_namespace = self._mp_manager.Namespace()

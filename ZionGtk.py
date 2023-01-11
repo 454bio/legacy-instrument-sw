@@ -1166,6 +1166,9 @@ class Handlers:
     def on_ip_use_diff_imgs_checkbox_toggled(self, button):
         return
 
+    def on_test1_button_clicked(self, button):
+        return
+
     def check_fixed_settings(self):
         is_fixed_capture, bad_params = self.parent.parent.Camera.is_fixed_capture()
         if not is_fixed_capture:
