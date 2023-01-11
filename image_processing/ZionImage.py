@@ -81,7 +81,7 @@ class ZionImage(UserDict):
 			out_arr[:,:,(3*ch_idx):(3*(ch_idx+1))] = self.data[wl]
 		return out_arr
 
-	def view_8bit_Channel(self, wl):
+	def get_8bit_view(self, wl):
 		return np.right_shift(self.data[wl], 8).astype('uint8')
 
 	# ~ def median_filter(self, wl_idx, kernel_size, method='sk2', inplace=False, timer=False):
