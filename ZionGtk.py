@@ -1142,6 +1142,7 @@ class Handlers:
         return False
 
     def on_ip_enable_checkbox_toggled(self, button):
+        #TODO: lock/unlock rest of ip control section
         return
 
     def on_ip_back_button_clicked(self, button):
@@ -1154,6 +1155,15 @@ class Handlers:
         return
 
     def on_ip_seek_fwd_button_clicked(self, button):
+        return
+
+    def on_ip_view_spots_checkbox_toggled(self, button):
+        return
+
+    def on_ip_view_bases_checkbox_toggled(self, button):
+        return
+
+    def on_ip_use_diff_imgs_checkbox_toggled(self, button):
         return
 
     def check_fixed_settings(self):
