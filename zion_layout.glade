@@ -2304,7 +2304,6 @@
                             <property name="receives-default">False</property>
                             <property name="margin-start">4</property>
                             <property name="margin-end">8</property>
-                            <property name="active">True</property>
                             <property name="draw-indicator">True</property>
                             <signal name="toggled" handler="on_ip_enable_checkbox_toggled" swapped="no"/>
                           </object>

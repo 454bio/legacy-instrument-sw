@@ -1141,8 +1141,12 @@ class Handlers:
     def on_image_processing_display_configure_event(self, *args):
         return False
 
-    def on_ip_enable_checkbox_toggled(self, button):
+    def on_ip_enable_checkbox_toggled(self, switch):
         #TODO: lock/unlock rest of ip control section
+        if switch.get_active():
+            self.parent.parent.ImageProcessor.set_enable(True)
+        else:
+            self.parent.parent.ImageProcessor.set_enable(False)
         return
 
     def on_ip_back_button_clicked(self, button):
