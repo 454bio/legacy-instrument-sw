@@ -133,17 +133,27 @@ class ZionImageProcessor(multiprocessing.Process):
 	def __init__(self):
 		super().__init__()
 
-		self._bEnable = False
-		self._bShowSpots = False
-		self._bShowBases = False
-
 		self._mp_manager = multiprocessing.Manager()
 		self.mp_namespace = self._mp_manager.Namespace()
+		self.mp_namespace._bEnable = False
+		self.mp_namespace._bShowSpots = False
+		self.mp_namespace._bShowBases = False
 
 		self.example_queue = self._mp_manager.Queue()
 		self.example_event = self._mp_manager.Event()
 
 	def set_enable(self, bEnable):
-		self._bEnable = bEnable
+		# TODO: lock?
+		self.mp_namespace._bEnable = bEnable
 		print(f"Image Processor enabled? {bEnable}")
+
+	def set_show_spots(self, bEnable):
+		# TODO: lock?
+		self.mp_namespace._bShowSpots = bEnable
+		print(f"View Spots enabled? {bEnable}")
+
+	def set_show_bases(self, bEnable):
+		# TODO: lock?
+		self.mp_namespace._bShowBases = bEnable
+		print(f"View Bases enabled? {bEnable}")
 
