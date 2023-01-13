@@ -6,7 +6,7 @@ gi.require_version('Gtk', '3.0')
 gi.require_version('Gst', '1.0')
 from gi.repository import Gtk, GObject, GLib
 import threading
-from ZionGtkHelpers import PictureView
+from ZionGtkHelpers import PictureViewFromFile, PictureViewFromMem
 from ZionLED import ZionLEDs, ZionLEDColor
 from ZionCamera import ZionCameraParameters
 
@@ -183,7 +183,10 @@ class ZionGUI():
         self.stopProgramButton  = self.builder.get_object("stop_program_button")
 
         self.cameraPreview = self.builder.get_object("camera_preview")
-        self.cameraPreviewWrapper = PictureView(self.cameraPreview, os.path.join(mod_path, "Logo.png"))
+        self.cameraPreviewWrapper = PictureViewFromFile(self.cameraPreview, os.path.join(mod_path, "Logo.png"))
+
+        self.IpView = self.builder.get_object("image_processing_display")
+        self.IpViewWrapper = PictureViewFromMem(self.IpView)
 
         self.handlers = Handlers(self)
         self.builder.connect_signals(self.handlers)
@@ -1136,9 +1139,12 @@ class Handlers:
     def on_image_processing_display_draw(self, *args):
         if not self.is_program_running():
             self.parent.parent.Camera.stop_preview()
+        self.parent.IpViewWrapper.on_draw(*args)
         return False
 
     def on_image_processing_display_configure_event(self, *args):
+        self.parent.IpViewWrapper.on_configure(*args)
+        # ~ self._update_camera_preview()
         return False
 
     def on_ip_enable_checkbox_toggled(self, switch):
@@ -1150,10 +1156,10 @@ class Handlers:
         return
 
     def on_ip_back_button_clicked(self, button):
-        return
+        self.parent.IpViewWrapper.channel_decrement()
 
     def on_ip_fwd_button_clicked(self, button):
-        return
+        self.parent.IpViewWrapper.channel_increment()
 
     def on_ip_seek_back_button_clicked(self, button):
         return
@@ -1171,6 +1177,8 @@ class Handlers:
         return
 
     def on_test1_button_clicked(self, button):
+        print("Test 1 Button clicked")
+        self.parent.parent.ImageProcessor.do_something()
         return
 
     def check_fixed_settings(self):
