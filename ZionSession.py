@@ -79,7 +79,7 @@ class ZionSession():
         with self.load_image_lock:
             self.load_image_enable = False
 
-        self.ImageProcessor = ZionImageProcessor()
+        self.ImageProcessor = ZionImageProcessor(self.gui)
 
     def CaptureImageThread(self, cropping=(0,0,1,1), group=None, verbose=False, comment='', suffix='', protocol=True):
         """ This is running in a thread. It should not call any GTK functions """
