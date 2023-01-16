@@ -372,26 +372,17 @@ class ZionPigpioProcess(multiprocessing.Process):
                 delta_t = curr_time-prev_time
                 timer_time += int(1000*delta_t)
                 error = mp_namespace.target_temp-mp_namespace.temperature
+                #hack for now to avoid initial super long windup
                 if (abs(error)<3.14159):   #hack
                     interror += mp_namespace.I*error*delta_t
-                    
                 else:
-                    interror=0  
-                    #hack for now to avoid initial super long windup
-						
+                    interror=0
+
                 pid_value = bias + (mp_namespace.P*error + interror) #todo add D term?
-                
-                #print(f'temp={mp_namespace.temperature}, target={mp_namespace.target_temp},\nP={mp_namespace.P}, I={mp_namespace.I},\nerr={error}, ierr={interror},\ndc={mp_namespace.P}*{error}+{mp_namespace.I}*{interror} ~= {max(min( int(new_dc_value), 100 ),0)}')
-                #if new_dc_value>0:
-                #    dc_tot += new_dc_value
-                #dc_avg = dc_tot/dc_cnt
-                #dc_cnt += 1
-                # ~ print('pwr_avg = '+str(pwr_avg))
-                
                 new_dc_value = int(pid_value + roundoff)
                 if 0 <= new_dc_value <= 1000:
                     pi.set_PWM_dutycycle(gpio, new_dc_value)
-                    roundoff = pid_value - new_dc_value
+                    roundoff = pid_value + roundoff - new_dc_value
                 elif new_dc_value < 0:
                     roundoff = 0
                     pi.set_PWM_dutycycle(gpio, 0)
@@ -403,7 +394,7 @@ class ZionPigpioProcess(multiprocessing.Process):
                 if mp_namespace.pid_verbose:
                     print(f'{timer_time:010}, {mp_namespace.P:6.2f}, {mp_namespace.I:5.2f}, {mp_namespace.target_temp:3}, {mp_namespace.temperature:6.2f}, {read_temperature:6.2f}, {interror:9.3f}, {pid_value:9.3f}, {0.1*new_dc_value:5.1f}')
                 prev_time = curr_time
-                
+
             else:
                 pi.set_PWM_dutycycle(gpio, 0)
             t = time.perf_counter()-t0
@@ -433,7 +424,7 @@ class ZionPigpioProcess(multiprocessing.Process):
                 added_wf = True
 
         return added_wf
-        
+
     @staticmethod
     def _add_complex_led_waveform(led : ZionLEDs, pi : pigpio.pi, delay : int = 0) -> bool:
         """ Adds COMPLEX waveforms for the pulsewidths/colors in led. Returns True if a wave was added.
@@ -447,7 +438,7 @@ class ZionPigpioProcess(multiprocessing.Process):
                 gpio_bits = 0
                 for led_pin in LED_GPIOS[color]:
                     gpio_bits |= 1<<led_pin
-                    
+
                 print_wf_info = any(pw_timings_tpl[1])
                 for timing, level in zip(*pw_timings_tpl):
                     if print_wf_info:
