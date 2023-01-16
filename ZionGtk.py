@@ -1168,6 +1168,7 @@ class Handlers:
         return
 
     def on_ip_view_spots_checkbox_toggled(self, button):
+        self.parent.parent.ImageProcessor.do_test()
         return
 
     def on_ip_view_bases_checkbox_toggled(self, button):

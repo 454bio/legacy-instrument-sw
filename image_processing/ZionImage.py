@@ -72,9 +72,9 @@ class ZionImage(UserDict):
 
 	@property
 	def view_4D(self):
-		out_arr = np.zeros(shape=self.dims+(3, self.nChannels), dtype='uint16')
+		out_arr = np.zeros(shape=(self.nChannels,)+self.dims+(3,), dtype='uint16')
 		for ch_idx, wl in enumerate(sorted(self.data.keys())):
-			out_arr[:,:,:, ch_idx] = self.data[wl]
+			out_arr[ch_idx,:,:,:] = self.data[wl]
 		return out_arr
 
 	@property
@@ -164,6 +164,12 @@ class ZionImageProcessor(multiprocessing.Process):
 	def set_show_bases(self, bEnable):
 		self.mp_namespace._bShowBases = bEnable
 		print(f"View Bases enabled? {bEnable}")
+
+	def do_test(self):
+		filelist = ['/home/pi/Desktop/zion/rois.tiff']
+		wavelengths = ['525']
+		test_img = ZionImage(filelist, wavelengths, cycle=1)
+		self.gui.IpViewWrapper.images = test_img.view_4D
 
 	def do_something(self):
 		filelist = [os.path.join("/home/pi/Desktop/zion/image_sets/S24/cycle1", fname)
