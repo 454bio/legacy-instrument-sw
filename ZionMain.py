@@ -39,7 +39,7 @@ Initial_Values = ZionCameraParameters(
 )
 
 PID_Params = {
-'Target_Temperature': 53,
+'Target_Temperature': 58,
 'PWM_Frequency': 10,
 'P': 500,
 'I': 25,
