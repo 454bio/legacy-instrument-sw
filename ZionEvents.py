@@ -41,8 +41,8 @@ class CaptureList(UserList):
             self._max = max(self.data)+1
 
     def setMax(self, val):
-        print(f"setting max value to: ceil( {val} )")
-        self._max = math.ceil(val)
+        self._max = max([1, math.ceil(val)])
+        print(f"setting max value to {self._max}")
         datanew = []
         for el in self.data:
             if el < self._max:
@@ -263,8 +263,9 @@ class ZionEvent(ZionProtocolEntry):
         captureList.setMax(self._time_to_cycles)
         if len(captureList) > 0:
             self.capture = captureList
-        else:
-            self.capture = capture_old
+        else: # empty list
+            self.capture = captureList
+            print("Empty capture list")
 
     def flatten(self) -> List['ZionEvent']:
         """ This will either return just ourselves in a list. Or ourselves plus a filler event that captures the extra cycle time """
