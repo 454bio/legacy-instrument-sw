@@ -343,10 +343,14 @@ class ZionProtocolTree():
                 capval = int(caps_str[0].strip())-1
                 if capval >= 0:
                     captures = [capval] #turn into a list
+                    print(f"Captures = {captures}")
                 else:
                     return
             except ValueError:
-                return
+                if caps_str[0].strip() == '':
+                    captures = []
+                else:
+                    return
         else: #comma separated list
             captures = []
             for cap in caps_str:
@@ -354,6 +358,7 @@ class ZionProtocolTree():
                     captures.append(int(cap.strip())-1)
                 except ValueError:
                     return
+
         captureList = CaptureList(captures)
         print(f"field: {field}  widget: {widget}  path: {path}  value: {captureList}")
         self._treestore[path][0].set_captures(captureList)
