@@ -104,6 +104,7 @@ class ZionGUI():
         self.logMarkEnd = self.logBuffer.create_mark("", self.logBuffer.get_end_iter(), False)
 
         self.temperatureBuffer = self.builder.get_object("temperature_buffer")
+        self.dcBuffer = self.builder.get_object("duty_cycle_buffer")
 
         self.imageDenoiseButton = self.builder.get_object("denoise_button")
 
@@ -350,10 +351,13 @@ class Handlers:
         #get_temp_thread.daemon = True
         #get_temp_thread.start()
         temperature = self.parent.parent.GPIO.pigpio_process.mp_namespace.temperature
+        dc = self.parent.parent.GPIO.pigpio_process.mp_namespace.temperature
         if temperature is not None:
             self.parent.temperatureBuffer.set_text("{:02.1f}".format(temperature))
+            self.parent.dcBuffer.set_text("{:.1f}".format(dc))
         else:
             self.parent.temperatureBuffer.set_text("-")
+            self.parent.dcBuffer.set_text("0")
         return True
         
     def on_pid_enable_button_toggled(self, button):
