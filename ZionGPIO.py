@@ -398,6 +398,7 @@ class ZionPigpioProcess(multiprocessing.Process):
 
             else:
                 pi.set_PWM_dutycycle(gpio, 0)
+                mp_namespace.dc = 0
             t = time.perf_counter()-t0
             time.sleep( max([mp_namespace.pid_delta_t - t,0]) )
 
