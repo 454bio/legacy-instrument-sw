@@ -132,6 +132,7 @@ class ZionPigpioProcess(multiprocessing.Process):
         self.Temp_1W_device = None
         # ~ P=10, I=2, D=0, delta_t=1, ramp_threshold=10, target_temp=25
         self.mp_namespace.temperature = None
+        self.mp_namespace.dc = 0
         
         self.mp_namespace.pid_verbose = True
         self.mp_namespace.pid_reset = True
@@ -364,16 +365,15 @@ class ZionPigpioProcess(multiprocessing.Process):
                     timer_time = int(0)
                     prev_time = time.time()
                     roundoff = 0
-                    #dc_cnt = 1
-                    #dc_tot = 0
                     mp_namespace.pid_reset = False
 
                 curr_time = time.time()
                 delta_t = curr_time-prev_time
                 timer_time += int(1000*delta_t)
                 error = mp_namespace.target_temp-mp_namespace.temperature
+
                 #hack for now to avoid initial super long windup
-                if (abs(error)<3.14159):   #hack
+                if (abs(error)<3.14159):
                     interror += mp_namespace.I*error*delta_t
                 else:
                     interror=0
@@ -393,6 +393,7 @@ class ZionPigpioProcess(multiprocessing.Process):
                     new_dc_value = 1000
                 if mp_namespace.pid_verbose:
                     print(f'{timer_time:010}, {mp_namespace.P:6.2f}, {mp_namespace.I:5.2f}, {mp_namespace.target_temp:3}, {mp_namespace.temperature:6.2f}, {read_temperature:6.2f}, {interror:9.3f}, {pid_value:9.3f}, {0.1*new_dc_value:5.1f}')
+                mp_namespace.dc = 0.1*new_dc_value
                 prev_time = curr_time
 
             else:
