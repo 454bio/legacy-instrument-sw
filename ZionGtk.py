@@ -367,7 +367,6 @@ class Handlers:
         else:
             self.parent.printToLog("Disabling PID")
             self.parent.parent.GPIO.enable_PID(False)
-            self.updateTemp()
             
     def on_pid_verbose_button_toggled(self, button):
         if button.get_active():
