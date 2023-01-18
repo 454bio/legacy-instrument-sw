@@ -194,7 +194,6 @@ class ZionSession():
         print("_save_event_image starting...")
         protocol_count = str(self.ProtocolCount).zfill(ZionSession.protocolCountDigits) + 'A'
         while True:
-            # ~ buffer, event, cycle_index = image_buffer_event_queue.get()
             buffer, event = image_buffer_event_queue.get()
             # buffer, event = image_buffer_event_queue.get_nowait()
             if buffer is None:
@@ -212,8 +211,8 @@ class ZionSession():
             protocol_capture_count = str(self.captureCountThisProtocol).zfill(ZionSession.captureCountPerProtocolDigits)
             group = event.group or ''
 
-            # ~ if cycle_index:
-                # ~ group += f"_C{cycle_index:03d}"
+            if event.cycle_index:
+                group += f"_C{event.cycle_index:03d}"
 
             filename = "_".join([
                 capture_count,
@@ -270,7 +269,6 @@ class ZionSession():
             self.TimeOfLife = time.time()
 
             events = self.Protocol.get_entries()
-            # ~ all_flat_events, all_cycle_indices = self.Protocol.flatten()
             all_flat_events = self.Protocol.flatten()
 
             GLib.idle_add(
@@ -294,27 +292,19 @@ class ZionSession():
             # the time it would take to reconfigure for a new group of events (10 minimum_cycle_times?).
             # The call to .flatten() has taken care of this for us though
             grouped_flat_events = []
-            # ~ grouped_flat_cycle_indices = []
             events_group = []
-            # ~ indices_group = []
-            # ~ for event, cycle_ind in zip(all_flat_events, all_cycle_indices):
             for event in all_flat_events:
 
                 if event.is_wait:
                     grouped_flat_events.append(events_group)
                     grouped_flat_events.append(event)
                     events_group = []
-                    # ~ grouped_flat_cycle_indices.append(indices_group)
-                    # ~ grouped_flat_cycle_indices.append(cycle_ind)
-                    # ~ indices_group = []
                 else:
                     events_group.append(event)
-                    # ~ indices_group.append(cycle_ind)
 
             # Need to make sure to add the last group if the last event isn't a wait
             if events_group:
                 grouped_flat_events.append(events_group)
-                # ~ grouped_flat_cycle_indices.append(indices_group)
 
             # rprint("[bold yellow]Grouped Flat Events[/bold yellow]")
             # rprint(grouped_flat_events)
@@ -400,7 +390,6 @@ class ZionSession():
                         seq_stream.seek(0)
 
                         if event.captureBool:
-                            # ~ print(f"Event {event.name} is getting captured for cyclRe {cycle_index[frame_ind]}")
                             buffer_queue.put_nowait((seq_stream.getvalue(), event))
                             print(f"Received frame {frame_ind} for event '{event.name}'  capture: {event.captureBool}  buf size: {stream_size}")
                             self.GPIO.debug_trigger()
@@ -444,7 +433,7 @@ class ZionSession():
                 print("RunProgram has finished")
 
             # Send the stop signal to the image saving thread
-            buffer_queue.put((None,None,None))
+            buffer_queue.put((None,None))
             self.buffer_thread.join(5.0)
             if self.buffer_thread.is_alive():
                 print("WARNING: buffer_thread is still alive!!!")
