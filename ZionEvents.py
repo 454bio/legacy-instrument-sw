@@ -118,6 +118,7 @@ class ZionProtocolEntry():
     _cycle_time: int = 0            # Not actually used as a private variable. Just used for property decleration
     _total_time_sec: float = 0.0    # Not actually used as a private variable. Just used for property decleration
     _progress: int = 0
+    # ~ cycle_index: int = 0
 
     @staticmethod
     def dict_factory(*args, **kwargs):
@@ -129,7 +130,6 @@ class ZionProtocolEntry():
         print(f"{self.name}:to_dict -- {list(d.keys())}")
         return d
 
-
 @dataclass
 class ZionEvent(ZionProtocolEntry):
     is_event: bool = True
@@ -137,10 +137,10 @@ class ZionEvent(ZionProtocolEntry):
     captureBool: bool = False #Used only for when we flatten event
     _is_wait: bool = False
     group: str = ""
-    # ~ cycle_ind: str = ""
     leds: ZionLEDs = field(default_factory=ZionLEDs)
     _minimum_cycle_time: ClassVar[int] = 0
     _minimum_wait_event_time: ClassVar[int] = 0
+    # ~ cycle_index: int = 0
 
     def __post_init__(self):
         if isinstance(self.leds, dict):
@@ -267,7 +267,7 @@ class ZionEvent(ZionProtocolEntry):
         else:
             self.capture = capture_old
 
-    def flatten(self) -> List['ZionEvent']:
+    def flatten(self): #-> List['ZionEvent']:
         """ This will either return just ourselves in a list. Or ourselves plus a filler event that captures the extra cycle time """
 
         # initialize captureBool for first (0th) frame
@@ -292,6 +292,7 @@ class ZionEvent(ZionProtocolEntry):
                         captureBool=True if frame_ind in self.capture else False,
                         group=self.group,
                         requested_cycle_time = self._minimum_cycle_time,
+                        # ~ cycle_index = self.cycle_index,
                         name=f"{self.name} piece {frame_ind+1}"
                     )
                 )
@@ -324,6 +325,8 @@ class ZionEventGroup(ZionProtocolEntry):
     is_event: bool = False
     entries: List[Union[ZionEvent, "ZionEventGroup"]] = field(default_factory=list)
     _minimum_cycle_time: int = 0
+    cycle_increment: bool = False
+    # ~ cycle_index: int = 0
 
     @classmethod
     def from_json(cls, json_dict: dict) -> "ZionEventGroup":
@@ -344,7 +347,7 @@ class ZionEventGroup(ZionProtocolEntry):
         self.refresh_minimum_cycle_time()
         self.cycle_time = self.requested_cycle_time
 
-    def flatten(self) -> List[ZionEvent]:
+    def flatten(self):# -> List[ZionEvent]:
         """
         Convert a ZionEventGroup to an equivalent list of ZionEvents
         """
@@ -370,18 +373,26 @@ class ZionEventGroup(ZionProtocolEntry):
                 wait_events.extend([cycle_filler_event,] * self._additional_cycles)
 
         flat_events = []
+        # ~ cycle_indices = []
+        # ~ cycle_index = 0
         for _ in range(self.cycles):
             for event in self.entries:
                 if isinstance(event, (ZionEvent, ZionEventGroup)):
-                    flat_events.extend(event.flatten())
+                    flattened_to_add = event.flatten()
+                    # ~ if self.cycle_increment:
+                        # ~ cycle_index += 1
+                    flat_events.extend(flattened_to_add)
+                    # ~ cycle_indices.extend([cycle_index] * len(flattened_to_add))
                 else:
                     raise RuntimeError(
                         f"Unrecognized type in the event list: {type(event)}"
                     )
 
             flat_events.extend(wait_events)
+            # ~ cycle_indices.extend([0]*len(wait_)
 
-        return flat_events
+        # ~ print(f"cycle increment is {self.cycle_increment}")
+        return flat_events#, self.cycle_increment
 
     @property
     def total_time(self) -> int:

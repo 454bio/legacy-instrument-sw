@@ -143,28 +143,106 @@ class ZionImageProcessor(multiprocessing.Process):
 		self.gui = gui
 		self._mp_manager = multiprocessing.Manager()
 		self.mp_namespace = self._mp_manager.Namespace()
+		self.stop_event = self._mp_manager.Event()
+
 		self.mp_namespace._bEnable = False
 		self.mp_namespace._bShowSpots = False
 		self.mp_namespace._bShowBases = False
 		self.mp_namespace.cycle_ind = 0
 
-		self.example_queue = self._mp_manager.Queue()
-		self._image_process_queue = self._mp_manager.Queue()
+		self.rois_detected_event = self._mp_manager.Event()
+		self.imageset_processed_event = self._mp_manager.Event()
+		self.image_process_queue = self._mp_manager.Queue()
 		self._image_viewer_queue = self._mp_manager.Queue()
-		# ~ self.example_event = self._mp_manager.Event()
 
-	def set_enable(self, bEnable):
+	@property
+	def enable(self):
+		return self.mp_namespace._bEnable
+
+	@enable.setter
+	def enable(self, bEnable):
 		self.mp_namespace._bEnable = bEnable
 		print(f"Image Processor enabled? {bEnable}")
 
-	def set_show_spots(self, bEnable):
-		self.mp_namespace._bShowSpots = bEnable
+	@property
+	def show_spots(self):
+		return self.mp_namespace._bShowSpots
+
+	@show_spots.setter
+	def show_spots(self, bEnable):
+		if bEnable:
+			if self.rois_detected_event.is_set():
+				self.mp_namespace._bShowSpots = bEnable
+				print("Spots/ROIs view enabled")
+			else:
+				print("ROIs not detected yet!")
+		else:
+			self.mp_namespace._bShowSpots = bEnable
+			print("Spots/ROIs view disabled")
+
+	@property
+	def show_bases(self):
+		return self.mp_namespace._bShowBases
+
+	@show_bases.setter
+	def show_bases(self, bEnable):
+		#TODO: check whether bases are called/ready
+		self.mp_namespace._bShowBases = bEnable
 		print(f"View Spots enabled? {bEnable}")
 
-	def set_show_bases(self, bEnable):
-		self.mp_namespace._bShowBases = bEnable
-		print(f"View Bases enabled? {bEnable}")
+	def run(self):
+		self._start_child_threads()
+		print("Image Processor threads started!")
+		#Now wait for stop event:
+		self.stop_event.wait()
+		print("Received stop signal!")
+		self._cleanup()
 
+	def _start_child_threads(self):
+
+		self._image_processing_handle = threading.Thread(
+			target=self._image_processing_thread,
+			args=(self.mp_namespace, self.image_process_queue, self.imageset_processed_event)
+		)
+		self._image_processing_handle.daemon = True
+		self._image_processing_handle.start()
+
+		#todo: same for image view thread
+
+	def _cleanup():
+		self.enable = False
+		self._image_processing_handle.join(1.0)
+		if self._image_processing_handle.is_alive():
+			print("_image_processing_thread is still alive!")
+
+		#TODO same for image view thread
+
+	def _image_processing_thread(self, mp_namespace : Namespace, image_process_queue : multiprocessing.Queue, done_event : multiprocessing.Event ):
+
+		while True:
+			imageset = image_process_queue.get() #get image set here
+			# mark if imageset is first of the cycle (or last?)
+			if self.enable:
+				# ~ cycle = self.mp_namespace.cycle_ind + 1
+
+				# Todo: Do processing
+				done_event.set()
+				# ~ self.mp_namespace.cycle_ind += 1
+
+			else:
+				while not self.enable:
+					continue
+				# ~ cycle = self.mp_namespace.cycle_ind + 1
+
+				#Todo: Do processing
+				done_event.set()
+				# ~ self.mp_namespace.cycle_int +=1
+
+	def _image_view_thread(self, mp_namespace : Namespace, image_viewer_queue : multiprocessing.Queue ):
+		return
+
+
+	# for testing:
 	def do_test(self):
 		filelist = ['/home/pi/Desktop/zion/rois.tiff']
 		wavelengths = ['525']
@@ -188,8 +266,4 @@ class ZionImageProcessor(multiprocessing.Process):
 		# ~ plt.imshow(test_img['525'])
 		return
 
-	def _image_processing_thread(self, mp_namespace : Namespace, image_process_queue : multiprocessing.Queue ):
-		return
 
-	def _image_view_thread(self, mp_namespace : Namespace, image_viewer_queue : multiprocessing.Queue ):
-		return
