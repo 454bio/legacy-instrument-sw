@@ -6,7 +6,8 @@ from collections import UserList
 from dataclasses import (
     dataclass,
     field,
-    asdict
+    asdict,
+    replace
 )
 
 
@@ -140,7 +141,7 @@ class ZionEvent(ZionProtocolEntry):
     leds: ZionLEDs = field(default_factory=ZionLEDs)
     _minimum_cycle_time: ClassVar[int] = 0
     _minimum_wait_event_time: ClassVar[int] = 0
-    # ~ cycle_index: int = 0
+    cycle_index: int = 0
 
     def __post_init__(self):
         if isinstance(self.leds, dict):
@@ -292,7 +293,7 @@ class ZionEvent(ZionProtocolEntry):
                         captureBool=True if frame_ind in self.capture else False,
                         group=self.group,
                         requested_cycle_time = self._minimum_cycle_time,
-                        # ~ cycle_index = self.cycle_index,
+                        cycle_index = self.cycle_index,
                         name=f"{self.name} piece {frame_ind+1}"
                     )
                 )
@@ -326,7 +327,7 @@ class ZionEventGroup(ZionProtocolEntry):
     entries: List[Union[ZionEvent, "ZionEventGroup"]] = field(default_factory=list)
     _minimum_cycle_time: int = 0
     cycle_increment: bool = False
-    # ~ cycle_index: int = 0
+    cycle_index: int = 0
 
     @classmethod
     def from_json(cls, json_dict: dict) -> "ZionEventGroup":
@@ -373,26 +374,22 @@ class ZionEventGroup(ZionProtocolEntry):
                 wait_events.extend([cycle_filler_event,] * self._additional_cycles)
 
         flat_events = []
-        # ~ cycle_indices = []
-        # ~ cycle_index = 0
-        for _ in range(self.cycles):
+        cycle_ind = self.cycle_index
+        for rpt_idx in range(self.cycles):
+            if self.cycle_increment:
+                cycle_ind += 1
             for event in self.entries:
-                if isinstance(event, (ZionEvent, ZionEventGroup)):
-                    flattened_to_add = event.flatten()
-                    # ~ if self.cycle_increment:
-                        # ~ cycle_index += 1
-                    flat_events.extend(flattened_to_add)
-                    # ~ cycle_indices.extend([cycle_index] * len(flattened_to_add))
+                if isinstance(event, (ZionEventGroup, ZionEvent)):
+                    event_copy = replace(event)
+                    event_copy.cycle_index = cycle_ind
+                    flat_events.extend(event_copy.flatten())
                 else:
                     raise RuntimeError(
                         f"Unrecognized type in the event list: {type(event)}"
                     )
-
             flat_events.extend(wait_events)
-            # ~ cycle_indices.extend([0]*len(wait_)
 
-        # ~ print(f"cycle increment is {self.cycle_increment}")
-        return flat_events#, self.cycle_increment
+        return flat_events
 
     @property
     def total_time(self) -> int:

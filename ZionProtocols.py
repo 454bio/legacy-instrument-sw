@@ -220,21 +220,9 @@ class ZionProtocol():
         Convert Entries to an equivalent list of only ZionEvents
         """
         flat_events = []
-        # ~ cycle_index = 0
-        # ~ cycle_indices = []
         for event in self.Entries:
-            if isinstance(event, ZionEventGroup):
-                # ~ flattened, cycle_inc = event.flatten()
-                flattened = event.flatten()
-                # ~ if cycle_inc:
-                    # ~ print(f"Incrementing cycle to {cycle_index + 1}")
-                    # ~ cycle_index += 1
-                flat_events.extend(flattened)
-                # ~ cycle_indices.extend([cycle_index] * len(flattened))
-            elif isinstance(event, ZionEvent):
-                flattened = event.flatten()
-                flat_events.extend(flattened)
-                # ~ cycle_indices.extend([cycle_index] * len(flattened))
+            if isinstance(event, (ZionEventGroup, ZionEvent):
+                flat_events.extend(event.flatten())
             else:
                 raise RuntimeError(
                     f"Unrecognized type in the event list: {type(event)}"
@@ -246,9 +234,7 @@ class ZionProtocol():
                 name=f"Final Wait Event"
             )
         )
-        # ~ cycle_indices.append(cycle_index)
-        # ~ print(f"Cycle Indices = {cycle_indices}")
-        return flat_events#, cycle_indices
+        return flat_events
 
     # The following gtk_* calls are pass through calls from ZionSession or ZionGtk
     def gtk_initialize_treeview(self, treeview : Gtk.TreeView):
