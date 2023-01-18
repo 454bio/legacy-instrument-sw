@@ -148,7 +148,8 @@ class ZionImageProcessor(multiprocessing.Process):
 		self.mp_namespace._bEnable = False
 		self.mp_namespace._bShowSpots = False
 		self.mp_namespace._bShowBases = False
-		self.mp_namespace.cycle_ind = 0
+		self.mp_namespace.ip_cycle_ind = 0
+		self.mp_namespace.view_cycle_ind = 0
 
 		self.rois_detected_event = self._mp_manager.Event()
 		self.imageset_processed_event = self._mp_manager.Event()
@@ -223,16 +224,16 @@ class ZionImageProcessor(multiprocessing.Process):
 			imageset = image_process_queue.get() #get image set here
 			# mark if imageset is first of the cycle (or last?)
 			if self.enable:
-				# ~ cycle = self.mp_namespace.cycle_ind + 1
+				# ~ cycle = self.mp_namespace.ip_cycle_ind + 1
 
 				# Todo: Do processing
 				done_event.set()
-				# ~ self.mp_namespace.cycle_ind += 1
+				# ~ self.mp_namespace.ip_cycle_ind += 1
 
 			else:
 				while not self.enable:
 					continue
-				# ~ cycle = self.mp_namespace.cycle_ind + 1
+				# ~ cycle = self.mp_namespace.ip_cycle_ind + 1
 
 				#Todo: Do processing
 				done_event.set()

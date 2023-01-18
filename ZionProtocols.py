@@ -221,7 +221,7 @@ class ZionProtocol():
         """
         flat_events = []
         for event in self.Entries:
-            if isinstance(event, (ZionEventGroup, ZionEvent):
+            if isinstance(event, (ZionEventGroup, ZionEvent)):
                 flat_events.extend(event.flatten())
             else:
                 raise RuntimeError(
