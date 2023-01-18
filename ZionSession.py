@@ -398,6 +398,8 @@ class ZionSession():
 
                         if stop_event.is_set():
                             print("Received stop!")
+                            with self.load_image_lock:
+                                self.load_image_enable = True
                             break
 
                     end_fstrobe = self.GPIO.get_num_fstrobes()
@@ -415,7 +417,8 @@ class ZionSession():
                     num_fstrobe = end_fstrobe - start_fstrobe
                     if num_fstrobe != num_captured_frames:
                         print(f"WARNING: We did not receive all of the frames actually captured!!  num_fstrobe: {num_fstrobe}  expected: {expected_num_frames}")
-
+            with self.load_image_lock:
+                self.load_image_enable = True
             print("RunProgram Finished!")
 
         except Exception as e:
