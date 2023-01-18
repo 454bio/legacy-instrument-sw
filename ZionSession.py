@@ -165,7 +165,7 @@ class ZionSession():
         self.Protocol.load_from_file(filename)
 
     def _convert_jpeg(self, image_file_queue:Queue):
-        print("Starting convertjpeg thread")
+        print("Starting convert_jpeg thread")
         while True:
             filepath_args = image_file_queue.get()
             filepath = filepath_args[0]
@@ -175,6 +175,7 @@ class ZionSession():
             if self.load_image_enable:
                 print(f"\n\nconverting jpeg {filepath}\n\n")
 
+                #todo add cycle index
                 out_dir = os.path.join(os.path.dirname(filepath), "raws")
                 filename = os.path.splitext(os.path.basename(filepath))[0]
                 rgbs = jpg_to_raw(filepath, os.path.join(out_dir, filename+".tif"))
@@ -193,6 +194,7 @@ class ZionSession():
         print("_save_event_image starting...")
         protocol_count = str(self.ProtocolCount).zfill(ZionSession.protocolCountDigits) + 'A'
         while True:
+            # ~ buffer, event, cycle_index = image_buffer_event_queue.get()
             buffer, event = image_buffer_event_queue.get()
             # buffer, event = image_buffer_event_queue.get_nowait()
             if buffer is None:
@@ -209,6 +211,9 @@ class ZionSession():
             timestamp_ms = str(round(1000*(time.time()-self.TimeOfLife))).zfill(9)
             protocol_capture_count = str(self.captureCountThisProtocol).zfill(ZionSession.captureCountPerProtocolDigits)
             group = event.group or ''
+
+            # ~ if cycle_index:
+                # ~ group += f"_C{cycle_index:03d}"
 
             filename = "_".join([
                 capture_count,
@@ -265,7 +270,9 @@ class ZionSession():
             self.TimeOfLife = time.time()
 
             events = self.Protocol.get_entries()
+            # ~ all_flat_events, all_cycle_indices = self.Protocol.flatten()
             all_flat_events = self.Protocol.flatten()
+
             GLib.idle_add(
                 self.gui.printToLog,
                 "Starting protocol!"
@@ -287,18 +294,27 @@ class ZionSession():
             # the time it would take to reconfigure for a new group of events (10 minimum_cycle_times?).
             # The call to .flatten() has taken care of this for us though
             grouped_flat_events = []
+            # ~ grouped_flat_cycle_indices = []
             events_group = []
+            # ~ indices_group = []
+            # ~ for event, cycle_ind in zip(all_flat_events, all_cycle_indices):
             for event in all_flat_events:
+
                 if event.is_wait:
                     grouped_flat_events.append(events_group)
                     grouped_flat_events.append(event)
                     events_group = []
+                    # ~ grouped_flat_cycle_indices.append(indices_group)
+                    # ~ grouped_flat_cycle_indices.append(cycle_ind)
+                    # ~ indices_group = []
                 else:
                     events_group.append(event)
+                    # ~ indices_group.append(cycle_ind)
 
             # Need to make sure to add the last group if the last event isn't a wait
             if events_group:
                 grouped_flat_events.append(events_group)
+                # ~ grouped_flat_cycle_indices.append(indices_group)
 
             # rprint("[bold yellow]Grouped Flat Events[/bold yellow]")
             # rprint(grouped_flat_events)
@@ -321,6 +337,7 @@ class ZionSession():
             self.load_image_thread.start()
 
             total_number_of_groups = float(len(grouped_flat_events))
+            cycle_index = 0
             for gow_ind, group_or_wait in enumerate(grouped_flat_events):
                 GLib.idle_add(self.gui.ProtocolProgressBar.set_fraction, gow_ind / total_number_of_groups)
 
@@ -383,6 +400,7 @@ class ZionSession():
                         seq_stream.seek(0)
 
                         if event.captureBool:
+                            # ~ print(f"Event {event.name} is getting captured for cyclRe {cycle_index[frame_ind]}")
                             buffer_queue.put_nowait((seq_stream.getvalue(), event))
                             print(f"Received frame {frame_ind} for event '{event.name}'  capture: {event.captureBool}  buf size: {stream_size}")
                             self.GPIO.debug_trigger()
@@ -426,7 +444,7 @@ class ZionSession():
                 print("RunProgram has finished")
 
             # Send the stop signal to the image saving thread
-            buffer_queue.put((None,None))
+            buffer_queue.put((None,None,None))
             self.buffer_thread.join(5.0)
             if self.buffer_thread.is_alive():
                 print("WARNING: buffer_thread is still alive!!!")

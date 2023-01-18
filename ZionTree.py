@@ -97,8 +97,8 @@ class ZionProtocolTree():
         'cycles': "Repeats",
         'cycle_time': "Cycle Time\n(ms)",
         'total_time_sec': "Total Time\n(sec)",
-        'capture': "Capture\nFrames",
-        # ~ 'cycle_ind':"Cycle",
+        'capture': "Capture\nFrames", # is there a way to combine this with cycle_inc for event groups?
+        'cycle_increment': "Cycle+?", # combine this with capture?
         'group': "Label\n(nm)",
         'leds': "$LED_NAME$ Pulse\n(ms)",  # Special field that gets formatted
     }
@@ -106,7 +106,7 @@ class ZionProtocolTree():
     # Displayed fields that shouldn't be edited
     NOT_EDITABLE_FIELDS = ('total_time_sec',)
 
-    assert set(FIELDS.keys()) <= set([f.name.lstrip('_') for f in fields(ZionEvent)]), \
+    assert set(FIELDS.keys()) <= set([f.name.lstrip('_') for f in fields(ZionEvent)+fields(ZionEventGroup)]), \
             f"'{set(FIELDS.keys())}' not a subset of '{set([f.name.lstrip('_') for f in fields(ZionEvent)])}'"
 
     def __init__(self, gtktreeview : Gtk.TreeView, entries : List[Union[ZionEventGroup, ZionEvent]] = []):
@@ -134,7 +134,7 @@ class ZionProtocolTree():
 
         self._treeview.set_model(self._treestore)
 
-        _field_to_type = {f.name.lstrip('_'): f.type for f in fields(ZionEvent)}
+        _field_to_type = {f.name.lstrip('_'): f.type for f in fields(ZionEvent)+fields(ZionEventGroup)}
         _type_to_func = {str: self.get_event_entry_str, int: self.get_event_entry_str, float: self.get_event_entry_str, bool: self.get_event_entry_bool}
         _type_to_edit_func = {str: self._text_edited, int: self._int_edited, bool: self._toggle_edited}
         _type_to_edit_signal = {str: "edited", int: "edited", bool: "toggled"}
@@ -330,6 +330,8 @@ class ZionProtocolTree():
 
     def _toggle_edited(self, field, widget, path):
         print(f"_toggle_edited -- field: {field}  widget: {widget}  path: {path}")
+        if field=='cycle_inc':
+            print(f"Cycle increment is {not getattr(self._treestore[path][0], field)}")
         setattr(self._treestore[path][0], field, not getattr(self._treestore[path][0], field))
 
     def _led_cell_edited(self, field, led_color, widget, path, value):
