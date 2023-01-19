@@ -19,6 +19,7 @@ except:
 import gi
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk, GLib
+from ZionConfig import ZionConfig
 from ZionCamera import ZionCamera, ZionCameraParameters
 from ZionGPIO import ZionGPIO
 from ZionProtocols import ZionProtocol
@@ -26,7 +27,7 @@ from ZionGtk import ZionGUI
 from picamera.exc import mmal
 from ZionEvents import ZionEvent
 
-mod_path = os.path.dirname(os.path.abspath(__file__))
+# ~ mod_path = os.path.dirname(os.path.abspath(__file__))
 
 class ZionSession():
 
@@ -43,13 +44,17 @@ class ZionSession():
         filename = now_date+'_'+now_time+'_'+self.Name
 
         lastSuffix = 0
-        sessions_dir = os.path.join(mod_path, "sessions")
+
+        self.Config = ZionConfig()
+        sessions_dir = os.path.join(self.Config["path"])
+        # ~ sessions_dir = os.path.join(mod_path, "sessions")
 
         for f in glob(os.path.join(sessions_dir, f"*_{session_name}_*")):
             lastHyphenIdx = f.rfind('_')
             newSuffix = int(f[(lastHyphenIdx+1):])
             lastSuffix = newSuffix if newSuffix>lastSuffix else lastSuffix
-        self.Dir = os.path.join(mod_path, "sessions", f"{filename}_{lastSuffix+1:04d}")
+
+        self.Dir = os.path.join(sessions_dir, f"{filename}_{lastSuffix+1:04d}")
         print('Creating directory '+str(self.Dir))
         os.makedirs(self.Dir)
         
@@ -399,7 +404,7 @@ class ZionSession():
         # Delete the session folder if it's empty
         if os.path.isdir(self.Dir) and not any(os.scandir(self.Dir)):
             print(f"Removing {self.Dir} since it's empty!")
-            os.removedirs(self.Dir)
+            os.rmdir(self.Dir)
 
     def update_last_capture(self):
         with self.update_last_capture_lock:
