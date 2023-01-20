@@ -32,41 +32,24 @@ def median_filter(in_img, kernel_size, behavior='ndimage'): #rank?
 				out_img[:,:,ch] = ski.filters.median(in_img[:,:,ch], ski.morphology.disk(kernel_size), behavior=behavior)
 	return out_img
 
-def detect_rois(in_img, median_ks=9, erosion_ks=35, dilation_ks=30):
-
-	# TODO: make in_img a ZionImage and access non-UV channels
-
-	#Convert to grayscale (needs to access UV channel here when above change occurs):
-	img_gs = rgb2gray(in_img)
-
-	img_gs = median_filter(img_gs, median_ks)
-	thresh = ski.filters.threshold_mean(img_gs)
-	#TODO: adjust threshold? eg make it based on stats?
-	img_bin = img_gs > thresh
-
-	img_bin = ski.morphology.binary_erosion(img_bin, ski.morpoholgy.disk(erosion_ks))
-	img_bin = ski.morphology.binary_dilation(img_bin, ski.morphology.disk(dilation_ks))
-	img_bin = ski.morphology.binary_erosion(img_bin, ski.morpoholgy.disk(4))
-
-	# TODO: add some additional channel (eg 525) that suffers from scatter/noise, and test against it to invalidate spots that include bloom of scatter.
-
-	spot_ind, nSpots = ski.measure.label(img_bin, return_num=True)
-	print(f"{nSpots} spots found")
-
-	# TODO: get stats, centroids of spots, further invalidate improper spots. (a la cv2.connectedComponentsWithStats)
-
-	return img_bin, spot_ind
-
 def overlay_image(img, labels, color):
 	return ski.segmentation.mark_boundaries(img, labels, color=color, mode='thick')
 
 class ZionImage(UserDict):
-	def __init__(self, lstImageFiles, lstWavelengths, cycle=None):
+	def __init__(self, lstImageFiles, lstWavelengths, cycle=None, subtrahends=None):
 		d = dict()
+        if subtrahends is not None:
+            wl_subs = [get_wavelength_from_file(fp) for fp in subtrahends]
 		for wavelength, imagefile in zip(lstWavelengths, lstImageFiles):
 			#TODO check validity (uint16, RGB, consistent sizes)
 			image = imread(imagefile)
-			d[wavelength] = image
+            if subtrahends is not None:
+                if wavelength in wl_subs:
+                    d[wavelength] = image - imread(subtrahends[wl_subs.index(wavelength)])
+                else:
+                    d[wavelength] = image
+            else:
+                d[wavelength] = image
 		super().__init__(d)
 		self.dtype = image.dtype
 		self.dims = image.shape[:2]
@@ -98,7 +81,32 @@ class ZionImage(UserDict):
 			raise ValueError(f"Invalid datatype given!")
 		return img_8b
 
-	# ~ def median_filter(self, wl_idx, kernel_size, method='sk2', inplace=False, timer=False):
+    def detect_rois(self, uv_wl='365', median_ks=9, erosion_ks=35, dilation_ks=30):
+
+        #Convert to grayscale (needs to access UV channel here when above change occurs):
+        img_gs = rgb2gray(self.data[uv_wl])
+
+        img_gs = median_filter(img_gs, median_ks)
+        thresh = ski.filters.threshold_mean(img_gs)
+        #TODO: adjust threshold? eg make it based on stats?
+        img_bin = img_gs > thresh
+
+        img_bin = ski.morphology.binary_erosion(img_bin, ski.morpoholgy.disk(erosion_ks))
+        img_bin = ski.morphology.binary_dilation(img_bin, ski.morphology.disk(dilation_ks))
+        img_bin = ski.morphology.binary_erosion(img_bin, ski.morpoholgy.disk(4))
+
+        # TODO: add some additional channel (eg 525) that suffers from scatter/noise, and test against it to invalidate spots that include bloom of scatter.
+
+        spot_ind, nSpots = ski.measure.label(img_bin, return_num=True)
+        print(f"{nSpots} spot candidates found")
+
+        # TODO: get stats, centroids of spots, further invalidate improper spots. (a la cv2.connectedComponentsWithStats)
+
+        return img_bin, spot_ind
+
+	def median_filter(self, wl_idx, kernel_size, method='sk2', inplace=False, timer=False):
+        # TODO: necesary?
+    
 		# ~ in_img = self.data[:,:,wl_idx]
 
 		# ~ if timer:
@@ -122,26 +130,7 @@ class ZionImage(UserDict):
 		# ~ if inplace:
 			# ~ self.data = img_filt
 		# ~ return img_filt
-
-# ~ class ZionDifferenceImage(ZionImage):
-	# ~ def __init__(self, posImage:ZionImage, negImage:ZionImage, cycle=None):
-
-		# ~ if cycle is None:
-			# ~ self.cycle = posImage.cycle
-		# ~ else:
-			# ~ self.cycle = cycle
-
-		# ~ self.wavelengths = posImage.wavelengths
-		# ~ self.nChannels = posImage.nChannels
-		# ~ for ind, w in enumerate(self.wavelengths):
-			# ~ if w in negImage.wavelengths:
-				# ~ negInd = negImage.wavelengths.index(w)
-				# ~ self.data[:,:,ind] = posImage.data[:,:,ind]-negImage.data[:,:,negInd]
-			# ~ else:
-				# ~ self.data[:,:,ind] = posImage.data[:,:,ind]
-
-		# ~ #ensure data is unsigned integer:
-		# ~ self.data = self.data - np.min(self.data)
+        return
 
 class ZionImageProcessor(multiprocessing.Process):
 
@@ -245,7 +234,9 @@ class ZionImageProcessor(multiprocessing.Process):
 				currImageSet = ZionImage(imgFileList, wls, cycle=cycle_ind, subtrahends=diffImgSubtrahends) if self.bUseDifferenceImages else ZionImage(imgFileList, wls, cycle=cycle_ind)
 				#TODO send to ROI detector
 
-				#TODO send to base-caller?
+				#TODO send to base-caller
+
+                #TODO do kinetics analysis
 
 				mp_namespace.ip_cycle_ind += 1
 
@@ -262,6 +253,9 @@ class ZionImageProcessor(multiprocessing.Process):
 						diffImgSubtrahends.append(cycle_files[[f"_{wl}_" in fp for fp in cycle_files].index(True)])
 				currImageSet = ZionImage(imgFileList, wls, cycle=cycle_ind, subtrahends=diffImgSubtrahends) if self.bUseDifferenceImages else ZionImage(imgFileList, wls, cycle=cycle_ind)
 				#TODO: send to base caller
+
+                #TODO do kinetics analysis
+
 				mp_namespace.ip_cycle_ind += 1
 
 			else:
