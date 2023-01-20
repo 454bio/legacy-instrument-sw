@@ -9,12 +9,16 @@ used_bytes_per_line = 6084
 img_W = 4056//2
 img_H = 3040//2
 
+# ~ def get_wavelength_and_cycle_from_filename(filepath):
+    # ~ splits = filepath.split('_')
+    # ~ # TODO handle when cycle is missing because this'd be broken
+    # ~ return splits[-3], splits[-2]
+
 def get_wavelength_from_filename(filepath):
-    return filepath.split('_')[-2]
+    return filepath.split('_')[-3]
 
 def get_cycle_from_filename(filepath):
-    return
-    # TODO
+    return filepath.split('_')[-2]
 
 #TODO: make all this faster? use C/C++?
 
