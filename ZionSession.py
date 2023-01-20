@@ -26,7 +26,7 @@ from ZionGtk import ZionGUI
 from picamera.exc import mmal
 from ZionEvents import ZionEvent
 from image_processing.ZionImage import ZionImageProcessor, ZionImage
-from image_processing.raw_converter import jpg_to_raw
+from image_processing.raw_converter import jpg_to_raw, get_cycle_from_filename
 
 mod_path = os.path.dirname(os.path.abspath(__file__))
 
@@ -167,6 +167,7 @@ class ZionSession():
     # TODO move to ImageProcessor!
     def _convert_jpeg(self, image_file_queue:Queue):
         print("Starting convert_jpeg thread")
+        curr_cycle = 0
         while True:
             filepath_args = image_file_queue.get()
             filepath = filepath_args[0]
@@ -176,11 +177,14 @@ class ZionSession():
             if self.load_image_enable:
                 print(f"\n\nconverting jpeg {filepath}\n\n")
 
-                #todo add cycle index
                 out_dir = os.path.join(os.path.dirname(filepath), "raws")
                 filename = os.path.splitext(os.path.basename(filepath))[0]
                 rgbs = jpg_to_raw(filepath, os.path.join(out_dir, filename+".tif"))
-
+                cycle = get_cycle_from_filename(filename)
+                if cycle != curr_cycle:
+                    print(f"_convert_jpg thread: New cycle {cycle} event being set")
+                    self.ImageProcessor.new_cycle_detected.set()
+                    curr_cycle = cycle
             else:
                 while not self.load_image_enable:
                     continue

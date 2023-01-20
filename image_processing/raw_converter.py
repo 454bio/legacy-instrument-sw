@@ -18,7 +18,7 @@ def get_wavelength_from_filename(filepath):
     return filepath.split('_')[-3]
 
 def get_cycle_from_filename(filepath):
-    return filepath.split('_')[-2]
+    return int(filepath.split('_')[-2][1:])
 
 #TODO: make all this faster? use C/C++?
 

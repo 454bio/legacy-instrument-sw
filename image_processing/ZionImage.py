@@ -12,7 +12,7 @@ from multiprocessing.managers import Namespace
 from tifffile import imread, imwrite
 from matplotlib import pyplot as plt
 
-from image_processing.raw_converter import jpg_to_raw, get_wavelength_and_cycle_from_filename
+from image_processing.raw_converter import jpg_to_raw, get_wavelength_from_filename
 
 def rgb2gray(img, weights=None):
 	if weights is None:
@@ -37,20 +37,30 @@ def overlay_image(img, labels, color):
 
 class ZionImage(UserDict):
 	def __init__(self, lstImageFiles, lstWavelengths, cycle=None, subtrahends=None):
+
 		d = dict()
-        if subtrahends is not None:
-            wl_subs = [get_wavelength_from_file(fp) for fp in subtrahends]
+		wl_subs = [get_wavelength_from_file(fp) for fp in subtrahends] if subtrahends is not None else []
+
 		for wavelength, imagefile in zip(lstWavelengths, lstImageFiles):
 			#TODO check validity (uint16, RGB, consistent sizes)
 			image = imread(imagefile)
-            if subtrahends is not None:
-                if wavelength in wl_subs:
-                    d[wavelength] = image - imread(subtrahends[wl_subs.index(wavelength)])
-                else:
-                    d[wavelength] = image
-            else:
-                d[wavelength] = image
+
+			if subtrahends is not None:
+				if wavelength == '000':  #skip dark images
+					continue
+				elif wavelength in wl_subs:
+					d[wavelength] = image - imread(subtrahends[wl_subs.index(wavelength)])
+				else:
+					d[wavelength] = image
+
+			else: #not using difference image
+				if '000' in listWavelengths:
+					d[wavelength] = image - imread(listImageFiles[listWavelengths.index('000')])
+				else:
+					d[wavelength] = image
+
 		super().__init__(d)
+		#TODO check that all images are same dtype, shape, and dimensionality
 		self.dtype = image.dtype
 		self.dims = image.shape[:2]
 		self.nChannels = len(lstWavelengths)
@@ -81,32 +91,9 @@ class ZionImage(UserDict):
 			raise ValueError(f"Invalid datatype given!")
 		return img_8b
 
-    def detect_rois(self, uv_wl='365', median_ks=9, erosion_ks=35, dilation_ks=30):
-
-        #Convert to grayscale (needs to access UV channel here when above change occurs):
-        img_gs = rgb2gray(self.data[uv_wl])
-
-        img_gs = median_filter(img_gs, median_ks)
-        thresh = ski.filters.threshold_mean(img_gs)
-        #TODO: adjust threshold? eg make it based on stats?
-        img_bin = img_gs > thresh
-
-        img_bin = ski.morphology.binary_erosion(img_bin, ski.morpoholgy.disk(erosion_ks))
-        img_bin = ski.morphology.binary_dilation(img_bin, ski.morphology.disk(dilation_ks))
-        img_bin = ski.morphology.binary_erosion(img_bin, ski.morpoholgy.disk(4))
-
-        # TODO: add some additional channel (eg 525) that suffers from scatter/noise, and test against it to invalidate spots that include bloom of scatter.
-
-        spot_ind, nSpots = ski.measure.label(img_bin, return_num=True)
-        print(f"{nSpots} spot candidates found")
-
-        # TODO: get stats, centroids of spots, further invalidate improper spots. (a la cv2.connectedComponentsWithStats)
-
-        return img_bin, spot_ind
-
 	def median_filter(self, wl_idx, kernel_size, method='sk2', inplace=False, timer=False):
-        # TODO: necesary?
-    
+		# TODO: necesary?
+		return
 		# ~ in_img = self.data[:,:,wl_idx]
 
 		# ~ if timer:
@@ -130,7 +117,7 @@ class ZionImage(UserDict):
 		# ~ if inplace:
 			# ~ self.data = img_filt
 		# ~ return img_filt
-        return
+
 
 class ZionImageProcessor(multiprocessing.Process):
 
@@ -139,16 +126,15 @@ class ZionImageProcessor(multiprocessing.Process):
 	# TODO: is this the best way to handle versions?
 	IMAGE_PROCESS_VERSION = 1
 
-	def __init__(self, gui, session_path):
+	def __init__(self, gui, session_path, bJpgConverter=True, uvWavelength='365'):
 		super().__init__()
 
 		self.gui = gui
-
 		self.session_path = session_path
 		self.file_output_path = os.path.join(session_path, f"processed_images_v{self.IMAGE_PROCESS_VERSION}")
-		if not os.isdir(self.file_output_path):
+		if not os.path.isdir(self.file_output_path):
 			os.makedirs(self.file_output_path)
-			print(f"Creating directory {self.file_output_path} for image processing file output")
+			print(f"Creating directory {self.file_output_path} for processing")
 
 		self._mp_manager = multiprocessing.Manager()
 		self.mp_namespace = self._mp_manager.Namespace()
@@ -161,11 +147,15 @@ class ZionImageProcessor(multiprocessing.Process):
 		self.mp_namespace.view_cycle_ind = 0
 
 		self.new_cycle_detected = self._mp_manager.Event()
-		# ~ self.output_data_ready_event = self._mp_manager.Event()
 
 		self.rois_detected_event = self._mp_manager.Event()
-		self.imageset_processed_event = self._mp_manager.Event()
-		self.image_process_queue = self._mp_manager.Queue()
+
+		self.base_caller_queue = self._mp_manager.Queue()
+		self.bases_called_event = self._mp_manager.Event()
+
+		self.kinetics_analyzer_queue = self._mp_manager.Queue()
+		self.kinetics_analuzed_event = self._mp_manager.Event()
+
 		self._image_viewer_queue = self._mp_manager.Queue()
 
 	def run(self):
@@ -185,15 +175,15 @@ class ZionImageProcessor(multiprocessing.Process):
 
 	def _start_child_threads(self):
 
-		self._image_processing_handle = threading.Thread(
-			target=self._image_processing_handler,
-			args=(self.mp_namespace, self.image_process_queue, self.imageset_processed_event)
+		self._image_processing_thread = threading.Thread(
+			target=self._image_handler,
+			args=(self.mp_namespace, self.new_cycle_detected, self.rois_detected_event, self.base_caller_queue, self.kinetics_analyzer_queue)
 		)
 		self._image_processing_handle.daemon = True
 		self._image_processing_handle.start()
 		#todo: same for image view thread
 
-	def _image_processing_handler(self, mp_namespace : Namespace, image_process_queue : multiprocessing.Queue, done_event : multiprocessing.Event ):
+	def _image_handler(self, mp_namespace : Namespace, image_ready_queue : multiprocessing.Queue, rois_detected_event, base_caller_queue, kinetics_queue):
 		''' High level handler... will use cycle number (before incrementing)
 			to check raws directory for cycles, make decisions on where to send imageset
 		'''
@@ -201,14 +191,16 @@ class ZionImageProcessor(multiprocessing.Process):
 		mp_namespace.ip_cycle_ind = 0
 		in_path = os.path.join(self.session_path, "raws")
 		out_path = self.file_output_path
+		# ~ rois_detected_event.clear()
 
 		#TODO: this should come from a ZionLED property or something
 		uv_wl = '365'
-		bg_wl = '000'
 
 		while True:
-
-			self.new_cycle_detected.wait()
+			print("_image_handler thread: Waiting for new cycle event")
+			image_ready_queue.wait()
+			print(f"_image_handler thread: new cycle detected event received")
+			image_ready_queue.clear()
 			cycle_ind = mp_namespace.ip_cycle_ind
 			cycle_str = f"C{cycle_ind:03d}"
 			cycle_files = sorted(glob(in_path, '*cycle_str*.tif'))
@@ -226,21 +218,24 @@ class ZionImageProcessor(multiprocessing.Process):
 				diffImgSubtrahends = []
 				for wl in wls:
 					if wl==uv_wl:
-						fileList.append(cycle_files[[f"_{wl}_" in fp for fp in cycle_files].index(True)])
+						fileList.append(cycle_files[[f"_{wl}_" in fp for fp in cycle_files].index(True)]) #first uv image
 					else:
 						lst_tmp = [f"_{wl}_" in fp for fp in cycle_files]
 						fileList.append(cycle_files[ len(lst_tmp) - lst_tmp[-1::-1].index(True) - 1]) # last vis led image
-						diffImgSubtrahends.append(cycle_files[[f"_{wl}_" in fp for fp in cycle_files].index(True)])
+						diffImgSubtrahends.append(cycle_files[[f"_{wl}_" in fp for fp in cycle_files].index(True)]) # first vis led image
 				currImageSet = ZionImage(imgFileList, wls, cycle=cycle_ind, subtrahends=diffImgSubtrahends) if self.bUseDifferenceImages else ZionImage(imgFileList, wls, cycle=cycle_ind)
-				#TODO send to ROI detector
 
-				#TODO send to base-caller
+				self.detect_rois( currImageSet )
+				print(self.roi_labels)
+				rois_detected_event.set()
+
+				base_caller_queue.put(currImageSet)
 
                 #TODO do kinetics analysis
 
 				mp_namespace.ip_cycle_ind += 1
 
-			elif cycle_ind > 1
+			elif cycle_ind > 1:
 				# do what we did before but no ROI stuff
 				imgFileList = []
 				diffImgSubtrahends = []
@@ -252,31 +247,32 @@ class ZionImageProcessor(multiprocessing.Process):
 						fileList.append(cycle_files[ len(lst_tmp) - lst_tmp[-1::-1].index(True) - 1]) # last vis led image
 						diffImgSubtrahends.append(cycle_files[[f"_{wl}_" in fp for fp in cycle_files].index(True)])
 				currImageSet = ZionImage(imgFileList, wls, cycle=cycle_ind, subtrahends=diffImgSubtrahends) if self.bUseDifferenceImages else ZionImage(imgFileList, wls, cycle=cycle_ind)
-				#TODO: send to base caller
+				base_caller_queue.put(currImageSet)
 
-                #TODO do kinetics analysis
+				#TODO do kinetics analysis
 
 				mp_namespace.ip_cycle_ind += 1
 
 			else:
 				raise ValueError(f"Invalid cycle index {mp_namespace.ip_cycle_ind}!")
-
-#			imageset = image_process_queue.get() #get image set here
+			image_ready_queue.clear()
+			print("clearing image ready queue")
+			# ~ imageset = image_process_queue.get() #get image set here
 			# mark if imageset is first of the cycle (or last?)
-			if self.enable:
+			# ~ if self.enable:
 				# ~ cycle = self.mp_namespace.ip_cycle_ind + 1
 
 				# Todo: Do processing
-				done_event.set()
+				# ~ done_event.set()
 				# ~ self.mp_namespace.ip_cycle_ind += 1
 
-			else:
-				while not self.enable:
-					continue
+			# ~ else:
+				# ~ while not self.enable:
+					# ~ continue
 				# ~ cycle = self.mp_namespace.ip_cycle_ind + 1
 
 				#Todo: Do processing
-				done_event.set()
+				# ~ done_event.set()
 				# ~ self.mp_namespace.cycle_int +=1
 
 	def _image_view_thread(self, mp_namespace : Namespace, image_viewer_queue : multiprocessing.Queue ):
@@ -317,7 +313,27 @@ class ZionImageProcessor(multiprocessing.Process):
 		self.mp_namespace._bShowBases = bEnable
 		print(f"View Spots enabled? {bEnable}")
 
+	def detect_rois(self, in_img, uv_wl='365', median_ks=9, erosion_ks=35, dilation_ks=30):
 
+		#Convert to grayscale (needs to access UV channel here when above change occurs):
+		img_gs = rgb2gray(in_img.data[uv_wl])
+
+		# ~ img_gs = median_filter(img_gs, median_ks)
+		# ~ thresh = ski.filters.threshold_mean(img_gs)
+		#TODO: adjust threshold? eg make it based on stats?
+		# ~ img_bin = img_gs > thresh
+
+		# ~ img_bin = ski.morphology.binary_erosion(img_bin, ski.morpoholgy.disk(erosion_ks))
+		# ~ img_bin = ski.morphology.binary_dilation(img_bin, ski.morphology.disk(dilation_ks))
+		# ~ img_bin = ski.morphology.binary_erosion(img_bin, ski.morpoholgy.disk(4))
+
+		# ~ spot_ind, nSpots = ski.measure.label(img_bin, return_num=True)
+		# ~ print(f"{nSpots} spot candidates found")
+
+		# TODO: add some additional channel (eg 525) that suffers from scatter/noise, and test against it to invalidate spots that include bloom of scatter.
+		# TODO: get stats, centroids of spots, further invalidate improper spots. (a la cv2.connectedComponentsWithStats)
+
+		self.roi_labels = 'set to image'
 
 	### for testing:
 	def do_test(self):
