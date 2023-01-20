@@ -79,7 +79,7 @@ class ZionSession():
         with self.load_image_lock:
             self.load_image_enable = False
 
-        self.ImageProcessor = ZionImageProcessor(self.gui)
+        self.ImageProcessor = ZionImageProcessor(self.gui, self.Dir)
 
     def CaptureImageThread(self, cropping=(0,0,1,1), group=None, verbose=False, comment='', suffix='', protocol=True):
         """ This is running in a thread. It should not call any GTK functions """
@@ -164,6 +164,7 @@ class ZionSession():
         # TODO: Add error handling and notify user
         self.Protocol.load_from_file(filename)
 
+    # TODO move to ImageProcessor!
     def _convert_jpeg(self, image_file_queue:Queue):
         print("Starting convert_jpeg thread")
         while True:
