@@ -12,7 +12,7 @@ from multiprocessing.managers import Namespace
 from tifffile import imread, imwrite
 from matplotlib import pyplot as plt
 
-from image_processing.raw_converter import jpg_to_raw, get_wavelength_from_filename
+from image_processing.raw_converter import jpg_to_raw, get_wavelength_from_filename, get_cycle_from_filename
 
 def rgb2gray(img, weights=None):
 	if weights is None:
@@ -140,10 +140,17 @@ class ZionImageProcessor(multiprocessing.Process):
 		self.mp_namespace = self._mp_manager.Namespace()
 		self.stop_event = self._mp_manager.Event()
 
-		self.mp_namespace._bEnable = False
-		self.mp_namespace._bShowSpots = False
-		self.mp_namespace._bShowBases = False
+		self.convert_files_queue = self._mp_manager.Queue()
+		# ~ self.load_image_lock = threading.Lock()
+		# ~ with self.load_image_lock:
+			# ~ self.load_image_enable = False
+
+		self.mp_namespace.bEnable = False
+		self.mp_namespace.bConvertEnable = False
+		self.mp_namespace.bShowSpots = False
+		self.mp_namespace.bShowBases = False
 		self.mp_namespace.ip_cycle_ind = 0
+		self.mp_namespace.convert_cycle_ind = 0
 		self.mp_namespace.view_cycle_ind = 0
 
 		self.new_cycle_detected = self._mp_manager.Event()
@@ -167,23 +174,68 @@ class ZionImageProcessor(multiprocessing.Process):
 		self._cleanup()
 
 	def _cleanup():
-		self.enable = False
-		self._image_processing_handle.join(1.0)
+		mp_namespace.bEnable = False
+
+		self._convert_image_thread.join(12.0)
+		if self._convert_image_thread.is_alive():
+			print("_convert_image_thread is still alive!")
+
+		self._image_processing_thread.join(1.0)
 		if self._image_processing_handle.is_alive():
 			print("_image_processing_thread is still alive!")
-		#TODO same for image view thread
+		#TODO same for all threads
 
 	def _start_child_threads(self):
+
+		self._convert_image_thread = threading.Thread(
+			target=self._convert_jpeg,
+			args=(self.mp_namespace, self.convert_files_queue, self.new_cycle_detected)
+		)
+		self._convert_image_thread.daemon = True
+		self._convert_image_thread.start()
 
 		self._image_processing_thread = threading.Thread(
 			target=self._image_handler,
 			args=(self.mp_namespace, self.new_cycle_detected, self.rois_detected_event, self.base_caller_queue, self.kinetics_analyzer_queue)
 		)
-		self._image_processing_handle.daemon = True
-		self._image_processing_handle.start()
-		#todo: same for image view thread
+		self._image_processing_thread.daemon = True
+		self._image_processing_thread.start()
 
-	def _image_handler(self, mp_namespace : Namespace, image_ready_queue : multiprocessing.Queue, rois_detected_event, base_caller_queue, kinetics_queue):
+		#todo: same for other threads
+
+	def _convert_jpeg(self, mp_namespace : Namespace, image_file_queue : multiprocessing.Queue, new_cycle_event : multiprocessing.Event):
+		print("Starting _convert_jpeg thread")
+		mp_namespace.convert_cycle_ind = 0
+		mp_namespace.bConvertEnable = True
+		while True:
+			filepath_args = image_file_queue.get()
+			filepath = filepath_args[0]
+			if filepath is None:
+				print("_convert_jpeg thread -- received stop signal!")
+				break
+			if mp_namespace.bConvertEnable:
+				print(f"\n\nconverting jpeg {filepath}\n\n")
+
+				out_dir = os.path.join(os.path.dirname(filepath), "raws")
+				filename = os.path.splitext(os.path.basename(filepath))[0]
+				rgbs = jpg_to_raw(filepath, os.path.join(out_dir, filename+".tif"))
+				cycle = get_cycle_from_filename(filename)
+				if cycle != mp_namespace.convert_cycle_ind:
+					if mp_namespace.convert_cycle_ind > 0:
+						new_cycle_event.set()
+						print(f"_convert_jpg thread: New cycle {cycle} event being set")
+				mp_namespace.convert_cycle_ind = cycle
+			else:
+				while not mp_namespace.bConvertEnable:
+					continue
+				print(f"\n\nconverting jpeg {filepath} after wait\n\n")
+
+				out_dir = os.path.join(os.path.dirname(filepath), "raws")
+				filename = os.path.splitext(os.path.basename(filepath))[0]
+				rgbs = jpg_to_raw(filepath, os.path.join(out_dir, filename+".tif"))
+
+
+	def _image_handler(self, mp_namespace : Namespace, image_ready_event : multiprocessing.Event, rois_detected_event, base_caller_queue, kinetics_queue):
 		''' High level handler... will use cycle number (before incrementing)
 			to check raws directory for cycles, make decisions on where to send imageset
 		'''
@@ -198,21 +250,28 @@ class ZionImageProcessor(multiprocessing.Process):
 
 		while True:
 			print("_image_handler thread: Waiting for new cycle event")
-			image_ready_queue.wait()
+			image_ready_event.wait()
 			print(f"_image_handler thread: new cycle detected event received")
-			image_ready_queue.clear()
-			cycle_ind = mp_namespace.ip_cycle_ind
-			cycle_str = f"C{cycle_ind:03d}"
-			cycle_files = sorted(glob(in_path, '*cycle_str*.tif'))
-			wls = unique([get_wavelength_from_file(f) for f in files_this_cycle])
-			if not uv_wl in wls:
-					raise ValueError(f"No {uv_wl} images in cycle {cycle_ind}!")
+			# ~ image_ready_event.clear()
 
-			if cycle_ind == 0:
+			if mp_namespace.ip_cycle_ind == 0:
 				#TODO: do any calibration here
 				mp_namespace.ip_cycle_ind += 1
+				continue
 
-			elif cycle_ind == 1:
+			else: # get cycle numbers if available
+				# TODO: clean this up, allow for no cycles?
+				cycle_str = f"C{mp_namespace.ip_cycle_ind:03d}"
+				
+				#TODO fix glob here
+				
+				cycle_files = sorted(glob(os.path.join(in_path, '*cycle_str*.tif')))
+				print(f"cycle {mp_namespace.ip_cycle_ind}'s file list: {cycle_files}")
+				wls = list(set(sorted([get_wavelength_from_file(f) for f in cycle_files])))
+				print(f"cycle {mp_namespace.ip_cycle_ind}'s wavelengths: {wls}")
+				if not uv_wl in wls:
+					raise ValueError(f"No {uv_wl} images in cycle {mp_namespace.ip_cycle_ind}!")
+
 				# Find earliest images of UV wavelength, but the latest of others:
 				imgFileList = []
 				diffImgSubtrahends = []
@@ -223,68 +282,48 @@ class ZionImageProcessor(multiprocessing.Process):
 						lst_tmp = [f"_{wl}_" in fp for fp in cycle_files]
 						fileList.append(cycle_files[ len(lst_tmp) - lst_tmp[-1::-1].index(True) - 1]) # last vis led image
 						diffImgSubtrahends.append(cycle_files[[f"_{wl}_" in fp for fp in cycle_files].index(True)]) # first vis led image
-				currImageSet = ZionImage(imgFileList, wls, cycle=cycle_ind, subtrahends=diffImgSubtrahends) if self.bUseDifferenceImages else ZionImage(imgFileList, wls, cycle=cycle_ind)
+				currImageSet = ZionImage(imgFileList, wls, cycle=mp_namespace.ip_cycle_ind, subtrahends=diffImgSubtrahends) if self.bUseDifferenceImages else ZionImage(imgFileList, wls, cycle=mp_namespace.ip_cycle_ind)
 
-				self.detect_rois( currImageSet )
-				print(self.roi_labels)
-				rois_detected_event.set()
+				if mp_namespace.ip_cycle_ind == 1:
+					self.detect_rois( currImageSet )
+					print(self.roi_labels)
+					rois_detected_event.set()
 
-				base_caller_queue.put(currImageSet)
+					base_caller_queue.put(currImageSet)
 
-                #TODO do kinetics analysis
+					#TODO do kinetics analysis
 
-				mp_namespace.ip_cycle_ind += 1
+					mp_namespace.ip_cycle_ind += 1
 
-			elif cycle_ind > 1:
-				# do what we did before but no ROI stuff
-				imgFileList = []
-				diffImgSubtrahends = []
-				for wl in wls:
-					if wl==uv_wl:
-						fileList.append(cycle_files[[f"_{wl}_" in fp for fp in cycle_files].index(True)])
-					else:
-						lst_tmp = [f"_{wl}_" in fp for fp in cycle_files]
-						fileList.append(cycle_files[ len(lst_tmp) - lst_tmp[-1::-1].index(True) - 1]) # last vis led image
-						diffImgSubtrahends.append(cycle_files[[f"_{wl}_" in fp for fp in cycle_files].index(True)])
-				currImageSet = ZionImage(imgFileList, wls, cycle=cycle_ind, subtrahends=diffImgSubtrahends) if self.bUseDifferenceImages else ZionImage(imgFileList, wls, cycle=cycle_ind)
-				base_caller_queue.put(currImageSet)
+				elif mp_namespace.ip_cycle_ind > 1:
+					base_caller_queue.put(currImageSet)
 
-				#TODO do kinetics analysis
+					#TODO do kinetics analysis
 
-				mp_namespace.ip_cycle_ind += 1
+					mp_namespace.ip_cycle_ind += 1
 
-			else:
-				raise ValueError(f"Invalid cycle index {mp_namespace.ip_cycle_ind}!")
+				else:
+					raise ValueError(f"Invalid cycle index {mp_namespace.ip_cycle_ind}!")
+
 			image_ready_queue.clear()
 			print("clearing image ready queue")
-			# ~ imageset = image_process_queue.get() #get image set here
-			# mark if imageset is first of the cycle (or last?)
-			# ~ if self.enable:
-				# ~ cycle = self.mp_namespace.ip_cycle_ind + 1
 
-				# Todo: Do processing
-				# ~ done_event.set()
-				# ~ self.mp_namespace.ip_cycle_ind += 1
-
-			# ~ else:
-				# ~ while not self.enable:
-					# ~ continue
-				# ~ cycle = self.mp_namespace.ip_cycle_ind + 1
-
-				#Todo: Do processing
-				# ~ done_event.set()
-				# ~ self.mp_namespace.cycle_int +=1
 
 	def _image_view_thread(self, mp_namespace : Namespace, image_viewer_queue : multiprocessing.Queue ):
 		return
 
+	def add_to_convert_queue(self, fpath):
+		self.convert_files_queue.put_nowait( (fpath,) )
+		# ~ self.convert_files_queue.put( (fpath,) )
+
+
 	@property
 	def enable(self):
-		return self.mp_namespace._bEnable
+		return self.mp_namespace.bEnable
 
 	@enable.setter
 	def enable(self, bEnable):
-		self.mp_namespace._bEnable = bEnable
+		self.mp_namespace.bEnable = bEnable
 		print(f"Image Processor enabled? {bEnable}")
 
 	@property

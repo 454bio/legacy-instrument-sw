@@ -233,9 +233,9 @@ class ZionPigpioProcess(multiprocessing.Process):
         self._debug_trigger_handle.start()
         
         self._pid_loop = threading.Thread(
-			target=self._pid_control_thread,
-			args = (self.mp_namespace, self.pid_freq, self.pid_bias, self.pid_ramp_threshold, self.temp_out_gpio, self.pi)
-		)
+            target=self._pid_control_thread,
+            args = (self.mp_namespace, self.pid_freq, self.pid_bias, self.pid_ramp_threshold, self.temp_out_gpio, self.pi)
+        )
         self._pid_loop.daemon = True
         self._pid_loop.start()
 
