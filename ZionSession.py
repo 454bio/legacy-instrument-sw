@@ -73,13 +73,10 @@ class ZionSession():
         self.update_last_capture_path = None
         self.update_last_capture_lock = threading.Lock()
 
-        self.image_files_queue = multiprocessing.Queue()
         self.all_image_paths = []
-        self.load_image_lock = threading.Lock()
-        with self.load_image_lock:
-            self.load_image_enable = False
-
         self.ImageProcessor = ZionImageProcessor(self.gui, self.Dir)
+        self.ImageProcessor.start()
+        # ~ self.load_image_lock =
 
     def CaptureImageThread(self, cropping=(0,0,1,1), group=None, verbose=False, comment='', suffix='', protocol=True):
         """ This is running in a thread. It should not call any GTK functions """
@@ -164,36 +161,6 @@ class ZionSession():
         # TODO: Add error handling and notify user
         self.Protocol.load_from_file(filename)
 
-    # TODO move to ImageProcessor!
-    def _convert_jpeg(self, image_file_queue:Queue):
-        print("Starting convert_jpeg thread")
-        curr_cycle = 0
-        while True:
-            filepath_args = image_file_queue.get()
-            filepath = filepath_args[0]
-            if filepath is None:
-                print("_convert_jpeg thread -- received stop signal!")
-                break
-            if self.load_image_enable:
-                print(f"\n\nconverting jpeg {filepath}\n\n")
-
-                out_dir = os.path.join(os.path.dirname(filepath), "raws")
-                filename = os.path.splitext(os.path.basename(filepath))[0]
-                rgbs = jpg_to_raw(filepath, os.path.join(out_dir, filename+".tif"))
-                cycle = get_cycle_from_filename(filename)
-                if cycle != curr_cycle:
-                    print(f"_convert_jpg thread: New cycle {cycle} event being set")
-                    self.ImageProcessor.new_cycle_detected.set()
-                    curr_cycle = cycle
-            else:
-                while not self.load_image_enable:
-                    continue
-                print(f"\n\nconverting jpeg {filepath} after wait\n\n")
-
-                out_dir = os.path.join(os.path.dirname(filepath), "raws")
-                filename = os.path.splitext(os.path.basename(filepath))[0]
-                rgbs = jpg_to_raw(filepath, os.path.join(out_dir, filename+".tif"))
-
     def _save_event_image(self, image_buffer_event_queue : Queue):
         """ Thread that will consume event buffers and save the files accordingly """
         print("_save_event_image starting...")
@@ -236,7 +203,7 @@ class ZionSession():
             )
 
             #Keep record of file saved for loading later in different thread
-            self.image_files_queue.put_nowait((filepath,))
+            self.ImageProcessor.add_to_convert_queue(filepath)
             self.all_image_paths.append(filepath)
 
             with open(filepath, "wb") as out:
@@ -327,9 +294,9 @@ class ZionSession():
             self.buffer_thread.daemon=True  # TODO: Should make this non-daemonic so files get save even if program is shutdown
             self.buffer_thread.start()
 
-            self.load_image_thread = threading.Thread(target=self._convert_jpeg, args=(self.image_files_queue, ) )
-            self.load_image_thread.daemon = True
-            self.load_image_thread.start()
+            # ~ self.load_image_thread = threading.Thread(target=self.ImageProcessor._convert_jpeg, args=(self.image_files_queue, ) )
+            # ~ self.load_image_thread.daemon = True
+            # ~ self.load_image_thread.start()
 
             total_number_of_groups = float(len(grouped_flat_events))
             cycle_index = 0
@@ -351,8 +318,8 @@ class ZionSession():
                     # ~ if self.load_image_lock.locked():
                         # ~ print(f"Unlocking _load_image thread")
                         # ~ self.load_image_lock.release()
-                    with self.load_image_lock:
-                        self.load_image_enable = True
+                    # ~ with self.load_image_lock:
+                    self.ImageProcessor.mp_namespace.bConvertEnable = True
 
                     group_or_wait.sleep(
                         stop_event=stop_event,
@@ -365,8 +332,8 @@ class ZionSession():
                         break
 
                 else:
-                    with self.load_image_lock:
-                        self.load_image_enable = False
+                    # ~ with self.load_image_lock:
+                    self.ImageProcessor.mp_namespace.bConvertEnable = False
                     flat_events = group_or_wait
 
                     # This will pre-program the pigpio with the waveforms for our LEDs
@@ -403,8 +370,8 @@ class ZionSession():
 
                         if stop_event.is_set():
                             print("Received stop!")
-                            with self.load_image_lock:
-                                self.load_image_enable = True
+                            # ~ with self.load_image_lock:
+                            self.ImageProcessor.mp_namespace.bConvertEnable = True
                             break
 
                     end_fstrobe = self.GPIO.get_num_fstrobes()
@@ -422,8 +389,8 @@ class ZionSession():
                     num_fstrobe = end_fstrobe - start_fstrobe
                     if num_fstrobe != num_captured_frames:
                         print(f"WARNING: We did not receive all of the frames actually captured!!  num_fstrobe: {num_fstrobe}  expected: {expected_num_frames}")
-            with self.load_image_lock:
-                self.load_image_enable = True
+            # ~ with self.load_image_lock:
+            self.ImageProcessor.mp_namespace.bConvertEnable = True
             print("RunProgram Finished!")
 
         except Exception as e:
