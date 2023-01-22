@@ -50,7 +50,7 @@ class ZionImage(UserDict):
 					continue
 				elif wavelength in wl_subs:
 					d[wavelength] = image - imread(subtrahends[wl_subs.index(wavelength)])
-					print(f"adding {imagefile} - {subtrahends[wl_subs.index(wavelength)}")
+					print(f"adding {imagefile} - {subtrahends[wl_subs.index(wavelength)]}")
 				else:
 					d[wavelength] = image
 					print(f"adding {image}")
@@ -60,7 +60,7 @@ class ZionImage(UserDict):
 			else: #not using difference image
 				if '000' in listWavelengths:
 					d[wavelength] = image - imread(listImageFiles[listWavelengths.index('000')])
-					print(f"adding {imagefile} - {listImageFiles[listWavelengths.index('000')}")
+					print(f"adding {imagefile} - {listImageFiles[listWavelengths.index('000')]}")
 				else:
 					d[wavelength] = image
 					print(f"adding {imagefile}")
