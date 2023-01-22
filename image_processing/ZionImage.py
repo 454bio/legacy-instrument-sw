@@ -39,7 +39,7 @@ class ZionImage(UserDict):
 	def __init__(self, lstImageFiles, lstWavelengths, cycle=None, subtrahends=None):
 
 		d = dict()
-		wl_subs = [get_wavelength_from_file(fp) for fp in subtrahends] if subtrahends is not None else []
+		wl_subs = [get_wavelength_from_filename(fp) for fp in subtrahends] if subtrahends is not None else []
 
 		for wavelength, imagefile in zip(lstWavelengths, lstImageFiles):
 			#TODO check validity (uint16, RGB, consistent sizes)
@@ -50,14 +50,20 @@ class ZionImage(UserDict):
 					continue
 				elif wavelength in wl_subs:
 					d[wavelength] = image - imread(subtrahends[wl_subs.index(wavelength)])
+					print(f"adding {imagefile} - {subtrahends[wl_subs.index(wavelength)}")
 				else:
 					d[wavelength] = image
+					print(f"adding {image}")
+
+				print(f"differences made from {subtrahends}")
 
 			else: #not using difference image
 				if '000' in listWavelengths:
 					d[wavelength] = image - imread(listImageFiles[listWavelengths.index('000')])
+					print(f"adding {imagefile} - {listImageFiles[listWavelengths.index('000')}")
 				else:
 					d[wavelength] = image
+					print(f"adding {imagefile}")
 
 		super().__init__(d)
 		#TODO check that all images are same dtype, shape, and dimensionality
@@ -145,6 +151,7 @@ class ZionImageProcessor(multiprocessing.Process):
 		# ~ with self.load_image_lock:
 			# ~ self.load_image_enable = False
 
+		self.bUseDifferenceImages = True
 		self.mp_namespace.bEnable = False
 		self.mp_namespace.bConvertEnable = False
 		self.mp_namespace.bShowSpots = False
@@ -243,7 +250,7 @@ class ZionImageProcessor(multiprocessing.Process):
 		mp_namespace.ip_cycle_ind = 0
 		in_path = os.path.join(self.session_path, "raws")
 		out_path = self.file_output_path
-		# ~ rois_detected_event.clear()
+		rois_detected_event.clear()
 
 		#TODO: this should come from a ZionLED property or something
 		uv_wl = '365'
@@ -262,12 +269,9 @@ class ZionImageProcessor(multiprocessing.Process):
 			else: # get cycle numbers if available
 				# TODO: clean this up, allow for no cycles?
 				cycle_str = f"C{mp_namespace.ip_cycle_ind:03d}"
-				
-				#TODO fix glob here
-				
-				cycle_files = sorted(glob(os.path.join(in_path, '*cycle_str*.tif')))
+				cycle_files = sorted(glob(os.path.join(in_path, f"*_{cycle_str}_*.tif")))
 				print(f"cycle {mp_namespace.ip_cycle_ind}'s file list: {cycle_files}")
-				wls = list(set(sorted([get_wavelength_from_file(f) for f in cycle_files])))
+				wls = list(set(sorted([get_wavelength_from_filename(f) for f in cycle_files])))
 				print(f"cycle {mp_namespace.ip_cycle_ind}'s wavelengths: {wls}")
 				if not uv_wl in wls:
 					raise ValueError(f"No {uv_wl} images in cycle {mp_namespace.ip_cycle_ind}!")
@@ -277,10 +281,10 @@ class ZionImageProcessor(multiprocessing.Process):
 				diffImgSubtrahends = []
 				for wl in wls:
 					if wl==uv_wl:
-						fileList.append(cycle_files[[f"_{wl}_" in fp for fp in cycle_files].index(True)]) #first uv image
+						imgFileList.append(cycle_files[[f"_{wl}_" in fp for fp in cycle_files].index(True)]) #first uv image
 					else:
 						lst_tmp = [f"_{wl}_" in fp for fp in cycle_files]
-						fileList.append(cycle_files[ len(lst_tmp) - lst_tmp[-1::-1].index(True) - 1]) # last vis led image
+						imgFileList.append(cycle_files[ len(lst_tmp) - lst_tmp[-1::-1].index(True) - 1]) # last vis led image
 						diffImgSubtrahends.append(cycle_files[[f"_{wl}_" in fp for fp in cycle_files].index(True)]) # first vis led image
 				currImageSet = ZionImage(imgFileList, wls, cycle=mp_namespace.ip_cycle_ind, subtrahends=diffImgSubtrahends) if self.bUseDifferenceImages else ZionImage(imgFileList, wls, cycle=mp_namespace.ip_cycle_ind)
 
@@ -305,7 +309,7 @@ class ZionImageProcessor(multiprocessing.Process):
 				else:
 					raise ValueError(f"Invalid cycle index {mp_namespace.ip_cycle_ind}!")
 
-			image_ready_queue.clear()
+			image_ready_event.clear()
 			print("clearing image ready queue")
 
 
