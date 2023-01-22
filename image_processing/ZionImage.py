@@ -6,7 +6,7 @@ import threading
 import numpy as np
 import pandas as pd
 import cv2
-import skimage as ski
+from skimage import filters, morphology, segmentation, measure
 from collections import UserDict
 from multiprocessing.managers import Namespace
 from tifffile import imread, imwrite
@@ -22,18 +22,18 @@ def rgb2gray(img, weights=None):
 
 def median_filter(in_img, kernel_size, behavior='ndimage'): #rank?
 	if len(in_img.shape) == 2: # grayscale
-		out_img = ski.filters.median(in_img, ski.morphology.disk(kernel_size), behavior=behavior)
+		out_img = filters.median(in_img, morphology.disk(kernel_size), behavior=behavior)
 	elif len(in_img.shape) == 3: # multi-channel
 		if behavior == 'cv2':
 			# TODO
 			raise ValueError("Invalid behavior option!")
 		else:
 			for ch in range(in_img.shape[-1]):
-				out_img[:,:,ch] = ski.filters.median(in_img[:,:,ch], ski.morphology.disk(kernel_size), behavior=behavior)
+				out_img[:,:,ch] = filters.median(in_img[:,:,ch], morphology.disk(kernel_size), behavior=behavior)
 	return out_img
 
 def overlay_image(img, labels, color):
-	return ski.segmentation.mark_boundaries(img, labels, color=color, mode='thick')
+	return segmentation.mark_boundaries(img, labels, color=color, mode='thick')
 
 class ZionImage(UserDict):
 	def __init__(self, lstImageFiles, lstWavelengths, cycle=None, subtrahends=None):
@@ -70,6 +70,13 @@ class ZionImage(UserDict):
 		self.cycle = cycle
 
 	@property
+	def wavelengths(self):
+		wls = self.data.keys()
+		if '000' in wls:
+			wls.remove('000')
+		return wls
+
+	@property
 	def view_4D(self):
 		out_arr = np.zeros(shape=(self.nChannels,)+self.dims+(3,), dtype=self.dtype)
 		for ch_idx, wl in enumerate(sorted(self.data.keys())):
@@ -95,7 +102,7 @@ class ZionImage(UserDict):
 		return img_8b
 
 	def median_filter(self, wl_idx, kernel_size, method='sk2', inplace=False, timer=False):
-		# TODO: necesary?
+		# TODO: necesary for image set? or just individual image channel?
 		return
 		# ~ in_img = self.data[:,:,wl_idx]
 
@@ -123,8 +130,6 @@ class ZionImage(UserDict):
 
 
 class ZionImageProcessor(multiprocessing.Process):
-
-	#TODO: add jpg_converter thread here!
 
 	# TODO: is this the best way to handle versions?
 	IMAGE_PROCESS_VERSION = 1
@@ -211,6 +216,7 @@ class ZionImageProcessor(multiprocessing.Process):
 		print("Starting _convert_jpeg thread")
 		mp_namespace.convert_cycle_ind = 0
 		mp_namespace.bConvertEnable = True
+		lock = False
 		while True:
 			filepath_args = image_file_queue.get()
 			filepath = filepath_args[0]
@@ -228,8 +234,13 @@ class ZionImageProcessor(multiprocessing.Process):
 					if cycle != mp_namespace.convert_cycle_ind:
 						if mp_namespace.convert_cycle_ind > 0:
 							new_cycle_event.set()
-							print(f"_convert_jpg thread: New cycle {cycle} event being set")
+							print(f"_convert_jpg thread: New cycle {mp_namespace.convert_cycle_ind} event being set")
 						mp_namespace.convert_cycle_ind = cycle
+				else:
+					if not lock and mp_namespace.convert_cycle_ind > 0:
+						new_cycle_event.set()
+						print(f"_convert_jpg thread: Cycle {mp_namespace.convert_cycle_ind} event being set")
+						lock = True # only do this once
 			else:
 				while not mp_namespace.bConvertEnable:
 					continue
@@ -288,7 +299,6 @@ class ZionImageProcessor(multiprocessing.Process):
 
 				if mp_namespace.ip_cycle_ind == 1:
 					self.detect_rois( currImageSet )
-					print(self.roi_labels)
 					rois_detected_event.set()
 
 					base_caller_queue.put(currImageSet)
@@ -359,22 +369,26 @@ class ZionImageProcessor(multiprocessing.Process):
 		#Convert to grayscale (needs to access UV channel here when above change occurs):
 		img_gs = rgb2gray(in_img.data[uv_wl])
 
-		# ~ img_gs = median_filter(img_gs, median_ks)
-		# ~ thresh = ski.filters.threshold_mean(img_gs)
+		img_gs = median_filter(img_gs, median_ks)
+		thresh = filters.threshold_mean(img_gs)
 		#TODO: adjust threshold? eg make it based on stats?
-		# ~ img_bin = img_gs > thresh
+		img_bin = img_gs > thresh
 
-		# ~ img_bin = ski.morphology.binary_erosion(img_bin, ski.morpoholgy.disk(erosion_ks))
-		# ~ img_bin = ski.morphology.binary_dilation(img_bin, ski.morphology.disk(dilation_ks))
-		# ~ img_bin = ski.morphology.binary_erosion(img_bin, ski.morpoholgy.disk(4))
+		img_bin = morphology.binary_erosion(img_bin, morphology.disk(erosion_ks))
+		img_bin = morphology.binary_dilation(img_bin, morphology.disk(dilation_ks))
+		img_bin = morphology.binary_erosion(img_bin, morphology.disk(4))
 
-		# ~ spot_ind, nSpots = ski.measure.label(img_bin, return_num=True)
-		# ~ print(f"{nSpots} spot candidates found")
+		spot_ind, nSpots = measure.label(img_bin, return_num=True)
+		print(f"{nSpots} spot candidates found")
 
 		# TODO: add some additional channel (eg 525) that suffers from scatter/noise, and test against it to invalidate spots that include bloom of scatter.
 		# TODO: get stats, centroids of spots, further invalidate improper spots. (a la cv2.connectedComponentsWithStats)
 
-		self.roi_labels = 'set to image'
+		self.roi_labels = spot_ind
+		for w in in_img.wavelengths:
+			roi_img = segmentation.mark_boundaries(in_img[w], spot_ind, mode='thick', color=[1,0,1])
+			#TODO adjust how images are normalized here?
+			imwrite( os.path.join(self.file_output_path, f"roi_{w}"), (255*roi_img).astype('uint8') )
 
 	### for testing:
 	def do_test(self):
