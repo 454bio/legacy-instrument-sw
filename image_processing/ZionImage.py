@@ -53,10 +53,7 @@ class ZionImage(UserDict):
 					print(f"adding {imagefile} - {subtrahends[wl_subs.index(wavelength)]}")
 				else:
 					d[wavelength] = image
-					print(f"adding {image}")
-
-				print(f"differences made from {subtrahends}")
-
+					print(f"adding {imagefile}")
 			else: #not using difference image
 				if '000' in listWavelengths:
 					d[wavelength] = image - imread(listImageFiles[listWavelengths.index('000')])
@@ -227,11 +224,12 @@ class ZionImageProcessor(multiprocessing.Process):
 				filename = os.path.splitext(os.path.basename(filepath))[0]
 				rgbs = jpg_to_raw(filepath, os.path.join(out_dir, filename+".tif"))
 				cycle = get_cycle_from_filename(filename)
-				if cycle != mp_namespace.convert_cycle_ind:
-					if mp_namespace.convert_cycle_ind > 0:
-						new_cycle_event.set()
-						print(f"_convert_jpg thread: New cycle {cycle} event being set")
-				mp_namespace.convert_cycle_ind = cycle
+				if cycle is not None:
+					if cycle != mp_namespace.convert_cycle_ind:
+						if mp_namespace.convert_cycle_ind > 0:
+							new_cycle_event.set()
+							print(f"_convert_jpg thread: New cycle {cycle} event being set")
+						mp_namespace.convert_cycle_ind = cycle
 			else:
 				while not mp_namespace.bConvertEnable:
 					continue
