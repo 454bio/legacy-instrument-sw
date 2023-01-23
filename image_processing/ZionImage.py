@@ -13,7 +13,7 @@ from tifffile import imread, imwrite
 from matplotlib import pyplot as plt
 
 from image_processing.raw_converter import jpg_to_raw, get_wavelength_from_filename, get_cycle_from_filename
-from image_processing.ZionBase import extract_spot_data
+from image_processing.ZionBase import df_cols, extract_spot_data
 
 
 # TODO rebase most skimage stuff into opencv (raspberry pi opencv by default doesn't deal with 16 bit images)
@@ -25,7 +25,7 @@ def rgb2gray(img, weights=None):
 		raise ValueError("Invalid weights option!")
 
 def median_filter(in_img, kernel_size, behavior='ndimage'): #rank?
-    #TODO make for whole imageset?
+	#TODO make for whole imageset?
 	if len(in_img.shape) == 2: # grayscale
 		out_img = filters.median(in_img, morphology.disk(kernel_size), behavior=behavior)
 	elif len(in_img.shape) == 3: # multi-channel
@@ -77,7 +77,7 @@ class ZionImage(UserDict):
 	@property
 	def wavelengths(self):
 		wls = self.data.keys()
-        # should be no dark key in here, but just in case
+		# should be no dark key in here, but just in case
 		if '000' in wls:
 			wls.remove('000')
 		return wls
@@ -130,7 +130,7 @@ class ZionImageProcessor(multiprocessing.Process):
 		self.stop_event = self._mp_manager.Event()
 
 		self.convert_files_queue = self._mp_manager.Queue()
-        # TODO bring back lock for all file read/write?
+		# TODO bring back lock for all file read/write?
 		# ~ self.load_image_lock = threading.Lock()
 		# ~ with self.load_image_lock:
 			# ~ self.load_image_enable = False
@@ -196,7 +196,7 @@ class ZionImageProcessor(multiprocessing.Process):
 			target=self._base_caller,
 			args=(self.mp_namespace, self.base_caller_queue, self.bases_called_event)
 		)
-        
+
 		self._base_calling_thread.daemon = True
 		self._base_calling_thread.start()
 
@@ -312,7 +312,9 @@ class ZionImageProcessor(multiprocessing.Process):
 
 	def _base_caller(self, mp_namespace : Namespace, base_caller_queue : multiprocessing.Queue, bases_called_event : multiprocessing.Event):
 
-		#todo init anything?
+		csvfile = os.path.join(self.file_output_path, "spot_data.csv")
+		with open(csvfile, "w") as f:
+			f.write(','.join(df_cols)+'\n')
 		while True:
 			imageset = base_caller_queue.get()
 			if self.roi_labels is None or self.numSpots is None:
@@ -320,7 +322,7 @@ class ZionImageProcessor(multiprocessing.Process):
 			elif self.numSpots==0:
 				raise ValueError("No spots to use in basecalling!")
 			else:
-				spot_data = extract_spot_data(imageset, self.roi_labels)
+				spot_data = extract_spot_data(imageset, self.roi_labels, cyclecsvFileName = csvfile)
 
 
 	def _image_view_thread(self, mp_namespace : Namespace, image_viewer_queue : multiprocessing.Queue ):
@@ -415,5 +417,3 @@ class ZionImageProcessor(multiprocessing.Process):
 		self.gui.IpViewWrapper.images = test_img.view_8bit
 		# ~ plt.imshow(test_img['525'])
 		return
-
-
