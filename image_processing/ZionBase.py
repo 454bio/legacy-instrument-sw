@@ -40,6 +40,8 @@ df_cols = [ "roi",
 class ZionBase(UserString):
 
     Names = ('A', 'C', 'G', 'T', '!')
+    # TODO change color based on dye colors?
+    Colors = ("orange", "green", "blue", "red")
 
     def __init__(self, char):
         if not isinstance(char, str):
@@ -51,8 +53,7 @@ class ZionBase(UserString):
         else:
             super().__init__(char)
 
-def extract_spot_data(img, roi_labels, cyclecsvFileName = None):
-#bUseMedian:bool = False, bUseHsv:bool = False, ):
+def extract_spot_data(img, roi_labels, csvFileName = None):
     ''' takes in a ZionImage (ie a dict of RGB images) and a 3D image of spot labels. Optionally writes a csv file.
         Outputs a pandas dataframe containing all data for the cycle.
     '''
@@ -62,9 +63,11 @@ def extract_spot_data(img, roi_labels, cyclecsvFileName = None):
     spot_data = dict()
     pd_idx = 0
     w_idx = []
+    #TODO check to see that csvFileName exists since we are appending later
+    
     for s_idx in range(1,numSpots+1): #spots go from [1, numSpots]
         for w in img.wavelengths:
-        w_idx += 3*[w]
+            w_idx += 3*[w]
             spot_data[df_cols[0]] = f"spot_{s_idx:03d}"
             spot_data[df_cols[1]] = w
             hsv_intensities = rgb2hsv(img[w][roi_labels==s_idx])
@@ -99,7 +102,8 @@ def extract_spot_data(img, roi_labels, cyclecsvFileName = None):
 
 def crosstalk_correct(data, X, numCycles, spotlist, measure="mean", append=False):
     '''
-    Takes in dataframe, Kx4 "crosstalk" matrix X (which is actually just the color basis vectors), and number of cycles
+    Takes in dataframe, Kx4 "crosstalk" matrix X (which is actually just the color basis vectors), and number of cycles.
+    Spotlist is a way to exclude spots or assign names to rois/spots
     Outputs coefficients which represent how much of each base are in each spot, also outputs stds if necessary
     '''
 
