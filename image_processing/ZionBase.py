@@ -80,7 +80,7 @@ def extract_spot_data(img, roi_labels, csvFileName = None):
             spot_data[df_cols[17]], spot_data[df_cols[18]], spot_data[df_cols[19]] = np.std(hsv_intensities, axis=0).tolist()
             spot_data[df_cols[20]], spot_data[df_cols[21]], spot_data[df_cols[22]] = np.min(rgb_intensities, axis=0).tolist()
             spot_data[df_cols[23]], spot_data[df_cols[24]], spot_data[df_cols[25]] = np.max(rgb_intensities, axis=0).tolist()
-            spot_data["cycle"] = int(img.cycle)
+            spot_data[df_cols[26]] = int(img.cycle)
             if csvFileName is not None:
                 with open(csvFileName, "a") as f:
                     f.write( ','.join( [str(spot_data[k]) for k in df_cols]) + '\n')
@@ -92,8 +92,9 @@ def extract_spot_data(img, roi_labels, csvFileName = None):
 
     ch_idx = []
     # Note: dependent on df_cols def above
-    for c in range(2, len(df_cols), 3):
-        ch_idx += len(wavelengths) * csv_cols[c:(c+3)]
+    for c in range(2, len(df_cols)-1, 3):
+        ch_idx += len(img.wavelengths) * df_cols[c:(c+3)]
+    print(f"ch_idx length = {len(ch_idx)}, w_idx length = {w_idx}")
     mi = pd.MultiIndex.from_arrays([ch_idx, int(len(ch_idx)/len(w_idx))*w_idx])
     df_total = df_total.reindex(columns=mi)
 
