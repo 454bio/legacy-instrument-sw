@@ -14,6 +14,8 @@ from matplotlib import pyplot as plt
 
 from image_processing.raw_converter import jpg_to_raw, get_wavelength_from_filename, get_cycle_from_filename
 
+# TODO rebase most skimage stuff into opencv (raspberry pi opencv by default doesn't deal with 16 bit images)
+
 def rgb2gray(img, weights=None):
 	if weights is None:
 		return np.mean(img, axis=-1).round().astype('uint16')
@@ -21,6 +23,7 @@ def rgb2gray(img, weights=None):
 		raise ValueError("Invalid weights option!")
 
 def median_filter(in_img, kernel_size, behavior='ndimage'): #rank?
+    #TODO make for whole imageset?
 	if len(in_img.shape) == 2: # grayscale
 		out_img = filters.median(in_img, morphology.disk(kernel_size), behavior=behavior)
 	elif len(in_img.shape) == 3: # multi-channel
@@ -56,8 +59,8 @@ class ZionImage(UserDict):
 					print(f"adding {imagefile}")
 			else: #not using difference image
 				if '000' in listWavelengths:
-					d[wavelength] = image - imread(listImageFiles[listWavelengths.index('000')])
-					print(f"adding {imagefile} - {listImageFiles[listWavelengths.index('000')]}")
+					d[wavelength] = image - imread(lstWavelengths[lstWavelengths.index('000')])
+					print(f"adding {imagefile} - {lstWavelengths[lstWavelengths.index('000')]}")
 				else:
 					d[wavelength] = image
 					print(f"adding {imagefile}")
@@ -72,6 +75,7 @@ class ZionImage(UserDict):
 	@property
 	def wavelengths(self):
 		wls = self.data.keys()
+        # should be no dark key in here, but just in case
 		if '000' in wls:
 			wls.remove('000')
 		return wls
@@ -101,34 +105,6 @@ class ZionImage(UserDict):
 			raise ValueError(f"Invalid datatype given!")
 		return img_8b
 
-	def median_filter(self, wl_idx, kernel_size, method='sk2', inplace=False, timer=False):
-		# TODO: necesary for image set? or just individual image channel?
-		return
-		# ~ in_img = self.data[:,:,wl_idx]
-
-		# ~ if timer:
-			# ~ t0 = time.perf_counter()
-
-		# ~ if method=='sk1':
-			# ~ img_filt = ski.filters.median(in_img, ski.morphology.disk(kernel_size), behavior='ndimage')
-		# ~ elif method=='sk2':
-			# ~ img_filt = ski.filters.median(in_img, ski.morphology.disk(kernel_size), behavior='rank')
-		# ~ elif method=='cv':
-			# ~ print("Warning, cv method only allows kernel size of 5")
-			# ~ img_filt = cv2.medianBlur(in_img, 5)
-		# ~ else:
-			# ~ print(f"Invalid Method {method}!")
-			# ~ return None
-
-		# ~ if timer:
-			# ~ t1 = time.perf_counter()
-			# ~ print(f"Elapsed time for median filtering: {t1-t0}")
-
-		# ~ if inplace:
-			# ~ self.data = img_filt
-		# ~ return img_filt
-
-
 class ZionImageProcessor(multiprocessing.Process):
 
 	# TODO: is this the best way to handle versions?
@@ -144,11 +120,15 @@ class ZionImageProcessor(multiprocessing.Process):
 			os.makedirs(self.file_output_path)
 			print(f"Creating directory {self.file_output_path} for processing")
 
+        self.roi_labels = None
+        self.numSpots = None
+
 		self._mp_manager = multiprocessing.Manager()
 		self.mp_namespace = self._mp_manager.Namespace()
 		self.stop_event = self._mp_manager.Event()
 
 		self.convert_files_queue = self._mp_manager.Queue()
+        # TODO bring back lock for all file read/write?
 		# ~ self.load_image_lock = threading.Lock()
 		# ~ with self.load_image_lock:
 			# ~ self.load_image_enable = False
@@ -209,6 +189,14 @@ class ZionImageProcessor(multiprocessing.Process):
 		)
 		self._image_processing_thread.daemon = True
 		self._image_processing_thread.start()
+
+		self._base_calling_thread = threading.Thread(
+			target=self._base_caller,
+			args=(self.mp_namespace, self.base_caller_queue, self.bases_called_event)
+		)
+        
+		self._base_calling_thread.daemon = True
+		self._base_calling_thread.start()
 
 		#todo: same for other threads
 
@@ -320,6 +308,18 @@ class ZionImageProcessor(multiprocessing.Process):
 			image_ready_event.clear()
 			print("clearing image ready queue")
 
+	def _base_caller(self, mp_namespace : Namespace, base_caller_queue : multiprocessing.Queue, bases_called_event : multiprocessing.Event):
+
+        #todo init anything?
+        while True:
+            imageset = image_file_queue.get()
+            if self.rois_label is None or self.numSpots is None:
+                raise RunTimeError("ROIs haven't been detected yet!")
+            elif self.numSpots==0:
+                raise ValueError("No spots to use in basecalling!")
+            else:
+                results
+            
 
 	def _image_view_thread(self, mp_namespace : Namespace, image_viewer_queue : multiprocessing.Queue ):
 		return
@@ -327,7 +327,6 @@ class ZionImageProcessor(multiprocessing.Process):
 	def add_to_convert_queue(self, fpath):
 		self.convert_files_queue.put_nowait( (fpath,) )
 		# ~ self.convert_files_queue.put( (fpath,) )
-
 
 	@property
 	def enable(self):
@@ -385,6 +384,7 @@ class ZionImageProcessor(multiprocessing.Process):
 		# TODO: get stats, centroids of spots, further invalidate improper spots. (a la cv2.connectedComponentsWithStats)
 
 		self.roi_labels = spot_ind
+        self.numSpots = nSpots
 		for w in in_img.wavelengths:
 			roi_img = segmentation.mark_boundaries(in_img[w], spot_ind, mode='thick', color=[1,0,1])
 			#TODO adjust how images are normalized here?
