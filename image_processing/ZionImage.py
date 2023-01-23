@@ -322,7 +322,7 @@ class ZionImageProcessor(multiprocessing.Process):
 			elif self.numSpots==0:
 				raise ValueError("No spots to use in basecalling!")
 			else:
-				spot_data = extract_spot_data(imageset, self.roi_labels, cyclecsvFileName = csvfile)
+				spot_data = extract_spot_data(imageset, self.roi_labels, csvFileName = csvfile)
 
 
 	def _image_view_thread(self, mp_namespace : Namespace, image_viewer_queue : multiprocessing.Queue ):
