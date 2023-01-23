@@ -13,6 +13,8 @@ from tifffile import imread, imwrite
 from matplotlib import pyplot as plt
 
 from image_processing.raw_converter import jpg_to_raw, get_wavelength_from_filename, get_cycle_from_filename
+from image_processing.ZionBase import extract_spot_data
+
 
 # TODO rebase most skimage stuff into opencv (raspberry pi opencv by default doesn't deal with 16 bit images)
 
@@ -120,8 +122,8 @@ class ZionImageProcessor(multiprocessing.Process):
 			os.makedirs(self.file_output_path)
 			print(f"Creating directory {self.file_output_path} for processing")
 
-        self.roi_labels = None
-        self.numSpots = None
+		self.roi_labels = None
+		self.numSpots = None
 
 		self._mp_manager = multiprocessing.Manager()
 		self.mp_namespace = self._mp_manager.Namespace()
@@ -310,16 +312,16 @@ class ZionImageProcessor(multiprocessing.Process):
 
 	def _base_caller(self, mp_namespace : Namespace, base_caller_queue : multiprocessing.Queue, bases_called_event : multiprocessing.Event):
 
-        #todo init anything?
-        while True:
-            imageset = image_file_queue.get()
-            if self.rois_label is None or self.numSpots is None:
-                raise RunTimeError("ROIs haven't been detected yet!")
-            elif self.numSpots==0:
-                raise ValueError("No spots to use in basecalling!")
-            else:
-                results
-            
+		#todo init anything?
+		while True:
+			imageset = base_caller_queue.get()
+			if self.roi_labels is None or self.numSpots is None:
+				raise RunTimeError("ROIs haven't been detected yet!")
+			elif self.numSpots==0:
+				raise ValueError("No spots to use in basecalling!")
+			else:
+				spot_data = extract_spot_data(imageset, self.roi_labels)
+
 
 	def _image_view_thread(self, mp_namespace : Namespace, image_viewer_queue : multiprocessing.Queue ):
 		return
@@ -384,9 +386,9 @@ class ZionImageProcessor(multiprocessing.Process):
 		# TODO: get stats, centroids of spots, further invalidate improper spots. (a la cv2.connectedComponentsWithStats)
 
 		self.roi_labels = spot_ind
-        self.numSpots = nSpots
-		for w in in_img.wavelengths:
-			roi_img = segmentation.mark_boundaries(in_img[w], spot_ind, mode='thick', color=[1,0,1])
+		self.numSpots = nSpots
+		for w_ind, w in enumerate(in_img.wavelengths):
+			roi_img = segmentation.mark_boundaries(in_img.view_8bit[w_ind], spot_ind, mode='thick', color=[1,0,1])
 			#TODO adjust how images are normalized here?
 			imwrite( os.path.join(self.file_output_path, f"roi_{w}"), (255*roi_img).astype('uint8') )
 
