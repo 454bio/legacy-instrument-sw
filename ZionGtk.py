@@ -49,7 +49,7 @@ class ZionGUI():
         self.SharpnessEntry = self.builder.get_object("sharpness_entry")
         self.SharpnessScale.set_value(initial_values.sharpness)
 
-        self.AutoAwbButton = self.builder.get_object("auto_wb_switch")
+        # ~ self.AutoAwbButton = self.builder.get_object("auto_wb_switch")
         self.redGainEntry = self.builder.get_object("red_gain_entry")
         self.redGainScale = self.builder.get_object("red_gain_scale")
         self.redGainScale.set_value(initial_values.red_gain)
@@ -58,18 +58,14 @@ class ZionGUI():
         self.blueGainScale.set_value(initial_values.blue_gain)
 
         if initial_values.awb_mode == 'off':
-            self.AutoAwbButton.set_active(False)
+            # ~ self.AutoAwbButton.set_active(False)
             self.redGainScale.set_sensitive(True)
             self.blueGainScale.set_sensitive(True)
         else:
-            self.AutoAwbButton.set_active(True)
+            # ~ self.AutoAwbButton.set_active(True)
             self.redGainScale.set_sensitive(False)
             self.blueGainScale.set_sensitive(False)
 
-        self.expModeLockButton = self.builder.get_object("exp_mode_lock_button")
-        self.expModeComboBox = self.builder.get_object("exposure_mode_combobox")
-        self.isoButtonBox = self.builder.get_object("iso_button_box")
-        self.expCompScale = self.builder.get_object("exposure_comp_scale")
         self.expTimeBuffer = self.builder.get_object("exposure_time_buffer")
         self.expTimeBox = self.builder.get_object("exposure_time_entry")
         self.analogGainBuffer = self.builder.get_object("analog_gain_buffer")
@@ -107,33 +103,8 @@ class ZionGUI():
 
         self.imageDenoiseButton = self.builder.get_object("denoise_button")
 
-        self.isoButtonAuto = self.builder.get_object("radiobutton0")
-        self.isoButton100 = self.builder.get_object("radiobutton1")
-        self.isoButton200 = self.builder.get_object("radiobutton2")
-        self.isoButton320 = self.builder.get_object("radiobutton3")
-        self.isoButton400 = self.builder.get_object("radiobutton4")
-        self.isoButton500 = self.builder.get_object("radiobutton5")
-        self.isoButton640 = self.builder.get_object("radiobutton6")
-        self.isoButton800 = self.builder.get_object("radiobutton7")
-
         self.commentBox = self.builder.get_object("comment_entry")
         self.suffixBox = self.builder.get_object("suffix_entry")
-
-
-        if initial_values.exposure_mode == 'off':
-            self.expModeLockButton.set_active(True)
-            self.isoButtonBox.set_sensitive(False)
-            self.expCompScale.set_sensitive(False)
-            self.expModeComboBox.set_active(0)
-            self.Def_row_idx = 0
-        else:
-            self.expModeLockButton.set_active(False)
-            self.isoButtonBox.set_sensitive(True)
-            self.expCompScale.set_sensitive(True)
-            listStore = self.expModeComboBox.get_model()
-            rowList = [row[0] for row in listStore]
-            self.Def_row_idx = rowList.index(initial_values.exposure_mode)
-            self.expModeComboBox.set_active(self.Def_row_idx)
 
         self.paramFileChooser = self.builder.get_object('param_file_chooser_dialog')
         self.filter_protocol = Gtk.FileFilter()
@@ -149,24 +120,6 @@ class ZionGUI():
 
         self.EventTreeViewGtk = self.builder.get_object("event_tree")
         self.DeleteEntryButton = self.builder.get_object("delete_entry_button")
-
-        # blue_led = ZionLEDs({ZionLEDColor.BLUE: 100})
-        # orange_led = ZionLEDs({ZionLEDColor.ORANGE: 120})
-        # uv_led = ZionLEDs({ZionLEDColor.UV: 100})
-
-        # self.parent.Protocol.clear()
-        # g_1 = self.parent.Protocol.add_event_group(name="All Steps", cycles=5)
-
-        # g_2 = self.parent.Protocol.add_event_group(name="Extension", cycles=144, parent=g_1)
-        # self.parent.Protocol.add_event(name="Dark", group="D", capture=True, parent=g_2)
-        # self.parent.Protocol.add_event(name="Blue", group="B", capture=True, leds=blue_led, parent=g_2)
-        # self.parent.Protocol.add_event(name="Orange", group="O", capture=True, leds=orange_led, parent=g_2)
-
-        # g_3 = self.parent.Protocol.add_event_group(name="Cleaving", cycles=4, parent=g_1)
-        # self.parent.Protocol.add_event(name="UV", group="U", capture=True, leds=uv_led, parent=g_3)
-        # self.parent.Protocol.add_event(name="Dark", group="D", capture=True, parent=g_3)
-        # self.parent.Protocol.add_event(name="Blue", group="B", capture=True, leds=blue_led, parent=g_3)
-        # self.parent.Protocol.add_event(name="Orange", group="O", capture=True, leds=orange_led, parent=g_3)
 
         self.parent.Protocol.gtk_initialize_treeview(self.EventTreeViewGtk)
         # self.parent.Protocol.load_from_file(filename="brett_testing_protocol.txt")
@@ -192,6 +145,7 @@ class ZionGUI():
         self.builder.connect_signals(self.handlers)
 
         GLib.idle_add(self.handlers.check_fixed_settings)
+        self.mainWindow.maximize()
 
     def printToLog(self, text):
         text_iter_end = self.logBuffer.get_end_iter()
@@ -214,7 +168,7 @@ class Handlers:
 
     def __init__(self, gui : ZionGUI):
         self.parent = gui
-        self.ExpModeLastChoice = self.parent.Def_row_idx if self.parent.Def_row_idx else 1
+        # ~ self.ExpModeLastChoice = self.parent.Def_row_idx if self.parent.Def_row_idx else 1
         self.updateExpParams()
         self.update_exp_params_sourceid = GObject.timeout_add(2000, self.updateExpParams)
         self.updateTemp()
@@ -1089,7 +1043,7 @@ class Handlers:
             self.parent.isoButton640.handler_unblock(handler_id_7)
             self.parent.isoButton800.handler_unblock(handler_id_8)
 
-            handler_id_1 = get_handler_id(self.parent.AutoAwbButton, "notify::active")
+            # ~ handler_id_1 = get_handler_id(self.parent.AutoAwbButton, "notify::active")
             handler_id_2 = get_handler_id(self.parent.redGainScale, "value-changed")
             handler_id_3 = get_handler_id(self.parent.blueGainScale, "value-changed")
             self.parent.AutoAwbButton.handler_block(handler_id_1)
@@ -1107,7 +1061,7 @@ class Handlers:
                 self.parent.redGainScale.set_sensitive(False)
                 self.parent.blueGainScale.set_sensitive(True)
 
-            self.parent.AutoAwbButton.handler_unblock(handler_id_1)
+            # ~ self.parent.AutoAwbButton.handler_unblock(handler_id_1)
             self.parent.redGainScale.handler_unblock(handler_id_2)
             self.parent.blueGainScale.handler_unblock(handler_id_3)
 
@@ -1150,9 +1104,37 @@ class Handlers:
     def on_ip_enable_checkbox_toggled(self, switch):
         #TODO: lock/unlock rest of ip control section
         if switch.get_active():
-            self.parent.parent.ImageProcessor.set_enable(True)
+            self.parent.parent.ImageProcessor.enable = True
         else:
-            self.parent.parent.ImageProcessor.set_enable(False)
+            self.parent.parent.ImageProcessor.enable = False
+        return
+
+    def on_spot_A_entry_activate(self, entry):
+        #TODO
+        return
+
+    def on_spot_C_entry_activate(self, entry):
+        #TODO
+        return
+
+    def on_spot_G_entry_activate(self, entry):
+        #TODO
+        return
+
+    def on_spot_T_entry_activate(self, entry):
+        #TODO
+        return
+
+    def on_subtract_dark_checkbutton_activate(self, button):
+        #TODO
+        return
+
+    def on_subtract_temporal_checkbutton_activate(self, button):
+        #TODO
+        return
+
+    def on_subtract_bg_checkbutton_activate(self, button):
+        #TODO
         return
 
     def on_ip_back_button_clicked(self, button):
