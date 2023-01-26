@@ -24,6 +24,9 @@ def get_cycle_from_filename(filepath):
     else:
         return None
 
+def get_time_from_filename(filepath):
+    return int( os.path.splitext(filepath)[0].split('_')[-1] )
+
 #TODO: make all this faster? use C/C++?
 
 def unpack_12_8_raw(line):

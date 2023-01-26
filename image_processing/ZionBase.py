@@ -34,7 +34,8 @@ df_cols = [ "roi",
             "max_R",
             "max_G",
             "max_B",
-            "cycle"
+            "cycle",
+            "time",
             ]
 
 class ZionBase(UserString):
@@ -81,10 +82,12 @@ def extract_spot_data(img, roi_labels, csvFileName = None):
             spot_data[df_cols[20]], spot_data[df_cols[21]], spot_data[df_cols[22]] = np.min(rgb_intensities, axis=0).tolist()
             spot_data[df_cols[23]], spot_data[df_cols[24]], spot_data[df_cols[25]] = np.max(rgb_intensities, axis=0).tolist()
             spot_data[df_cols[26]] = int(img.cycle)
+            spot_data[df_cols[27]] = int(img.time)
             if csvFileName is not None:
                 with open(csvFileName, "a") as f:
-                    f.write( ','.join( [str(spot_data[k]) for k in df_cols]) + '\n')
-                    print(f"Writing line to {csvFileName}")
+                    lineToWrite = ','.join( [str(spot_data[k]) for k in df_cols])
+                    f.write( lineToWrite + '\n')
+                    print(f"Appending to {csvFileName}:\n{lineToWrite}")
             df_total = pd.concat([df_total, pd.DataFrame(spot_data, index=[pd_idx])], axis=0)
             pd_idx += 1
     df_total.set_index(["roi", "cycle", "wavelength"], inplace=True)
@@ -94,7 +97,6 @@ def extract_spot_data(img, roi_labels, csvFileName = None):
     # Note: dependent on df_cols def above
     for c in range(2, len(df_cols)-1, 3):
         ch_idx += len(img.wavelengths) * df_cols[c:(c+3)]
-    print(f"ch_idx length = {len(ch_idx)}, w_idx length = {w_idx}")
     mi = pd.MultiIndex.from_arrays([ch_idx, int(len(ch_idx)/len(w_idx))*w_idx])
     df_total = df_total.reindex(columns=mi)
 

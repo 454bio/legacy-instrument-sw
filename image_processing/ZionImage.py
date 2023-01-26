@@ -12,7 +12,7 @@ from multiprocessing.managers import Namespace
 from tifffile import imread, imwrite
 from matplotlib import pyplot as plt
 
-from image_processing.raw_converter import jpg_to_raw, get_wavelength_from_filename, get_cycle_from_filename
+from image_processing.raw_converter import jpg_to_raw, get_wavelength_from_filename, get_cycle_from_filename, get_time_from_filename
 from image_processing.ZionBase import df_cols, extract_spot_data
 
 
@@ -37,18 +37,34 @@ def median_filter(in_img, kernel_size, behavior='ndimage'): #rank?
 				out_img[:,:,ch] = filters.median(in_img[:,:,ch], morphology.disk(kernel_size), behavior=behavior)
 	return out_img
 
-def overlay_image(img, labels, color):
-	return segmentation.mark_boundaries(img, labels, color=color, mode='thick')
+def display_labeled_rois(labels, filepath=None, color=[1,0,1], img=None):
+	img = np.zeros_like(labels) if img is None else img
+	h,w = labels.shape
+	f = plt.figure(frameon=False)
+	f.set_size_inches(w/h, 1, forward=False)
+	ax = plt.Axes(f, [0,0,1,1])
+	ax.set_axis_off()
+	f.add_axes(ax)
+	out_img = segmentation.mark_boundaries(img, labels, color=color, outline_color=color, mode='thick')
+	ax.imshow(out_img)
+	rp = ski.measure.regionprops(labels)
+	for s in range(1, np.max(labels)+1):
+		centroid = rp[s-1]['centroid']
+		plt.text(centroid[1], centroid[0], str(s), color=[1,0,1], horizontalalignment='center', verticalalignment='center', fontsize=1)
+	if filepath is not None:
+		plt.savefig(filepath, bbox_inches='tight', pad_inches=0, dpi=h, format='png')
 
 class ZionImage(UserDict):
-	def __init__(self, lstImageFiles, lstWavelengths, cycle=None, subtrahends=None):
+	def __init__(self, lstImageFiles, lstWavelengths, cycle=None, subtrahends=None, bgIntensity=None):
 
 		d = dict()
 		wl_subs = [get_wavelength_from_filename(fp) for fp in subtrahends] if subtrahends is not None else []
 
+		times = []
 		for wavelength, imagefile in zip(lstWavelengths, lstImageFiles):
 			#TODO check validity (uint16, RGB, consistent sizes)
 			image = imread(imagefile)
+			times.append( get_time_from_filename(imagefile) )
 
 			if subtrahends is not None:
 				if wavelength == '000':  #skip dark images
@@ -60,9 +76,11 @@ class ZionImage(UserDict):
 					d[wavelength] = image
 					print(f"adding {imagefile}")
 			else: #not using difference image
-				if '000' in listWavelengths:
-					d[wavelength] = image - imread(lstWavelengths[lstWavelengths.index('000')])
-					print(f"adding {imagefile} - {lstWavelengths[lstWavelengths.index('000')]}")
+				if wavelength == '000':
+					continue
+				if '000' in lstWavelengths:
+					d[wavelength] = image - imread(lstImageFiles[lstWavelengths.index('000')])
+					print(f"adding {imagefile} - {lstImageFiles[lstWavelengths.index('000')]}")
 				else:
 					d[wavelength] = image
 					print(f"adding {imagefile}")
@@ -73,6 +91,7 @@ class ZionImage(UserDict):
 		self.dims = image.shape[:2]
 		self.nChannels = len(lstWavelengths)
 		self.cycle = cycle
+		self.time = round(sum(times)/len(times))
 
 	@property
 	def wavelengths(self):
@@ -91,7 +110,7 @@ class ZionImage(UserDict):
 
 	@property
 	def view_3D(self):
-		out_arr = np.zeros(shape=self.dims+[3*self.nChannels], dtype=self.dtype)
+		out_arr = np.zeros(shape=self.dims+(3*self.nChannels,), dtype=self.dtype)
 		for ch_idx, wl in enumerate(sorted(self.data.keys())):
 			out_arr[:,:,(3*ch_idx):(3*(ch_idx+1))] = self.data[wl]
 		return out_arr
@@ -152,7 +171,7 @@ class ZionImageProcessor(multiprocessing.Process):
 		self.bases_called_event = self._mp_manager.Event()
 
 		self.kinetics_analyzer_queue = self._mp_manager.Queue()
-		self.kinetics_analuzed_event = self._mp_manager.Event()
+		self.kinetics_analyzed_event = self._mp_manager.Event()
 
 		self._image_viewer_queue = self._mp_manager.Queue()
 
@@ -199,6 +218,14 @@ class ZionImageProcessor(multiprocessing.Process):
 
 		self._base_calling_thread.daemon = True
 		self._base_calling_thread.start()
+
+		self._kinetics_thread = threading.Thread(
+			target=self._kinetics_analyzer,
+			args=(self.mp_namespace, self.kinetics_analyzer_queue, self.kinetics_analyzed_event)
+		)
+
+		self._kinetics_thread.daemon = True
+		# ~ self._kinetics_thread.start()
 
 		#todo: same for other threads
 
@@ -291,6 +318,8 @@ class ZionImageProcessor(multiprocessing.Process):
 					self.detect_rois( currImageSet )
 					rois_detected_event.set()
 
+					#TODO define spots of "pure" base for each base (eg identify homopolymer spots)
+
 					base_caller_queue.put(currImageSet)
 
 					#TODO do kinetics analysis
@@ -313,6 +342,7 @@ class ZionImageProcessor(multiprocessing.Process):
 	def _base_caller(self, mp_namespace : Namespace, base_caller_queue : multiprocessing.Queue, bases_called_event : multiprocessing.Event):
 
 		csvfile = os.path.join(self.file_output_path, "spot_data.csv")
+		print(f"_base_caller_thread: creating csv file {csvfile}")
 		with open(csvfile, "w") as f:
 			f.write(','.join(df_cols)+'\n')
 		while True:
@@ -324,6 +354,11 @@ class ZionImageProcessor(multiprocessing.Process):
 			else:
 				spot_data = extract_spot_data(imageset, self.roi_labels, csvFileName = csvfile)
 
+	def _kinetics_analyzer(self, mp_namespace : Namespace, kinetics_queue : multiprocessing.Queue, kinetics_analyzed_event : multiprocessing.Event):
+
+		#init file(s)
+		while True:
+			imageset = kinetics_queue.get()
 
 	def _image_view_thread(self, mp_namespace : Namespace, image_viewer_queue : multiprocessing.Queue ):
 		return
@@ -381,16 +416,22 @@ class ZionImageProcessor(multiprocessing.Process):
 		img_bin = morphology.binary_dilation(img_bin, morphology.disk(dilation_ks))
 		img_bin = morphology.binary_erosion(img_bin, morphology.disk(4))
 
-		spot_ind, nSpots = measure.label(img_bin, return_num=True)
+		spot_labels, nSpots = measure.label(img_bin, return_num=True)
 		print(f"{nSpots} spot candidates found")
-
+		spot_props = measure.regionprops(spot_labels)
+		# sort spot labels by centroid locations because we want to identify homopolymer spots by array coords
+		# sorted left to right, top to bottom (like 
 		# TODO: add some additional channel (eg 525) that suffers from scatter/noise, and test against it to invalidate spots that include bloom of scatter.
-		# TODO: get stats, centroids of spots, further invalidate improper spots. (a la cv2.connectedComponentsWithStats)
+		centroids = [p.centroid for p in spot_props]
+		# snew_cnew_orted(centroids, key=lambda c: [c[1], c[0])
+
+
+		# TODO: get stats, centroids of spots, further invalidate improper spots. ()
 
 		self.roi_labels = spot_ind
 		self.numSpots = nSpots
 		for w_ind, w in enumerate(in_img.wavelengths):
-			roi_img = segmentation.mark_boundaries(in_img.view_8bit[w_ind], spot_ind, mode='thick', color=[1,0,1])
+			roi_img = segmentation.mark_boundaries(in_img[w_ind], spot_ind, mode='thick', color=[1,0,1])
 			#TODO adjust how images are normalized here?
 			imwrite( os.path.join(self.file_output_path, f"roi_{w}"), (255*roi_img).astype('uint8') )
 
