@@ -90,7 +90,7 @@ def extract_spot_data(img, roi_labels, csvFileName = None):
                     print(f"Appending to {csvFileName}:\n{lineToWrite}")
             df_total = pd.concat([df_total, pd.DataFrame(spot_data, index=[pd_idx])], axis=0)
             pd_idx += 1
-    df_total.set_index(["roi", "cycle", "wavelength"], inplace=True)
+    df_total.set_index(["roi", "time", "cycle", "wavelength"], inplace=True)
     df_total = df_total.unstack()
 
     ch_idx = []
