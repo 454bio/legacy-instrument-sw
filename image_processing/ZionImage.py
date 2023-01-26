@@ -137,9 +137,6 @@ class ZionImageProcessor(multiprocessing.Process):
 		self.gui = gui
 		self.session_path = session_path
 		self.file_output_path = os.path.join(session_path, f"processed_images_v{self.IMAGE_PROCESS_VERSION}")
-		if not os.path.isdir(self.file_output_path):
-			os.makedirs(self.file_output_path)
-			print(f"Creating directory {self.file_output_path} for processing")
 
 		self.roi_labels = None
 		self.numSpots = None
@@ -147,6 +144,9 @@ class ZionImageProcessor(multiprocessing.Process):
 		self._mp_manager = multiprocessing.Manager()
 		self.mp_namespace = self._mp_manager.Namespace()
 		self.stop_event = self._mp_manager.Event()
+
+		self._enable_condition = self._mp_manager.Condition()
+		self._enable_lock = self._mp_manager.Lock()
 
 		self.convert_files_queue = self._mp_manager.Queue()
 		# TODO bring back lock for all file read/write?
@@ -176,6 +176,9 @@ class ZionImageProcessor(multiprocessing.Process):
 		self._image_viewer_queue = self._mp_manager.Queue()
 
 	def run(self):
+		if not os.path.isdir(self.file_output_path):
+			os.makedirs(self.file_output_path)
+			print(f"Creating directory {self.file_output_path} for processing")
 		self._start_child_threads()
 		print("Image Processor threads started!")
 		#Now wait for stop event:

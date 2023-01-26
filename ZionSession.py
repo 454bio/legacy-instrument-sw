@@ -75,7 +75,7 @@ class ZionSession():
 
         self.all_image_paths = []
         self.ImageProcessor = ZionImageProcessor(self.gui, self.Dir)
-        self.ImageProcessor.start()
+        # ~ self.ImageProcessor.start() moved to when running program
         # ~ self.load_image_lock =
 
     def CaptureImageThread(self, cropping=(0,0,1,1), group=None, verbose=False, comment='', suffix='', protocol=True):
@@ -236,6 +236,8 @@ class ZionSession():
         # Load up the shared queue for the fstrobe callback with the ids
         # Check if the shared queue is empty at the end?
         # Do I unroll _all_ the events?
+
+        self.ImageProcessor.start()
 
         try:
             self.TimeOfLife = time.time()
