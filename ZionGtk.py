@@ -866,7 +866,7 @@ class Handlers:
         self.parent.orangeSwitch.set_sensitive(False)
         self.parent.redSwitch.set_sensitive(False)
 
-        self.parent.expModeComboBox.set_active(0)
+        # ~ self.parent.expModeComboBox.set_active(0)
         comment = self.parent.commentBox.get_text()
         suffix = self.parent.suffixBox.get_text()
         self.parent.parent.SaveParameterFile(comment, True)
@@ -972,81 +972,81 @@ class Handlers:
             self.parent.SharpnessScale.set_value(params.sharpness)
             self.parent.SharpnessScale.handler_unblock(handler_id)
 
-            handler_id = get_handler_id(self.parent.expCompScale, "value-changed")
-            self.parent.expCompScale.handler_block(handler_id)
-            self.parent.expCompScale.set_value(params.exposure_compensation)
-            self.parent.expCompScale.handler_unblock(handler_id)
+            # ~ handler_id = get_handler_id(self.parent.expCompScale, "value-changed")
+            # ~ self.parent.expCompScale.handler_block(handler_id)
+            # ~ self.parent.expCompScale.set_value(params.exposure_compensation)
+            # ~ self.parent.expCompScale.handler_unblock(handler_id)
 
             handler_id = get_handler_id(self.parent.imageDenoiseButton, "toggled")
             self.parent.imageDenoiseButton.handler_block(handler_id)
             self.parent.imageDenoiseButton.set_active(params.image_denoise)
             self.parent.imageDenoiseButton.handler_unblock(handler_id)
 
-            handler_id_1 = get_handler_id(self.parent.isoButtonAuto, "toggled")
-            self.parent.isoButtonAuto.handler_block(handler_id_1)
-            handler_id_2 = get_handler_id(self.parent.isoButton100, "toggled")
-            self.parent.isoButton100.handler_block(handler_id_2)
-            handler_id_3 = get_handler_id(self.parent.isoButton200, "toggled")
-            self.parent.isoButton200.handler_block(handler_id_3)
-            handler_id_4 = get_handler_id(self.parent.isoButton320, "toggled")
-            self.parent.isoButton320.handler_block(handler_id_4)
-            handler_id_5 = get_handler_id(self.parent.isoButton400, "toggled")
-            self.parent.isoButton400.handler_block(handler_id_5)
-            handler_id_6 = get_handler_id(self.parent.isoButton500, "toggled")
-            self.parent.isoButton500.handler_block(handler_id_6)
-            handler_id_7 = get_handler_id(self.parent.isoButton640, "toggled")
-            self.parent.isoButton640.handler_block(handler_id_7)
-            handler_id_8 = get_handler_id(self.parent.isoButton800, "toggled")
-            self.parent.isoButton800.handler_block(handler_id_8)
-            handler_id_9 = get_handler_id(self.parent.expModeComboBox, "changed")
-            handler_id_10 = get_handler_id(self.parent.expModeLockButton, "toggled")
-            handler_id_11 = get_handler_id(self.parent.expCompScale, "value-changed")
-            self.parent.expModeComboBox.handler_block(handler_id_9)
-            self.parent.expModeLockButton.handler_block(handler_id_10)
-            self.parent.expCompScale.handler_block(handler_id_11)
+            # ~ handler_id_1 = get_handler_id(self.parent.isoButtonAuto, "toggled")
+            # ~ self.parent.isoButtonAuto.handler_block(handler_id_1)
+            # ~ handler_id_2 = get_handler_id(self.parent.isoButton100, "toggled")
+            # ~ self.parent.isoButton100.handler_block(handler_id_2)
+            # ~ handler_id_3 = get_handler_id(self.parent.isoButton200, "toggled")
+            # ~ self.parent.isoButton200.handler_block(handler_id_3)
+            # ~ handler_id_4 = get_handler_id(self.parent.isoButton320, "toggled")
+            # ~ self.parent.isoButton320.handler_block(handler_id_4)
+            # ~ handler_id_5 = get_handler_id(self.parent.isoButton400, "toggled")
+            # ~ self.parent.isoButton400.handler_block(handler_id_5)
+            # ~ handler_id_6 = get_handler_id(self.parent.isoButton500, "toggled")
+            # ~ self.parent.isoButton500.handler_block(handler_id_6)
+            # ~ handler_id_7 = get_handler_id(self.parent.isoButton640, "toggled")
+            # ~ self.parent.isoButton640.handler_block(handler_id_7)
+            # ~ handler_id_8 = get_handler_id(self.parent.isoButton800, "toggled")
+            # ~ self.parent.isoButton800.handler_block(handler_id_8)
+            # ~ handler_id_9 = get_handler_id(self.parent.expModeComboBox, "changed")
+            # ~ handler_id_10 = get_handler_id(self.parent.expModeLockButton, "toggled")
+            # ~ handler_id_11 = get_handler_id(self.parent.expCompScale, "value-changed")
+            # ~ self.parent.expModeComboBox.handler_block(handler_id_9)
+            # ~ self.parent.expModeLockButton.handler_block(handler_id_10)
+            # ~ self.parent.expCompScale.handler_block(handler_id_11)
 
-            if params.iso == 0:
-                button_name = "isoButtonAuto"
-            else:
-                button_name = f"isoButton{params.iso}"
+            # ~ if params.iso == 0:
+                # ~ button_name = "isoButtonAuto"
+            # ~ else:
+                # ~ button_name = f"isoButton{params.iso}"
 
-            iso_button = getattr(self.parent, button_name, None)
-            if iso_button:
-                iso_button.set_active(True)
-            else:
-                self.parent.printToLog(f"WARNING: Unrecogonized ISO value ({params.iso})")
+            # ~ iso_button = getattr(self.parent, button_name, None)
+            # ~ if iso_button:
+                # ~ iso_button.set_active(True)
+            # ~ else:
+                # ~ self.parent.printToLog(f"WARNING: Unrecogonized ISO value ({params.iso})")
 
-            self.parent.expCompScale.set_value(params.exposure_compensation)
+            # ~ self.parent.expCompScale.set_value(params.exposure_compensation)
 
-            listStore = self.parent.expModeComboBox.get_model()
-            rowList = [row[0] for row in listStore]
-            row_idx = rowList.index(params.exposure_mode)
-            self.parent.expModeComboBox.set_active(row_idx)
-            if not row_idx:
-                self.parent.expModeLockButton.set_active(True)
-                self.parent.expCompScale.set_sensitive(False)
-                self.parent.isoButtonBox.set_sensitive(False)
-            else:
-                self.parent.expModeLockButton.set_active(False)
-                self.parent.expCompScale.set_sensitive(True)
-                self.parent.isoButtonBox.set_sensitive(True)
+            # ~ listStore = self.parent.expModeComboBox.get_model()
+            # ~ rowList = [row[0] for row in listStore]
+            # ~ row_idx = rowList.index(params.exposure_mode)
+            # ~ self.parent.expModeComboBox.set_active(row_idx)
+            # ~ if not row_idx:
+                # ~ self.parent.expModeLockButton.set_active(True)
+                # ~ self.parent.expCompScale.set_sensitive(False)
+                # ~ self.parent.isoButtonBox.set_sensitive(False)
+            # ~ else:
+                # ~ self.parent.expModeLockButton.set_active(False)
+                # ~ self.parent.expCompScale.set_sensitive(True)
+                # ~ self.parent.isoButtonBox.set_sensitive(True)
 
-            self.parent.expModeComboBox.handler_unblock(handler_id_9)
-            self.parent.expModeLockButton.handler_unblock(handler_id_10)
-            self.parent.expCompScale.handler_unblock(handler_id_11)
-            self.parent.isoButtonAuto.handler_unblock(handler_id_1)
-            self.parent.isoButton100.handler_unblock(handler_id_2)
-            self.parent.isoButton200.handler_unblock(handler_id_3)
-            self.parent.isoButton320.handler_unblock(handler_id_4)
-            self.parent.isoButton400.handler_unblock(handler_id_5)
-            self.parent.isoButton500.handler_unblock(handler_id_6)
-            self.parent.isoButton640.handler_unblock(handler_id_7)
-            self.parent.isoButton800.handler_unblock(handler_id_8)
+            # ~ self.parent.expModeComboBox.handler_unblock(handler_id_9)
+            # ~ self.parent.expModeLockButton.handler_unblock(handler_id_10)
+            # ~ self.parent.expCompScale.handler_unblock(handler_id_11)
+            # ~ self.parent.isoButtonAuto.handler_unblock(handler_id_1)
+            # ~ self.parent.isoButton100.handler_unblock(handler_id_2)
+            # ~ self.parent.isoButton200.handler_unblock(handler_id_3)
+            # ~ self.parent.isoButton320.handler_unblock(handler_id_4)
+            # ~ self.parent.isoButton400.handler_unblock(handler_id_5)
+            # ~ self.parent.isoButton500.handler_unblock(handler_id_6)
+            # ~ self.parent.isoButton640.handler_unblock(handler_id_7)
+            # ~ self.parent.isoButton800.handler_unblock(handler_id_8)
 
-            # ~ handler_id_1 = get_handler_id(self.parent.AutoAwbButton, "notify::active")
-            handler_id_2 = get_handler_id(self.parent.redGainScale, "value-changed")
-            handler_id_3 = get_handler_id(self.parent.blueGainScale, "value-changed")
-            self.parent.AutoAwbButton.handler_block(handler_id_1)
+            handler_id_1 = get_handler_id(self.parent.AutoAwbButton, "notify::active")
+            # ~ handler_id_2 = get_handler_id(self.parent.redGainScale, "value-changed")
+            # ~ handler_id_3 = get_handler_id(self.parent.blueGainScale, "value-changed")
+            # ~ self.parent.AutoAwbButton.handler_block(handler_id_1)
             self.parent.redGainScale.handler_block(handler_id_2)
             self.parent.blueGainScale.handler_block(handler_id_3)
 
