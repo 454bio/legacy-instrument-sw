@@ -14,8 +14,12 @@ class ZionConfig(dict):
 		# {serial}: cpuid  #can add things later by turning into tuple
 		"Zach_Dev": "417c8eb2",
 		"MK26_03F": "fe04ffd5",
-		"MK26_08":  "bad5a0cf",
+		"MK27_01":  "8273400a",
+		"MK27_02":  "28a62a16",
+		"MK27_04":  "e7e7af47",
+		"MK27_05":  "b3ff81ad",
 		"MK26_07":  "cdfc750b",
+		"MK26_08":  "bad5a0cf",
 	}
 
 	def __init__(self):
