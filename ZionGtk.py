@@ -145,6 +145,7 @@ class ZionGUI():
         self.Spot_C_Entry = self.builder.get_object("spot_C_entry")
         self.Spot_G_Entry = self.builder.get_object("spot_G_entry")
         self.Spot_T_Entry = self.builder.get_object("spot_T_entry")
+        self.SelectSpotsButton = self.builder.get_object("select_spots_button")
 
         self.handlers = Handlers(self)
         self.builder.connect_signals(self.handlers)
@@ -178,7 +179,7 @@ class ZionGUI():
         self.Spot_C_Entry.set_sensitive(True)
         self.Spot_G_Entry.set_sensitive(True)
         self.Spot_T_Entry.set_sensitive(True)
-
+        self.SelectSpotsButton.set_sensitive(True)
 
 class Handlers:
 
@@ -1124,6 +1125,19 @@ class Handlers:
         else:
             self.parent.parent.ImageProcessor.enable = False
         return
+
+    def on_select_spots_button_clicked(self, button):
+        try:
+            a = int(self.parent.Spot_A_Entry.get_text())
+            c = int(self.parent.Spot_C_Entry.get_text())
+            g = int(self.parent.Spot_G_Entry.get_text())
+            t = int(self.parent.Spot_T_Entry.get_text())
+        except ValueError:
+            print("Invalid Spot Choices")
+            return
+        #TODO check for ranges
+        basis = (a,c,g,t)
+        self.parent.parent.ImageProcessor.basis_spots_chosen_queue.put( basis )
 
     def on_spot_A_entry_activate(self, entry):
         #TODO
