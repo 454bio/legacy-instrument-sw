@@ -138,6 +138,7 @@ class ZionGUI():
         self.cameraPreview = self.builder.get_object("camera_preview")
         self.cameraPreviewWrapper = PictureViewFromFile(self.cameraPreview, os.path.join(mod_path, "Logo.png"))
 
+        self.NotebookRight = self.builder.get_object("notebook_right")
         self.IpView = self.builder.get_object("image_processing_display")
         self.IpViewWrapper = PictureViewFromFile(self.IpView, os.path.join(mod_path, "Logo.png"))
         self.Spot_A_Entry = self.builder.get_object("spot_A_entry")
@@ -167,7 +168,11 @@ class ZionGUI():
     def set_file_chooser_for_parameter_files(self):
         self.paramFileChooser.set_filter(self.filter_parameter)
 
-    def load_roi_image(self, filepath, queue):
+    def load_roi_image(self, args):#filepath, queue):
+        filepath = args[0]
+        queue = args[1]
+        print("GUI displaying ROI, enabling spot entries")
+        self.NotebookRight.set_current_page(1)
         self.IpViewWrapper.image_path = filepath
         self.Spot_A_Entry.set_sensitive(True)
         self.Spot_C_Entry.set_sensitive(True)

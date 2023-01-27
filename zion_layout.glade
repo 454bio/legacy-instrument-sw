@@ -6,6 +6,7 @@
   <object class="GtkTextBuffer" id="analog_gain_buffer"/>
   <object class="GtkImage" id="back_button_image">
     <property name="visible">True</property>
+    <property name="sensitive">False</property>
     <property name="can-focus">False</property>
     <property name="icon-name">go-previous</property>
   </object>
@@ -199,7 +200,7 @@
             <property name="can-focus">False</property>
             <property name="orientation">vertical</property>
             <child>
-              <object class="GtkNotebook" id="notebook1">
+              <object class="GtkNotebook" id="notebook_left">
                 <property name="visible">True</property>
                 <property name="can-focus">True</property>
                 <property name="show-border">False</property>
@@ -1839,7 +1840,7 @@ Gain</property>
             <property name="can-focus">False</property>
             <property name="orientation">vertical</property>
             <child>
-              <object class="GtkNotebook">
+              <object class="GtkNotebook" id="notebook_right">
                 <property name="visible">True</property>
                 <property name="can-focus">True</property>
                 <child>
@@ -1918,6 +1919,7 @@ Gain</property>
                             <child>
                               <object class="GtkButton" id="ip_seek_fwd_button">
                                 <property name="visible">True</property>
+                                <property name="sensitive">False</property>
                                 <property name="can-focus">True</property>
                                 <property name="receives-default">True</property>
                                 <property name="image">skip_fwd_button_image</property>
@@ -1945,6 +1947,7 @@ Gain</property>
                             <child>
                               <object class="GtkButton" id="ip_fwd_button">
                                 <property name="visible">True</property>
+                                <property name="sensitive">False</property>
                                 <property name="can-focus">True</property>
                                 <property name="receives-default">True</property>
                                 <property name="image">fwd_button_image</property>

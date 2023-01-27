@@ -40,19 +40,22 @@ def median_filter(in_img, kernel_size, behavior='ndimage'): #rank?
 def create_labeled_rois(labels, filepath=None, color=[1,0,1], img=None):
 	img = np.zeros_like(labels) if img is None else img
 	h,w = labels.shape
-	f = plt.figure(frameon=False)
-	f.set_size_inches(w/h, 1, forward=False)
-	ax = plt.Axes(f, [0,0,1,1])
-	ax.set_axis_off()
-	f.add_axes(ax)
+	# ~ f = plt.figure(frameon=False)
+	# ~ f.set_size_inches(w/h, 1, forward=False)
+	# ~ ax = plt.Axes(f, [0,0,1,1])
+	# ~ ax.set_axis_off()
+	# ~ f.add_axes(ax)
 	out_img = segmentation.mark_boundaries(img, labels, color=color, outline_color=color, mode='thick')
-	ax.imshow(out_img)
-	rp = ski.measure.regionprops(labels)
+	out_img = (255*out_img).astype('uint8')
+	# ~ ax.imshow(out_img)
+	rp = measure.regionprops(labels)
 	for s in range(1, np.max(labels)+1):
 		centroid = rp[s-1]['centroid']
-		plt.text(centroid[1], centroid[0], str(s), color=[1,0,1], horizontalalignment='center', verticalalignment='center', fontsize=1)
+		# ~ plt.text(centroid[1], centroid[0], str(s), color=[1,0,1], horizontalalignment='center', verticalalignment='center', fontsize=1)
+		cv2.putText(out_img, str(s), (int(centroid[1]), int(centroid[0])), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 255), 2)
 	if filepath is not None:
-		plt.savefig(filepath+".png", bbox_inches='tight', pad_inches=0, dpi=h, format='png')
+		cv2.imwrite(filepath+".jpg", out_img)
+	return out_img
 
 class ZionImage(UserDict):
 	def __init__(self, lstImageFiles, lstWavelengths, cycle=None, subtrahends=None, bgIntensity=None):
@@ -242,7 +245,7 @@ class ZionImageProcessor(multiprocessing.Process):
 				print("_convert_jpeg thread -- received stop signal!")
 				break
 			if mp_namespace.bEnable:
-				# ~ print(f"\n\nconverting jpeg {filepath}\n\n")
+				print(f"\n\nconverting jpeg {filepath}\n\n")
 
 				out_dir = os.path.join(os.path.dirname(filepath), "raws")
 				filename = os.path.splitext(os.path.basename(filepath))[0]
@@ -262,7 +265,7 @@ class ZionImageProcessor(multiprocessing.Process):
 			else:
 				while not mp_namespace.bEnable:
 					continue
-				# ~ print(f"\n\nconverting jpeg {filepath} after wait\n\n")
+				print(f"\n\nconverting jpeg {filepath} after wait\n\n")
 
 				out_dir = os.path.join(os.path.dirname(filepath), "raws")
 				filename = os.path.splitext(os.path.basename(filepath))[0]
@@ -290,24 +293,21 @@ class ZionImageProcessor(multiprocessing.Process):
 			while not mp_namespace.bEnable:
 				continue
 
-			if new_cycle != mp_namespace.ip_cycle_ind+1:
-				raise ValueError(f"Expected cycle {mp_namespace.ip_cycle_ind}, got {new_cycle}!")
-
 			# now new_cycle and ip_cycle_ind must differ by 1 now
-			if mp_namespace.ip_cycle_ind == 0:
+			if new_cycle == 0:
 				#TODO: do any calibration here
-				mp_namespace.ip_cycle_ind += 1
+				print("Cycle 0 calibration (none yet)")
 				continue
 
 			else: # get cycle numbers if available
 				# TODO: clean this up, allow for no cycles?
-				cycle_str = f"C{mp_namespace.ip_cycle_ind:03d}"
+				cycle_str = f"C{new_cycle:03d}"
 				cycle_files = sorted(glob(os.path.join(in_path, f"*_{cycle_str}_*.tif")))
-				print(f"cycle {mp_namespace.ip_cycle_ind}'s file list: {cycle_files}")
+				print(f"cycle {new_cycle}'s file list: {cycle_files}")
 				wls = list(set(sorted([get_wavelength_from_filename(f) for f in cycle_files])))
-				print(f"cycle {mp_namespace.ip_cycle_ind}'s wavelengths: {wls}")
+				print(f"cycle {new_cycle}'s wavelengths: {wls}")
 				if not uv_wl in wls:
-					raise ValueError(f"No {uv_wl} images in cycle {mp_namespace.ip_cycle_ind}!")
+					raise ValueError(f"No {uv_wl} images in cycle {new_cycle}!")
 
 				# Find earliest images of UV wavelength, but the latest of others:
 				imgFileList = []
@@ -319,9 +319,9 @@ class ZionImageProcessor(multiprocessing.Process):
 						lst_tmp = [f"_{wl}_" in fp for fp in cycle_files]
 						imgFileList.append(cycle_files[ len(lst_tmp) - lst_tmp[-1::-1].index(True) - 1]) # last vis led image
 						diffImgSubtrahends.append(cycle_files[[f"_{wl}_" in fp for fp in cycle_files].index(True)]) # first vis led image
-				currImageSet = ZionImage(imgFileList, wls, cycle=mp_namespace.ip_cycle_ind, subtrahends=diffImgSubtrahends) if self.bUseDifferenceImages else ZionImage(imgFileList, wls, cycle=mp_namespace.ip_cycle_ind)
+				currImageSet = ZionImage(imgFileList, wls, cycle=new_cycle, subtrahends=diffImgSubtrahends) if self.bUseDifferenceImages else ZionImage(imgFileList, wls, cycle=new_cycle)
 
-				if mp_namespace.ip_cycle_ind == 1:
+				if new_cycle == 1:
 					roi_imgs = self.detect_rois( currImageSet )
 					rois_detected_event.set()
 					M, spots = basis_chosen_queue.get()
@@ -332,19 +332,19 @@ class ZionImageProcessor(multiprocessing.Process):
 
 					#TODO do kinetics analysis
 
-					mp_namespace.ip_cycle_ind += 1
+					# ~ mp_namespace.ip_cycle_ind += 1
 
-				elif mp_namespace.ip_cycle_ind > 1:
+				elif new_cycle > 1:
 					base_caller_queue.put(currImageSet)
 
 					#TODO do kinetics analysis
 
-					mp_namespace.ip_cycle_ind += 1
+					# ~ mp_namespace.ip_cycle_ind += 1
 
 				else:
-					raise ValueError(f"Invalid cycle index {mp_namespace.ip_cycle_ind}!")
+					raise ValueError(f"Invalid cycle index {new_cycle}!")
 
-			image_ready_event.clear()
+			# ~ image_ready_event.clear()
 			print("clearing image ready queue")
 
 	def _base_caller(self, mp_namespace : Namespace, base_caller_queue : multiprocessing.Queue, bases_called_event : multiprocessing.Event):
@@ -436,7 +436,7 @@ class ZionImageProcessor(multiprocessing.Process):
 
 		# TODO: get stats, centroids of spots, further invalidate improper spots. ()
 
-		self.roi_labels = spot_ind
+		self.roi_labels = spot_labels
 		self.numSpots = nSpots
 		roi_img = [create_labeled_rois(self.roi_labels, filepath=os.path.join(self.file_output_path, f"rois"), color=[1,0,1])]
 		#TODO include other channels here
