@@ -459,9 +459,10 @@ class ZionSession():
         # self.gui.cameraPreview.get_parent().queue_draw()
 
     def update_roi_image(self, basis_spot_queue):
-        self.ImageProcessor.rois_detected_event.wait()
-        print(f"update_rot_image thread: roi event detected, instructing gui")
-        GLib.idle_add(self.gui.load_roi_image, (os.path.join(self.ImageProcessor.file_output_path, "rois.jpg"), basis_spot_queue))
+        while True:
+            self.ImageProcessor.rois_detected_event.wait()
+            GLib.idle_add(self.gui.load_roi_image, (os.path.join(self.ImageProcessor.file_output_path, "rois.jpg"), basis_spot_queue))
+            self.ImageProcessor.rois_detected_event.clear()
 
     def get_temperature(self):
         self.Temperature = self.GPIO.read_temperature()

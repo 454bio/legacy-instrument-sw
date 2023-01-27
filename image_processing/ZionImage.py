@@ -37,22 +37,17 @@ def median_filter(in_img, kernel_size, behavior='ndimage'): #rank?
 				out_img[:,:,ch] = filters.median(in_img[:,:,ch], morphology.disk(kernel_size), behavior=behavior)
 	return out_img
 
-def create_labeled_rois(labels, filepath=None, color=[1,0,1], img=None):
+def create_labeled_rois(labels, filepath=None, color=[1,0,1], img=None, font=cv2.FONT_HERSHEY_SIMPLEX):
 	img = np.zeros_like(labels) if img is None else img
 	h,w = labels.shape
-	# ~ f = plt.figure(frameon=False)
-	# ~ f.set_size_inches(w/h, 1, forward=False)
-	# ~ ax = plt.Axes(f, [0,0,1,1])
-	# ~ ax.set_axis_off()
-	# ~ f.add_axes(ax)
 	out_img = segmentation.mark_boundaries(img, labels, color=color, outline_color=color, mode='thick')
 	out_img = (255*out_img).astype('uint8')
-	# ~ ax.imshow(out_img)
 	rp = measure.regionprops(labels)
 	for s in range(1, np.max(labels)+1):
 		centroid = rp[s-1]['centroid']
-		# ~ plt.text(centroid[1], centroid[0], str(s), color=[1,0,1], horizontalalignment='center', verticalalignment='center', fontsize=1)
-		cv2.putText(out_img, str(s), (int(centroid[1]), int(centroid[0])), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 255), 2)
+		text = str(s)
+		text_size = cv2.getTextSize(text, font,1,2)[0]
+		cv2.putText(out_img, str(s), (int(centroid[1]-text_size[0]/2), int(centroid[0]+text_size[1]/2)), font, 1, (255, 0, 255), 2)
 	if filepath is not None:
 		cv2.imwrite(filepath+".jpg", out_img)
 	return out_img
@@ -97,6 +92,12 @@ class ZionImage(UserDict):
 		self.nChannels = len(lstWavelengths)
 		self.cycle = cycle
 		self.time_avg = round(sum(times)/len(times))
+
+	def get_mean_spot_vector(self, indices):
+		out = []
+		for k in self.data.keys():
+			out.append( np.mean(self.data[k][indices], axis=(0,1) )
+		return out
 
 	@property
 	def wavelengths(self):
@@ -245,7 +246,7 @@ class ZionImageProcessor(multiprocessing.Process):
 				print("_convert_jpeg thread -- received stop signal!")
 				break
 			if mp_namespace.bEnable:
-				print(f"\n\nconverting jpeg {filepath}\n\n")
+				print(f"Converting jpeg {filepath}")
 
 				out_dir = os.path.join(os.path.dirname(filepath), "raws")
 				filename = os.path.splitext(os.path.basename(filepath))[0]
@@ -265,7 +266,7 @@ class ZionImageProcessor(multiprocessing.Process):
 			else:
 				while not mp_namespace.bEnable:
 					continue
-				print(f"\n\nconverting jpeg {filepath} after wait\n\n")
+				print(f"Converting jpeg {filepath} after wait")
 
 				out_dir = os.path.join(os.path.dirname(filepath), "raws")
 				filename = os.path.splitext(os.path.basename(filepath))[0]
@@ -293,13 +294,12 @@ class ZionImageProcessor(multiprocessing.Process):
 			while not mp_namespace.bEnable:
 				continue
 
-			# now new_cycle and ip_cycle_ind must differ by 1 now
 			if new_cycle == 0:
 				#TODO: do any calibration here
 				print("Cycle 0 calibration (none yet)")
 				continue
 
-			else: # get cycle numbers if available
+			else:
 				# TODO: clean this up, allow for no cycles?
 				cycle_str = f"C{new_cycle:03d}"
 				cycle_files = sorted(glob(os.path.join(in_path, f"*_{cycle_str}_*.tif")))
@@ -324,9 +324,9 @@ class ZionImageProcessor(multiprocessing.Process):
 				if new_cycle == 1:
 					roi_imgs = self.detect_rois( currImageSet )
 					rois_detected_event.set()
-					M, spots = basis_chosen_queue.get()
-
-					#TODO define spots of "pure" base for each base (eg identify homopolymer spots)
+					basis_spots = basis_chosen_queue.get() #tuple of spot labels
+					M = np.array([ currImageSet.get_mean_spot_vector( self.roi_labels==basis_spot ) for basis_spot in basis_spots ]).T
+					print(f"\n\nBasis Vector = {M}, with shape {M.shape}\n\n")
 
 					# ~ base_caller_queue.put(currImageSet)
 
@@ -439,9 +439,8 @@ class ZionImageProcessor(multiprocessing.Process):
 		self.roi_labels = spot_labels
 		self.numSpots = nSpots
 		roi_img = [create_labeled_rois(self.roi_labels, filepath=os.path.join(self.file_output_path, f"rois"), color=[1,0,1])]
-		#TODO include other channels here
-		# ~ for w_ind, w in enumerate(in_img.wavelengths):
-			# ~ roi_img.append( create_labeled_rois(self.roi_labels, filepath=os.path.join(self.file_output_path, f"roi_{w}"), color=[1,0,1], img=in_img[w]) )
+		for w_ind, w in enumerate(in_img.wavelengths):
+			roi_img.append( create_labeled_rois(self.roi_labels, filepath=os.path.join(self.file_output_path, f"rois_{w}"), color=[1,0,1], img=in_img[w]) )
 		return roi_img
 
 	### for testing:
