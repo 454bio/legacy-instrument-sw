@@ -80,7 +80,7 @@ def jpg_to_raw(filepath, target_path, compression=None):
     filename =  os.path.splitext(target_path)[0]
     color_image = np.stack([red_image, green_image, blue_image], axis=-1).reshape((img_H, img_W, 3))
     imwrite(filename+".tif", color_image, photometric='rgb', compression=compression)
-    print("Wrote file "+filename+".tif")
+    # ~ print("Wrote file "+filename+".tif")
 
     #images available to return if desired:
     return red_image, green_image, blue_image

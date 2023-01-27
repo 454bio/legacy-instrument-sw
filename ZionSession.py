@@ -238,6 +238,9 @@ class ZionSession():
         # Do I unroll _all_ the events?
 
         self.ImageProcessor.start()
+        self.roi_thread = threading.Thread(target=self.update_roi_image, args=(self.ImageProcessor.basis_spots_chosen_queue, ) )
+        self.roi_thread.daemon=True
+        self.roi_thread.start()
 
         try:
             self.TimeOfLife = time.time()
@@ -455,10 +458,10 @@ class ZionSession():
             self.gui.cameraPreviewWrapper.image_path = t_path
         # self.gui.cameraPreview.get_parent().queue_draw()
 
-    def update_roi_image(self, roi_detected_event, basis_spot_queue):
-        while True:
-            roi_detected_event.wait()
-            GLib.idle_add(self.gui.load_roi_image, (os.path.join(self.ImageProcessor.file_output_path, "rois.png"), basis_spot_queue))
+    def update_roi_image(self, basis_spot_queue):
+        self.ImageProcessor.rois_detected_event.wait()
+        print(f"update_rot_image thread: roi event detected, instructing gui")
+        GLib.idle_add(self.gui.load_roi_image, (os.path.join(self.ImageProcessor.file_output_path, "rois.jpg"), basis_spot_queue))
 
     def get_temperature(self):
         self.Temperature = self.GPIO.read_temperature()
