@@ -72,18 +72,22 @@ class ZionImage(UserDict):
 				elif wavelength in wl_subs:
 					d[wavelength] = image - imread(subtrahends[wl_subs.index(wavelength)])
 					print(f"adding {imagefile} - {subtrahends[wl_subs.index(wavelength)]}")
+					# ~ print(f"image shape: {image.shape}")
 				else:
 					d[wavelength] = image
 					print(f"adding {imagefile}")
+					# ~ print(f"image shape: {image.shape}")
 			else: #not using difference image
 				if wavelength == '000':
 					continue
 				if '000' in lstWavelengths:
 					d[wavelength] = image - imread(lstImageFiles[lstWavelengths.index('000')])
 					print(f"adding {imagefile} - {lstImageFiles[lstWavelengths.index('000')]}")
+					# ~ print(f"image shape: {image.shape}")
 				else:
 					d[wavelength] = image
 					print(f"adding {imagefile}")
+					# ~ print(f"image shape: {image.shape}")
 
 		super().__init__(d)
 		#TODO check that all images are same dtype, shape, and dimensionality
@@ -96,7 +100,7 @@ class ZionImage(UserDict):
 	def get_mean_spot_vector(self, indices):
 		out = []
 		for k in self.data.keys():
-			out.append( np.mean(self.data[k][indices], axis=(0,1) )
+			out.extend( np.mean(self.data[k][indices], axis=0).tolist() )
 		return out
 
 	@property
@@ -303,9 +307,9 @@ class ZionImageProcessor(multiprocessing.Process):
 				# TODO: clean this up, allow for no cycles?
 				cycle_str = f"C{new_cycle:03d}"
 				cycle_files = sorted(glob(os.path.join(in_path, f"*_{cycle_str}_*.tif")))
-				print(f"cycle {new_cycle}'s file list: {cycle_files}")
+				# ~ print(f"cycle {new_cycle}'s file list: {cycle_files}")
 				wls = list(set(sorted([get_wavelength_from_filename(f) for f in cycle_files])))
-				print(f"cycle {new_cycle}'s wavelengths: {wls}")
+				# ~ print(f"cycle {new_cycle}'s wavelengths: {wls}")
 				if not uv_wl in wls:
 					raise ValueError(f"No {uv_wl} images in cycle {new_cycle}!")
 
@@ -328,18 +332,14 @@ class ZionImageProcessor(multiprocessing.Process):
 					M = np.array([ currImageSet.get_mean_spot_vector( self.roi_labels==basis_spot ) for basis_spot in basis_spots ]).T
 					print(f"\n\nBasis Vector = {M}, with shape {M.shape}\n\n")
 
-					# ~ base_caller_queue.put(currImageSet)
+					base_caller_queue.put(currImageSet)
 
 					#TODO do kinetics analysis
-
-					# ~ mp_namespace.ip_cycle_ind += 1
 
 				elif new_cycle > 1:
 					base_caller_queue.put(currImageSet)
 
 					#TODO do kinetics analysis
-
-					# ~ mp_namespace.ip_cycle_ind += 1
 
 				else:
 					raise ValueError(f"Invalid cycle index {new_cycle}!")
