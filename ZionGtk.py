@@ -139,7 +139,11 @@ class ZionGUI():
         self.cameraPreviewWrapper = PictureViewFromFile(self.cameraPreview, os.path.join(mod_path, "Logo.png"))
 
         self.IpView = self.builder.get_object("image_processing_display")
-        self.IpViewWrapper = PictureViewFromMem(self.IpView)
+        self.IpViewWrapper = PictureViewFromFile(self.IpView, os.path.join(mod_path, "Logo.png"))
+        self.Spot_A_Entry = self.builder.get_object("spot_A_entry")
+        self.Spot_C_Entry = self.builder.get_object("spot_C_entry")
+        self.Spot_G_Entry = self.builder.get_object("spot_G_entry")
+        self.Spot_T_Entry = self.builder.get_object("spot_T_entry")
 
         self.handlers = Handlers(self)
         self.builder.connect_signals(self.handlers)
@@ -162,6 +166,13 @@ class ZionGUI():
 
     def set_file_chooser_for_parameter_files(self):
         self.paramFileChooser.set_filter(self.filter_parameter)
+
+    def load_roi_image(self, filepath, queue):
+        self.IpViewWrapper.image_path = filepath
+        self.Spot_A_Entry.set_sensitive(True)
+        self.Spot_C_Entry.set_sensitive(True)
+        self.Spot_G_Entry.set_sensitive(True)
+        self.Spot_T_Entry.set_sensitive(True)
 
 
 class Handlers:

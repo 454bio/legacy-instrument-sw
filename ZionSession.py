@@ -76,7 +76,7 @@ class ZionSession():
         self.all_image_paths = []
         self.ImageProcessor = ZionImageProcessor(self.gui, self.Dir)
         # ~ self.ImageProcessor.start() moved to when running program
-        # ~ self.load_image_lock =
+        self.ip_enable_lock = threading.Lock()
 
     def CaptureImageThread(self, cropping=(0,0,1,1), group=None, verbose=False, comment='', suffix='', protocol=True):
         """ This is running in a thread. It should not call any GTK functions """
@@ -320,8 +320,8 @@ class ZionSession():
                     # ~ if self.load_image_lock.locked():
                         # ~ print(f"Unlocking _load_image thread")
                         # ~ self.load_image_lock.release()
-                    # ~ with self.load_image_lock:
-                    self.ImageProcessor.mp_namespace.bConvertEnable = True
+                    with self.ip_enable_lock:
+                        self.ImageProcessor.mp_namespace.bEnable = True
 
                     group_or_wait.sleep(
                         stop_event=stop_event,
@@ -334,8 +334,8 @@ class ZionSession():
                         break
 
                 else:
-                    # ~ with self.load_image_lock:
-                    self.ImageProcessor.mp_namespace.bConvertEnable = False
+                    with self.ip_enable_lock:
+                        self.ImageProcessor.mp_namespace.bEnable = False
                     flat_events = group_or_wait
 
                     # This will pre-program the pigpio with the waveforms for our LEDs
@@ -372,8 +372,8 @@ class ZionSession():
 
                         if stop_event.is_set():
                             print("Received stop!")
-                            # ~ with self.load_image_lock:
-                            self.ImageProcessor.mp_namespace.bConvertEnable = True
+                            with self.ip_enable_lock:
+                                self.ImageProcessor.mp_namespace.bEnable = True
                             break
 
                     end_fstrobe = self.GPIO.get_num_fstrobes()
@@ -391,8 +391,8 @@ class ZionSession():
                     num_fstrobe = end_fstrobe - start_fstrobe
                     if num_fstrobe != num_captured_frames:
                         print(f"WARNING: We did not receive all of the frames actually captured!!  num_fstrobe: {num_fstrobe}  expected: {expected_num_frames}")
-            # ~ with self.load_image_lock:
-            self.ImageProcessor.mp_namespace.bConvertEnable = True
+            with self.ip_enable_lock:
+                self.ImageProcessor.mp_namespace.bEnable = True
             print("RunProgram Finished!")
 
         except Exception as e:
@@ -454,6 +454,11 @@ class ZionSession():
             self.update_last_capture_path = None
             self.gui.cameraPreviewWrapper.image_path = t_path
         # self.gui.cameraPreview.get_parent().queue_draw()
+
+    def update_roi_image(self, roi_detected_event, basis_spot_queue):
+        while True:
+            roi_detected_event.wait()
+            GLib.idle_add(self.gui.load_roi_image, (os.path.join(self.ImageProcessor.file_output_path, "rois.png"), basis_spot_queue))
 
     def get_temperature(self):
         self.Temperature = self.GPIO.read_temperature()
