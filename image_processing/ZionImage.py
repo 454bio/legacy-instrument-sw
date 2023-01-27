@@ -37,7 +37,7 @@ def median_filter(in_img, kernel_size, behavior='ndimage'): #rank?
 				out_img[:,:,ch] = filters.median(in_img[:,:,ch], morphology.disk(kernel_size), behavior=behavior)
 	return out_img
 
-def display_labeled_rois(labels, filepath=None, color=[1,0,1], img=None):
+def create_labeled_rois(labels, filepath=None, color=[1,0,1], img=None):
 	img = np.zeros_like(labels) if img is None else img
 	h,w = labels.shape
 	f = plt.figure(frameon=False)
@@ -52,7 +52,7 @@ def display_labeled_rois(labels, filepath=None, color=[1,0,1], img=None):
 		centroid = rp[s-1]['centroid']
 		plt.text(centroid[1], centroid[0], str(s), color=[1,0,1], horizontalalignment='center', verticalalignment='center', fontsize=1)
 	if filepath is not None:
-		plt.savefig(filepath, bbox_inches='tight', pad_inches=0, dpi=h, format='png')
+		plt.savefig(filepath+".png", bbox_inches='tight', pad_inches=0, dpi=h, format='png')
 
 class ZionImage(UserDict):
 	def __init__(self, lstImageFiles, lstWavelengths, cycle=None, subtrahends=None, bgIntensity=None):
@@ -61,10 +61,12 @@ class ZionImage(UserDict):
 		wl_subs = [get_wavelength_from_filename(fp) for fp in subtrahends] if subtrahends is not None else []
 
 		times = []
+		self.filenames = dict()
 		for wavelength, imagefile in zip(lstWavelengths, lstImageFiles):
 			#TODO check validity (uint16, RGB, consistent sizes)
 			image = imread(imagefile)
 			times.append( get_time_from_filename(imagefile) )
+			self.filenames[wavelength] = imagefile
 
 			if subtrahends is not None:
 				if wavelength == '000':  #skip dark images
@@ -91,7 +93,7 @@ class ZionImage(UserDict):
 		self.dims = image.shape[:2]
 		self.nChannels = len(lstWavelengths)
 		self.cycle = cycle
-		self.time = round(sum(times)/len(times))
+		self.time_avg = round(sum(times)/len(times))
 
 	@property
 	def wavelengths(self):
@@ -145,31 +147,27 @@ class ZionImageProcessor(multiprocessing.Process):
 		self.mp_namespace = self._mp_manager.Namespace()
 		self.stop_event = self._mp_manager.Event()
 
-		self._enable_condition = self._mp_manager.Condition()
-		self._enable_lock = self._mp_manager.Lock()
-
-		self.convert_files_queue = self._mp_manager.Queue()
-		# TODO bring back lock for all file read/write?
-		# ~ self.load_image_lock = threading.Lock()
-		# ~ with self.load_image_lock:
-			# ~ self.load_image_enable = False
-
-		self.bUseDifferenceImages = True
+		# TODO: a Lock, RLock, or condition to enable/disable all IP processes
+		# ~ self._enable_condition = self._mp_manager.Condition()
+		# ~ self._enable_lock = self._mp_manager.Lock()
 		self.mp_namespace.bEnable = False
-		self.mp_namespace.bConvertEnable = False
+
+		self.bUseDifferenceImages = False
 		self.mp_namespace.bShowSpots = False
 		self.mp_namespace.bShowBases = False
 		self.mp_namespace.ip_cycle_ind = 0
 		self.mp_namespace.convert_cycle_ind = 0
 		self.mp_namespace.view_cycle_ind = 0
 
-		self.new_cycle_detected = self._mp_manager.Event()
+		self.convert_files_queue = self._mp_manager.Queue()
+		self.new_cycle_detected = self._mp_manager.Queue()
+		self.spot_extraction_queue = self._mp_manager.Queue()
 
 		self.rois_detected_event = self._mp_manager.Event()
+		self.basis_spots_chosen_queue = self._mp_manager.Queue()
 
 		self.base_caller_queue = self._mp_manager.Queue()
 		self.bases_called_event = self._mp_manager.Event()
-
 		self.kinetics_analyzer_queue = self._mp_manager.Queue()
 		self.kinetics_analyzed_event = self._mp_manager.Event()
 
@@ -202,40 +200,40 @@ class ZionImageProcessor(multiprocessing.Process):
 
 		self._convert_image_thread = threading.Thread(
 			target=self._convert_jpeg,
-			args=(self.mp_namespace, self.convert_files_queue, self.new_cycle_detected)
+			args=(self.mp_namespace, self.convert_files_queue, self.new_cycle_detected, self.spot_extraction_queue)
 		)
 		self._convert_image_thread.daemon = True
 		self._convert_image_thread.start()
 
 		self._image_processing_thread = threading.Thread(
 			target=self._image_handler,
-			args=(self.mp_namespace, self.new_cycle_detected, self.rois_detected_event, self.base_caller_queue, self.kinetics_analyzer_queue)
+			args=(self.mp_namespace, self.new_cycle_detected, self.rois_detected_event, self.basis_spots_chosen_queue, self.base_caller_queue, self.kinetics_analyzer_queue)
 		)
 		self._image_processing_thread.daemon = True
 		self._image_processing_thread.start()
 
-		self._base_calling_thread = threading.Thread(
-			target=self._base_caller,
-			args=(self.mp_namespace, self.base_caller_queue, self.bases_called_event)
-		)
+		# ~ self._base_calling_thread = threading.Thread(
+			# ~ target=self._base_caller,
+			# ~ args=(self.mp_namespace, self.base_caller_queue, self.bases_called_event)
+		# ~ )
 
-		self._base_calling_thread.daemon = True
-		self._base_calling_thread.start()
+		# ~ self._base_calling_thread.daemon = True
+		# ~ self._base_calling_thread.start()
 
-		self._kinetics_thread = threading.Thread(
-			target=self._kinetics_analyzer,
-			args=(self.mp_namespace, self.kinetics_analyzer_queue, self.kinetics_analyzed_event)
-		)
+		# ~ self._kinetics_thread = threading.Thread(
+			# ~ target=self._kinetics_analyzer,
+			# ~ args=(self.mp_namespace, self.kinetics_analyzer_queue, self.kinetics_analyzed_event)
+		# ~ )
 
-		self._kinetics_thread.daemon = True
+		# ~ self._kinetics_thread.daemon = True
 		# ~ self._kinetics_thread.start()
 
 		#todo: same for other threads
 
-	def _convert_jpeg(self, mp_namespace : Namespace, image_file_queue : multiprocessing.Queue, new_cycle_event : multiprocessing.Event):
+	def _convert_jpeg(self, mp_namespace : Namespace, image_file_queue : multiprocessing.Queue, new_cycle_queue : multiprocessing.Queue, output_queue : multiprocessing.Queue):
 		print("Starting _convert_jpeg thread")
 		mp_namespace.convert_cycle_ind = 0
-		mp_namespace.bConvertEnable = True
+		mp_namespace.bEnable = True
 		lock = False
 		while True:
 			filepath_args = image_file_queue.get()
@@ -243,8 +241,8 @@ class ZionImageProcessor(multiprocessing.Process):
 			if filepath is None:
 				print("_convert_jpeg thread -- received stop signal!")
 				break
-			if mp_namespace.bConvertEnable:
-				print(f"\n\nconverting jpeg {filepath}\n\n")
+			if mp_namespace.bEnable:
+				# ~ print(f"\n\nconverting jpeg {filepath}\n\n")
 
 				out_dir = os.path.join(os.path.dirname(filepath), "raws")
 				filename = os.path.splitext(os.path.basename(filepath))[0]
@@ -253,25 +251,26 @@ class ZionImageProcessor(multiprocessing.Process):
 				if cycle is not None:
 					if cycle != mp_namespace.convert_cycle_ind:
 						if mp_namespace.convert_cycle_ind > 0:
-							new_cycle_event.set()
+							new_cycle_queue.put(mp_namespace.convert_cycle_ind)
 							print(f"_convert_jpg thread: New cycle {mp_namespace.convert_cycle_ind} event being set")
 						mp_namespace.convert_cycle_ind = cycle
 				else:
 					if not lock and mp_namespace.convert_cycle_ind > 0:
-						new_cycle_event.set()
+						new_cycle_queue.put(mp_namespace.convert_cycle_ind)
 						print(f"_convert_jpg thread: Cycle {mp_namespace.convert_cycle_ind} event being set")
 						lock = True # only do this once
 			else:
-				while not mp_namespace.bConvertEnable:
+				while not mp_namespace.bEnable:
 					continue
-				print(f"\n\nconverting jpeg {filepath} after wait\n\n")
+				# ~ print(f"\n\nconverting jpeg {filepath} after wait\n\n")
 
 				out_dir = os.path.join(os.path.dirname(filepath), "raws")
 				filename = os.path.splitext(os.path.basename(filepath))[0]
 				rgbs = jpg_to_raw(filepath, os.path.join(out_dir, filename+".tif"))
+				# TODO: do something with rgb data?
 
 
-	def _image_handler(self, mp_namespace : Namespace, image_ready_event : multiprocessing.Event, rois_detected_event, base_caller_queue, kinetics_queue):
+	def _image_handler(self, mp_namespace : Namespace, image_ready_queue : multiprocessing.Queue, rois_detected_event, basis_chosen_queue, base_caller_queue, kinetics_queue):
 		''' High level handler... will use cycle number (before incrementing)
 			to check raws directory for cycles, make decisions on where to send imageset
 		'''
@@ -280,16 +279,21 @@ class ZionImageProcessor(multiprocessing.Process):
 		in_path = os.path.join(self.session_path, "raws")
 		out_path = self.file_output_path
 		rois_detected_event.clear()
+		# ~ lock = False
 
 		#TODO: this should come from a ZionLED property or something
 		uv_wl = '365'
 
 		while True:
-			print("_image_handler thread: Waiting for new cycle event")
-			image_ready_event.wait()
-			print(f"_image_handler thread: new cycle detected event received")
-			# ~ image_ready_event.clear()
+			new_cycle = image_ready_queue.get()
+			print(f"_image_handler thread: new cycle {new_cycle} fully converted")
+			while not mp_namespace.bEnable:
+				continue
 
+			if new_cycle != mp_namespace.ip_cycle_ind+1:
+				raise ValueError(f"Expected cycle {mp_namespace.ip_cycle_ind}, got {new_cycle}!")
+
+			# now new_cycle and ip_cycle_ind must differ by 1 now
 			if mp_namespace.ip_cycle_ind == 0:
 				#TODO: do any calibration here
 				mp_namespace.ip_cycle_ind += 1
@@ -318,12 +322,13 @@ class ZionImageProcessor(multiprocessing.Process):
 				currImageSet = ZionImage(imgFileList, wls, cycle=mp_namespace.ip_cycle_ind, subtrahends=diffImgSubtrahends) if self.bUseDifferenceImages else ZionImage(imgFileList, wls, cycle=mp_namespace.ip_cycle_ind)
 
 				if mp_namespace.ip_cycle_ind == 1:
-					self.detect_rois( currImageSet )
+					roi_imgs = self.detect_rois( currImageSet )
 					rois_detected_event.set()
+					M, spots = basis_chosen_queue.get()
 
 					#TODO define spots of "pure" base for each base (eg identify homopolymer spots)
 
-					base_caller_queue.put(currImageSet)
+					# ~ base_caller_queue.put(currImageSet)
 
 					#TODO do kinetics analysis
 
@@ -433,10 +438,11 @@ class ZionImageProcessor(multiprocessing.Process):
 
 		self.roi_labels = spot_ind
 		self.numSpots = nSpots
-		for w_ind, w in enumerate(in_img.wavelengths):
-			roi_img = segmentation.mark_boundaries(in_img[w_ind], spot_ind, mode='thick', color=[1,0,1])
-			#TODO adjust how images are normalized here?
-			imwrite( os.path.join(self.file_output_path, f"roi_{w}"), (255*roi_img).astype('uint8') )
+		roi_img = [create_labeled_rois(self.roi_labels, filepath=os.path.join(self.file_output_path, f"rois"), color=[1,0,1])]
+		#TODO include other channels here
+		# ~ for w_ind, w in enumerate(in_img.wavelengths):
+			# ~ roi_img.append( create_labeled_rois(self.roi_labels, filepath=os.path.join(self.file_output_path, f"roi_{w}"), color=[1,0,1], img=in_img[w]) )
+		return roi_img
 
 	### for testing:
 	def do_test(self):
