@@ -150,6 +150,7 @@ class ZionImageProcessor(multiprocessing.Process):
 
 		self.roi_labels = None
 		self.numSpots = None
+		self.M = None
 
 		self._mp_manager = multiprocessing.Manager()
 		self.mp_namespace = self._mp_manager.Namespace()
@@ -294,10 +295,9 @@ class ZionImageProcessor(multiprocessing.Process):
 
 		while True:
 			new_cycle = image_ready_queue.get()
-			print(f"_image_handler thread: new cycle {new_cycle} fully converted")
 			while not mp_namespace.bEnable:
 				continue
-
+			print(f"_image_handler thread: begin processing new cycle {new_cycle}")
 			if new_cycle == 0:
 				#TODO: do any calibration here
 				print("Cycle 0 calibration (none yet)")
@@ -329,8 +329,8 @@ class ZionImageProcessor(multiprocessing.Process):
 					roi_imgs = self.detect_rois( currImageSet )
 					rois_detected_event.set()
 					basis_spots = basis_chosen_queue.get() #tuple of spot labels
-					M = np.array([ currImageSet.get_mean_spot_vector( self.roi_labels==basis_spot ) for basis_spot in basis_spots ]).T
-					print(f"\n\nBasis Vector = {M}, with shape {M.shape}\n\n")
+					self.create_basis_vector_matrix(currImageSet, basis_spots)
+					print(f"\n\nBasis Vector = {self.M}, with shape {self.M.shape}\n\n")
 
 					base_caller_queue.put(currImageSet)
 
@@ -338,14 +338,13 @@ class ZionImageProcessor(multiprocessing.Process):
 
 				elif new_cycle > 1:
 					base_caller_queue.put(currImageSet)
+					print(f"\n\nBasis Vector = {self.M}, with shape {self.M.shape}\n\n")
 
 					#TODO do kinetics analysis
 
 				else:
 					raise ValueError(f"Invalid cycle index {new_cycle}!")
 
-			# ~ image_ready_event.clear()
-			print("clearing image ready queue")
 
 	def _base_caller(self, mp_namespace : Namespace, base_caller_queue : multiprocessing.Queue, bases_called_event : multiprocessing.Event):
 
@@ -442,6 +441,12 @@ class ZionImageProcessor(multiprocessing.Process):
 		for w_ind, w in enumerate(in_img.wavelengths):
 			roi_img.append( create_labeled_rois(self.roi_labels, filepath=os.path.join(self.file_output_path, f"rois_{w}"), color=[1,0,1], img=in_img[w]) )
 		return roi_img
+
+	def create_basis_vector_matrix(self, cycle1_imageset, spot_indices):
+		if self.roi_labels is not None:
+			self.M = np.array([ cycle1_imageset.get_mean_spot_vector( self.roi_labels==basis_spot ) for basis_spot in spot_indices ]).T
+		else:
+			print("ROIs not detected yet!")
 
 	### for testing:
 	def do_test(self):
