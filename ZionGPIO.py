@@ -134,7 +134,7 @@ class ZionPigpioProcess(multiprocessing.Process):
         self.mp_namespace.temperature = None
         self.mp_namespace.dc = 0
         
-        self.mp_namespace.pid_verbose = True
+        self.mp_namespace.pid_verbose = False
         self.mp_namespace.pid_reset = True
         self.mp_namespace.pid_enable = False
         if PID_Params is not None:
@@ -234,9 +234,9 @@ class ZionPigpioProcess(multiprocessing.Process):
         self._debug_trigger_handle.start()
         
         self._pid_loop = threading.Thread(
-			target=self._pid_control_thread,
-			args = (self.mp_namespace, self.pid_freq, self.pid_bias, self.pid_ramp_threshold, self.temp_out_gpio, self.pi)
-		)
+            target=self._pid_control_thread,
+            args = (self.mp_namespace, self.pid_freq, self.pid_bias, self.pid_ramp_threshold, self.temp_out_gpio, self.pi)
+        )
         self._pid_loop.daemon = True
         self._pid_loop.start()
 
@@ -795,86 +795,3 @@ class ZionGPIO():
     def enable_PID(self, bEnable):
         self.pigpio_process.enable_PID(bEnable)
 
-# ~ class ZionPID():
-	# ~ def __init__(self, parent, gpio, frequency=10, P=10, I=2, D=0, delta_t=1, ramp_threshold=10, target_temp=25):
-		# ~ self.parent = parent
-		# ~ self.gpio = gpio
-		# ~ if GpioPins[gpio][1]:
-			# ~ self.parent.pi.set_mode(gpio, pigpio.PUD_DOWN)
-			# ~ self.parent.pi.set_PWM_range(gpio, 100)
-			# ~ self.parent.pi.set_PWM_frequency(gpio,frequency)
-		# ~ else:
-			# ~ raise ValueError('Chosen GPIO is not enabled!')
-		
-		# ~ self.P = P
-		# ~ self.I = I
-		# ~ self.D = D
-		
-		# ~ self.delta_t = delta_t
-		# ~ self.ramp_threshold = ramp_threshold
-		# ~ self.target_temp = target_temp
-		
-		# ~ self.init_vars()
-		# ~ self.set_dc(0)
-		# ~ self.update_temp()
-		
-		# ~ self.Enable = False
-		
-	# ~ def enable_PID(self, bEnable):
-		# ~ self.Enable = bEnable
-		
-	# ~ def init_vars(self):
-		# ~ self.error = 0
-		# ~ self.interror = 0
-		# ~ self.dc_cnt = 1
-		# ~ self.dc_tot = 0
-	
-	# ~ def set_P(self, p):
-		# ~ self.P = p
-	
-	# ~ def set_I(self, i):
-		# ~ self.I = i
-	
-	# ~ def set_D(self, d):
-		# ~ self.D = d
-		
-	# ~ def set_target_temp(self, temp):
-		# ~ self.target_temp = temp
-		
-	# ~ def set_frequency(self, freq):
-		# ~ self.parent.pi.set_PWM_frequency(self.gpio,frequency)
-		
-	# ~ def set_dc(self, dc):
-		# ~ self.parent.pi.set_PWM_dutycycle(self.gpio,dc)
-		# ~ self.dc = dc
-	
-	# ~ def update_temp(self):
-		# ~ self.temperature = self.parent._read_temperature()
-		
-	# ~ def pid_control_loop(self, bias=0):
-		# ~ if self.Enable:
-			# ~ self.update_temp()
-			# ~ print('starting initial ramp, temp = '+str(self.temperature))
-			# ~ self.set_dc(100)
-			# ~ while self.target_temp - self.temperature > self.ramp_threshold:
-				# ~ update_temp()
-				# ~ time.sleep(self.delta_t)
-
-			# ~ print('control loop started')
-			# ~ prev_time = time.time()
-			# ~ self.init_vars()
-			# ~ while True:
-				# ~ self.update_temp()
-				# ~ curr_time = time.time()
-				# ~ self.error = self.target_temp-self.temperature
-				# ~ self.interror += error*(curr_time-prev_time)
-				# ~ new_dc_value = bias + (self.P*self.error + self.I*self.interror) #todo add D term?
-				# ~ print(str(curr_temp)+ ', power = '+str(power)+', error = '+str(error)+', interror = '+str(interror))
-				# ~ if new_dc_value>0:
-					# ~ self.dc_tot += new_dc_value
-				# ~ self.dc_avg = self.dc_tot/self.dc_cnt
-				# ~ self.dc_cnt += 1
-				# ~ print('pwr_avg = '+str(pwr_avg))
-				# ~ self.parent.pi.set_dc(max(min( int(new_dc_value), 100 ),0))
-				# ~ prev_time = curr_time
-				# ~ time.sleep(self.delta_t)
