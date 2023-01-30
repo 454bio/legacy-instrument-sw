@@ -58,12 +58,12 @@ class ZionImage(UserDict):
 		d = dict()
 		wl_subs = [get_wavelength_from_filename(fp) for fp in subtrahends] if subtrahends is not None else []
 
-		times = []
+		self.times = []
 		self.filenames = dict()
 		for wavelength, imagefile in zip(lstWavelengths, lstImageFiles):
 			#TODO check validity (uint16, RGB, consistent sizes)
 			image = imread(imagefile)
-			times.append( get_time_from_filename(imagefile) )
+			self.times.append( get_time_from_filename(imagefile) )
 			self.filenames[wavelength] = imagefile
 
 			if subtrahends is not None:
@@ -71,22 +71,22 @@ class ZionImage(UserDict):
 					continue
 				elif wavelength in wl_subs:
 					d[wavelength] = image - imread(subtrahends[wl_subs.index(wavelength)])
-					print(f"adding {imagefile} - {subtrahends[wl_subs.index(wavelength)]}")
+					# ~ print(f"adding {imagefile} - {subtrahends[wl_subs.index(wavelength)]}")
 					# ~ print(f"image shape: {image.shape}")
 				else:
 					d[wavelength] = image
-					print(f"adding {imagefile}")
+					# ~ print(f"adding {imagefile}")
 					# ~ print(f"image shape: {image.shape}")
 			else: #not using difference image
 				if wavelength == '000':
 					continue
 				if '000' in lstWavelengths:
 					d[wavelength] = image - imread(lstImageFiles[lstWavelengths.index('000')])
-					print(f"adding {imagefile} - {lstImageFiles[lstWavelengths.index('000')]}")
+					# ~ print(f"adding {imagefile} - {lstImageFiles[lstWavelengths.index('000')]}")
 					# ~ print(f"image shape: {image.shape}")
 				else:
 					d[wavelength] = image
-					print(f"adding {imagefile}")
+					# ~ print(f"adding {imagefile}")
 					# ~ print(f"image shape: {image.shape}")
 
 		super().__init__(d)
@@ -95,7 +95,7 @@ class ZionImage(UserDict):
 		self.dims = image.shape[:2]
 		self.nChannels = len(lstWavelengths)
 		self.cycle = cycle
-		self.time_avg = round(sum(times)/len(times))
+		self.time_avg = round(sum(self.times)/len(self.times))
 
 	def get_mean_spot_vector(self, indices):
 		out = []
@@ -203,7 +203,14 @@ class ZionImageProcessor(multiprocessing.Process):
 		self._image_processing_thread.join(1.0)
 		if self._image_processing_handle.is_alive():
 			print("_image_processing_thread is still alive!")
-		#TODO same for all threads
+
+		self._base_calling_thread.join(1.0)
+		if self._base_calling_thread.is_alive():
+			print("_base_calling_thread is still alive!")
+
+		self._kinetics_thread.join(1.0)
+		if self._kinetics_thread.is_alive():
+			print("_kinetics_thread is still alive!")
 
 	def _start_child_threads(self):
 
@@ -221,21 +228,21 @@ class ZionImageProcessor(multiprocessing.Process):
 		self._image_processing_thread.daemon = True
 		self._image_processing_thread.start()
 
-		# ~ self._base_calling_thread = threading.Thread(
-			# ~ target=self._base_caller,
-			# ~ args=(self.mp_namespace, self.base_caller_queue, self.bases_called_event)
-		# ~ )
+		self._base_calling_thread = threading.Thread(
+			target=self._base_caller,
+			args=(self.mp_namespace, self.base_caller_queue, self.bases_called_event)
+		)
 
-		# ~ self._base_calling_thread.daemon = True
-		# ~ self._base_calling_thread.start()
+		self._base_calling_thread.daemon = True
+		self._base_calling_thread.start()
 
-		# ~ self._kinetics_thread = threading.Thread(
-			# ~ target=self._kinetics_analyzer,
-			# ~ args=(self.mp_namespace, self.kinetics_analyzer_queue, self.kinetics_analyzed_event)
-		# ~ )
+		self._kinetics_thread = threading.Thread(
+			target=self._kinetics_analyzer,
+			args=(self.mp_namespace, self.kinetics_analyzer_queue, self.kinetics_analyzed_event)
+		)
 
-		# ~ self._kinetics_thread.daemon = True
-		# ~ self._kinetics_thread.start()
+		self._kinetics_thread.daemon = True
+		self._kinetics_thread.start()
 
 		#todo: same for other threads
 
@@ -328,25 +335,33 @@ class ZionImageProcessor(multiprocessing.Process):
 				currImageSet = ZionImage(imgFileList, wls, cycle=new_cycle, subtrahends=diffImgSubtrahends) if self.bUseDifferenceImages else ZionImage(imgFileList, wls, cycle=new_cycle)
 
 				if new_cycle == 1:
-					roi_imgs = self.detect_rois( currImageSet )
-					#TODO include saving labels file
-					rois_detected_event.set()
-					basis_spots = basis_chosen_queue.get() #tuple of spot labels
+					done = False
+					while not done:
+						while not mp_namespace.bEnable:
+							continue
+						roi_imgs = self.detect_rois( currImageSet )
+						rois_detected_event.set()
+						basis_spots = basis_chosen_queue.get() #tuple of spot labels
+						if isinstance(basis_spots, tuple) and len(basis_spots)==4:
+							done = True
+						else:
+							done = False
+							rois_detected_event.clear()
+					#this is a real set of basis spots
 					self.create_basis_vector_matrix(currImageSet, basis_spots)
 					print(f"\n\nBasis Vector = {self.M}, with shape {self.M.shape}\n\n")
 					base_caller_queue.put(currImageSet)
-
 					vis_cycle_files = [ f for f in cycle_files if not get_wavelength_from_filename(f)==uv_wl]
-					print(f"kineticsImageSet = {vis_cycle_files}")
+					# ~ print(f"kineticsImageSet = {vis_cycle_files}")
 					for cf in range(0, len(vis_cycle_files), nWls):
 						wls = [ get_wavelength_from_filename(f) for f in vis_cycle_files[cf:cf+nWls] ]
 						kinetics_queue.put( ZionImage(vis_cycle_files[cf:cf+nWls], wls, cycle=new_cycle) )
 
 				elif new_cycle > 1:
 					base_caller_queue.put(currImageSet)
-					print(f"\n\nBasis Vector = {self.M}, with shape {self.M.shape}\n\n")
+					# ~ print(f"\n\nBasis Vector = {self.M}, with shape {self.M.shape}\n\n")
 					vis_cycle_files = [ f for f in cycle_files if not get_wavelength_from_filename(f)==uv_wl]
-					print(f"kineticsImageSet = {vis_cycle_files}")
+					# ~ print(f"kineticsImageSet = {vis_cycle_files}")
 					for cf in range(0, len(vis_cycle_files), nWls):
 						wls = [ get_wavelength_from_filename(f) for f in vis_cycle_files[cf:cf+nWls] ]
 						kinetics_queue.put( ZionImage(vis_cycle_files[cf:cf+nWls], wls, cycle=new_cycle) )
@@ -371,7 +386,7 @@ class ZionImageProcessor(multiprocessing.Process):
 				raise ValueError("No spots to use in basecalling!")
 			else:
 				spot_data = extract_spot_data(imageset, self.roi_labels, csvFileName = csvfile)
-				print(self.roi_labels)
+				# ~ print(f"roi label image = {self.roi_labels}")
 
 	def _kinetics_analyzer(self, mp_namespace : Namespace, kinetics_queue : multiprocessing.Queue, kinetics_analyzed_event : multiprocessing.Event):
 
@@ -388,7 +403,8 @@ class ZionImageProcessor(multiprocessing.Process):
 			elif self.numSpots==0:
 				raise ValueError("No spots to use in kinetics!")
 			else:
-				spot_data = extract_spot_data(imageset, self.roi_labels, csvFileName = csvfile)
+				spot_data = extract_spot_data(imageset, self.roi_labels, csvFileName = csvfile, kinetic=True)
+				# ~ print(f"adding kinetics data to {csvfile}")
 
 
 	def _image_view_thread(self, mp_namespace : Namespace, image_viewer_queue : multiprocessing.Queue ):
@@ -397,6 +413,15 @@ class ZionImageProcessor(multiprocessing.Process):
 	def add_to_convert_queue(self, fpath):
 		self.convert_files_queue.put_nowait( (fpath,) )
 		# ~ self.convert_files_queue.put( (fpath,) )
+
+	def set_roi_params(self, median_ks, erode_ks, dilate_ks):
+		self.mp_namespace.median_ks = median_ks
+		self.mp_namespace.erode_ks = erode_ks
+		self.mp_namespace.dilate_ks = dilate_ks
+
+	def set_basecall_params(self, p, q):
+		self.mp_namespace.p = p
+		self.mp_namespace.q = q
 
 	@property
 	def enable(self):
@@ -433,18 +458,20 @@ class ZionImageProcessor(multiprocessing.Process):
 		self.mp_namespace._bShowBases = bEnable
 		print(f"View Spots enabled? {bEnable}")
 
-	def detect_rois(self, in_img, uv_wl='365', median_ks=9, erosion_ks=35, dilation_ks=30):
+	def detect_rois(self, in_img, uv_wl='365'):
+
+		print(f"Detecting ROIs using median={self.mp_namespace.median_ks}, erode={self.mp_namespace.erode_ks}, dilate={self.mp_namespace.dilate_ks}")
 
 		#Convert to grayscale (needs to access UV channel here when above change occurs):
 		img_gs = rgb2gray(in_img.data[uv_wl])
 
-		img_gs = median_filter(img_gs, median_ks)
+		img_gs = median_filter(img_gs, self.mp_namespace.median_ks)
 		thresh = filters.threshold_mean(img_gs)
 		#TODO: adjust threshold? eg make it based on stats?
 		img_bin = img_gs > thresh
 
-		img_bin = morphology.binary_erosion(img_bin, morphology.disk(erosion_ks))
-		img_bin = morphology.binary_dilation(img_bin, morphology.disk(dilation_ks))
+		img_bin = morphology.binary_erosion(img_bin, morphology.disk(self.mp_namespace.erode_ks))
+		img_bin = morphology.binary_dilation(img_bin, morphology.disk(self.mp_namespace.dilate_ks))
 		img_bin = morphology.binary_erosion(img_bin, morphology.disk(4))
 
 		spot_labels, nSpots = measure.label(img_bin, return_num=True)
@@ -460,6 +487,7 @@ class ZionImageProcessor(multiprocessing.Process):
 		# TODO: get stats, centroids of spots, further invalidate improper spots. ()
 
 		self.roi_labels = spot_labels
+		np.save(os.path.join(self.file_output_path, f"rois.npy"), spot_labels)
 		self.numSpots = nSpots
 		roi_img = [create_labeled_rois(self.roi_labels, filepath=os.path.join(self.file_output_path, f"rois"), color=[1,0,1])]
 		for w_ind, w in enumerate(in_img.wavelengths):
@@ -469,6 +497,7 @@ class ZionImageProcessor(multiprocessing.Process):
 	def create_basis_vector_matrix(self, cycle1_imageset, spot_indices):
 		if self.roi_labels is not None:
 			self.M = np.array([ cycle1_imageset.get_mean_spot_vector( self.roi_labels==basis_spot ) for basis_spot in spot_indices ]).T
+			np.save(os.path.join(self.file_output_path, f"M.npy"), self.M)
 		else:
 			print("ROIs not detected yet!")
 
