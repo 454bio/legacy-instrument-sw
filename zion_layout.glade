@@ -39,6 +39,7 @@
     <property name="icon-name">edit-delete-symbolic</property>
   </object>
   <object class="GtkTextBuffer" id="digital_gain_buffer"/>
+  <object class="GtkTextBuffer" id="duty_cycle_buffer"/>
   <object class="GtkAdjustment" id="exp_comp_adjust">
     <property name="lower">-25</property>
     <property name="upper">25</property>
@@ -1709,6 +1710,50 @@
                                     <property name="margin-bottom">8</property>
                                     <property name="left-padding">12</property>
                                     <child>
+                                      <object class="GtkTextView" id="duty_cycle_textview">
+                                        <property name="visible">True</property>
+                                        <property name="sensitive">False</property>
+                                        <property name="can-focus">True</property>
+                                        <property name="valign">center</property>
+                                        <property name="pixels-above-lines">10</property>
+                                        <property name="editable">False</property>
+                                        <property name="justification">center</property>
+                                        <property name="cursor-visible">False</property>
+                                        <property name="buffer">duty_cycle_buffer</property>
+                                        <property name="accepts-tab">False</property>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
+                                <child type="label">
+                                  <object class="GtkLabel">
+                                    <property name="visible">True</property>
+                                    <property name="can-focus">False</property>
+                                    <property name="label" translatable="yes">DC(%):</property>
+                                  </object>
+                                </child>
+                              </object>
+                              <packing>
+                                <property name="expand">False</property>
+                                <property name="fill">True</property>
+                                <property name="position">4</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <object class="GtkFrame">
+                                <property name="visible">True</property>
+                                <property name="can-focus">False</property>
+                                <property name="halign">center</property>
+                                <property name="valign">end</property>
+                                <property name="label-xalign">0</property>
+                                <property name="shadow-type">in</property>
+                                <child>
+                                  <object class="GtkAlignment">
+                                    <property name="visible">True</property>
+                                    <property name="can-focus">False</property>
+                                    <property name="margin-bottom">8</property>
+                                    <property name="left-padding">12</property>
+                                    <child>
                                       <object class="GtkEntry" id="pid_tDelta_entry">
                                         <property name="visible">True</property>
                                         <property name="sensitive">False</property>
@@ -1731,7 +1776,7 @@
                               <packing>
                                 <property name="expand">False</property>
                                 <property name="fill">True</property>
-                                <property name="position">4</property>
+                                <property name="position">5</property>
                               </packing>
                             </child>
                             <child>
@@ -1769,7 +1814,7 @@
                               <packing>
                                 <property name="expand">False</property>
                                 <property name="fill">True</property>
-                                <property name="position">5</property>
+                                <property name="position">6</property>
                               </packing>
                             </child>
                             <child>
