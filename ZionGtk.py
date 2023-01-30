@@ -147,6 +147,12 @@ class ZionGUI():
         self.Spot_T_Entry = self.builder.get_object("spot_T_entry")
         self.SelectSpotsButton = self.builder.get_object("select_spots_button")
 
+        self.median_ks_entry = self.builder.get_object("median_ks_entry")
+        self.erode_ks_entry = self.builder.get_object("erode_ks_entry")
+        self.dilate_ks_entry = self.builder.get_object("dilate_ks_entry")
+        self.basecall_p_entry = self.builder.get_object("basecall_p_entry")
+        self.basecall_q_entry = self.builder.get_object("basecall_p_entry")
+
         self.handlers = Handlers(self)
         self.builder.connect_signals(self.handlers)
 
@@ -889,6 +895,23 @@ class Handlers:
         self.parent.parent.SaveParameterFile(comment, True)
         self.parent.parent.SaveProtocolFile(comment=comment, suffix=suffix)
 
+        try:
+            median_ks = int(self.parent.median_ks_entry.get_text())
+            erode_ks = int(self.parent.erode_ks_entry.get_text())
+            dilate_ks = int(self.parent.dilate_ks_entry.get_text())
+        except ValueError:
+            self.parent.printToLog("ROI Values must be integers!")
+            return
+        #todo check for non-positive values
+        self.parent.parent.ImageProcessor.set_roi_params(median_ks, erode_ks, dilate_ks)
+        try:
+            p = float(self.parent.basecall_p_entry.get_text())
+            q = float(self.parent.basecall_q_entry.get_text())
+        except ValueError:
+            self.parent.printToLog("p and q must be numeric!")
+            return
+        self.parent.parent.ImageProcessor.set_basecall_params(p,q)
+
         self.stop_run_thread.clear()
         self.parent.parent.Camera.stop_preview()
 
@@ -1125,6 +1148,19 @@ class Handlers:
         else:
             self.parent.parent.ImageProcessor.enable = False
         return
+
+    def on_redo_roi_detection_button_clicked(self, button):
+        try:
+            median_ks = int(self.parent.median_ks_entry.get_text())
+            erode_ks = int(self.parent.erode_ks_entry.get_text())
+            dilate_ks = int(self.parent.dilate_ks_entry.get_text())
+        except ValueError:
+            self.parent.printToLog("ROI Values must be integers!")
+            return
+        #todo check for non-positive values
+        self.parent.parent.ImageProcessor.set_roi_params(median_ks, erode_ks, dilate_ks)
+        # ~ self.parent.parent.ImageProcessor.mp_namespace.bEnable = False
+        self.parent.parent.ImageProcessor.basis_spots_chosen_queue.put( 'redo_roi' )
 
     def on_select_spots_button_clicked(self, button):
         try:

@@ -1187,11 +1187,12 @@ Gain</property>
                                       </packing>
                                     </child>
                                     <child>
-                                      <object class="GtkButton">
+                                      <object class="GtkButton" id="redo_roi_detection_button">
                                         <property name="label" translatable="yes">Redo</property>
                                         <property name="visible">True</property>
                                         <property name="can-focus">True</property>
                                         <property name="receives-default">True</property>
+                                        <signal name="clicked" handler="on_redo_roi_detection_button_clicked" swapped="no"/>
                                       </object>
                                       <packing>
                                         <property name="expand">False</property>

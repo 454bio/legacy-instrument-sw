@@ -54,7 +54,7 @@ class ZionBase(UserString):
         else:
             super().__init__(char)
 
-def extract_spot_data(img, roi_labels, csvFileName = None):
+def extract_spot_data(img, roi_labels, csvFileName = None, kinetic=False):
     ''' takes in a ZionImage (ie a dict of RGB images) and a 3D image of spot labels. Optionally writes a csv file.
         Outputs a pandas dataframe containing all data for the cycle.
     '''
@@ -67,7 +67,7 @@ def extract_spot_data(img, roi_labels, csvFileName = None):
     #TODO check to see that csvFileName exists since we are appending later
     
     for s_idx in range(1,numSpots+1): #spots go from [1, numSpots]
-        for w in img.wavelengths:
+        for w_ind, w in enumerate(img.wavelengths):
             w_idx += 3*[w]
             spot_data[df_cols[0]] = f"spot_{s_idx:03d}"
             spot_data[df_cols[1]] = w
@@ -82,7 +82,11 @@ def extract_spot_data(img, roi_labels, csvFileName = None):
             spot_data[df_cols[20]], spot_data[df_cols[21]], spot_data[df_cols[22]] = np.min(rgb_intensities, axis=0).tolist()
             spot_data[df_cols[23]], spot_data[df_cols[24]], spot_data[df_cols[25]] = np.max(rgb_intensities, axis=0).tolist()
             spot_data[df_cols[26]] = int(img.cycle)
-            spot_data[df_cols[27]] = int(img.time)
+            if not kinetic:
+                spot_data[df_cols[27]] = int(img.time_avg)
+            else:
+                spot_data[df_cols[27]] = int(img.time[w_ind])
+
             if csvFileName is not None:
                 with open(csvFileName, "a") as f:
                     lineToWrite = ','.join( [str(spot_data[k]) for k in df_cols])
@@ -95,8 +99,9 @@ def extract_spot_data(img, roi_labels, csvFileName = None):
 
     ch_idx = []
     # Note: dependent on df_cols def above
-    for c in range(2, len(df_cols)-1, 3):
+    for c in [2,5,8,11,14,17,20,23]:
         ch_idx += len(img.wavelengths) * df_cols[c:(c+3)]
+    print(f"ch_idx = {ch_idx}, w_idx = {w_idx}")
     mi = pd.MultiIndex.from_arrays([ch_idx, int(len(ch_idx)/len(w_idx))*w_idx])
     df_total = df_total.reindex(columns=mi)
 
