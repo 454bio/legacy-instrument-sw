@@ -312,10 +312,12 @@ class ZionImageProcessor(multiprocessing.Process):
 				# ~ print(f"cycle {new_cycle}'s wavelengths: {wls}")
 				if not uv_wl in wls:
 					raise ValueError(f"No {uv_wl} images in cycle {new_cycle}!")
+				nWls = len(wls)-1
 
 				# Find earliest images of UV wavelength, but the latest of others:
 				imgFileList = []
 				diffImgSubtrahends = []
+
 				for wl in wls:
 					if wl==uv_wl:
 						imgFileList.append(cycle_files[[f"_{wl}_" in fp for fp in cycle_files].index(True)]) #first uv image
@@ -327,20 +329,27 @@ class ZionImageProcessor(multiprocessing.Process):
 
 				if new_cycle == 1:
 					roi_imgs = self.detect_rois( currImageSet )
+					#TODO include saving labels file
 					rois_detected_event.set()
 					basis_spots = basis_chosen_queue.get() #tuple of spot labels
 					self.create_basis_vector_matrix(currImageSet, basis_spots)
 					print(f"\n\nBasis Vector = {self.M}, with shape {self.M.shape}\n\n")
-
 					base_caller_queue.put(currImageSet)
 
-					#TODO do kinetics analysis
+					vis_cycle_files = [ f for f in cycle_files if not get_wavelength_from_filename(f)==uv_wl]
+					print(f"kineticsImageSet = {vis_cycle_files}")
+					for cf in range(0, len(vis_cycle_files), nWls):
+						wls = [ get_wavelength_from_filename(f) for f in vis_cycle_files[cf:cf+nWls] ]
+						kinetics_queue.put( ZionImage(vis_cycle_files[cf:cf+nWls], wls, cycle=new_cycle) )
 
 				elif new_cycle > 1:
 					base_caller_queue.put(currImageSet)
 					print(f"\n\nBasis Vector = {self.M}, with shape {self.M.shape}\n\n")
-
-					#TODO do kinetics analysis
+					vis_cycle_files = [ f for f in cycle_files if not get_wavelength_from_filename(f)==uv_wl]
+					print(f"kineticsImageSet = {vis_cycle_files}")
+					for cf in range(0, len(vis_cycle_files), nWls):
+						wls = [ get_wavelength_from_filename(f) for f in vis_cycle_files[cf:cf+nWls] ]
+						kinetics_queue.put( ZionImage(vis_cycle_files[cf:cf+nWls], wls, cycle=new_cycle) )
 
 				else:
 					raise ValueError(f"Invalid cycle index {new_cycle}!")
@@ -348,24 +357,39 @@ class ZionImageProcessor(multiprocessing.Process):
 
 	def _base_caller(self, mp_namespace : Namespace, base_caller_queue : multiprocessing.Queue, bases_called_event : multiprocessing.Event):
 
-		csvfile = os.path.join(self.file_output_path, "spot_data.csv")
+		csvfile = os.path.join(self.file_output_path, "basecaller_spot_data.csv")
 		print(f"_base_caller_thread: creating csv file {csvfile}")
 		with open(csvfile, "w") as f:
 			f.write(','.join(df_cols)+'\n')
 		while True:
 			imageset = base_caller_queue.get()
+			while not mp_namespace.bEnable:
+				continue
 			if self.roi_labels is None or self.numSpots is None:
 				raise RunTimeError("ROIs haven't been detected yet!")
 			elif self.numSpots==0:
 				raise ValueError("No spots to use in basecalling!")
 			else:
 				spot_data = extract_spot_data(imageset, self.roi_labels, csvFileName = csvfile)
+				print(self.roi_labels)
 
 	def _kinetics_analyzer(self, mp_namespace : Namespace, kinetics_queue : multiprocessing.Queue, kinetics_analyzed_event : multiprocessing.Event):
 
-		#init file(s)
+		csvfile = os.path.join(self.file_output_path, "kinetics_spot_data.csv")
+		print(f"_base_caller_thread: creating csv file {csvfile}")
+		with open(csvfile, "w") as f:
+			f.write(','.join(df_cols)+'\n')
 		while True:
 			imageset = kinetics_queue.get()
+			while not mp_namespace.bEnable:
+				continue
+			if self.roi_labels is None or self.numSpots is None:
+				raise RunTimeError("ROIs haven't been detected yet!")
+			elif self.numSpots==0:
+				raise ValueError("No spots to use in kinetics!")
+			else:
+				spot_data = extract_spot_data(imageset, self.roi_labels, csvFileName = csvfile)
+
 
 	def _image_view_thread(self, mp_namespace : Namespace, image_viewer_queue : multiprocessing.Queue ):
 		return
