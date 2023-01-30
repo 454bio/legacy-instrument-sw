@@ -134,7 +134,7 @@ class ZionPigpioProcess(multiprocessing.Process):
         self.mp_namespace.temperature = None
         self.mp_namespace.dc = 0
         
-        self.mp_namespace.pid_verbose = True
+        self.mp_namespace.pid_verbose = False
         self.mp_namespace.pid_reset = True
         self.mp_namespace.pid_enable = False
         if PID_Params is not None:
