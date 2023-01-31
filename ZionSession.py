@@ -444,6 +444,7 @@ class ZionSession():
     def QuitSession(self):
         self.Camera.quit()
         self.GPIO.quit()
+        self.ImageProcessor.stop_event.set()
 
         # Delete the session folder if it's empty
         if os.path.isdir(self.Dir) and not any(os.scandir(self.Dir)):
@@ -461,7 +462,7 @@ class ZionSession():
     def update_roi_image(self, basis_spot_queue):
         while True:
             self.ImageProcessor.rois_detected_event.wait()
-            GLib.idle_add(self.gui.load_roi_image, (os.path.join(self.ImageProcessor.file_output_path, "rois.jpg"), basis_spot_queue))
+            GLib.idle_add(self.gui.load_roi_image, (os.path.join(self.ImageProcessor.file_output_path, "rois_365.jpg"), basis_spot_queue))
             self.ImageProcessor.rois_detected_event.clear()
 
     def get_temperature(self):

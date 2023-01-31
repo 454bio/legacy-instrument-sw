@@ -1153,7 +1153,7 @@ Gain</property>
                                         <property name="can-focus">True</property>
                                         <property name="margin-end">16</property>
                                         <property name="width-chars">4</property>
-                                        <property name="text" translatable="yes">35</property>
+                                        <property name="text" translatable="yes">16</property>
                                       </object>
                                       <packing>
                                         <property name="expand">False</property>
@@ -1178,12 +1178,37 @@ Gain</property>
                                         <property name="visible">True</property>
                                         <property name="can-focus">True</property>
                                         <property name="width-chars">4</property>
-                                        <property name="text" translatable="yes">31</property>
+                                        <property name="text" translatable="yes">13</property>
                                       </object>
                                       <packing>
                                         <property name="expand">False</property>
                                         <property name="fill">True</property>
                                         <property name="position">6</property>
+                                      </packing>
+                                    </child>
+                                    <child>
+                                      <object class="GtkLabel">
+                                        <property name="visible">True</property>
+                                        <property name="can-focus">False</property>
+                                        <property name="label" translatable="yes">threshold_scale</property>
+                                      </object>
+                                      <packing>
+                                        <property name="expand">False</property>
+                                        <property name="fill">True</property>
+                                        <property name="position">7</property>
+                                      </packing>
+                                    </child>
+                                    <child>
+                                      <object class="GtkEntry" id="threshold_scale_entry">
+                                        <property name="visible">True</property>
+                                        <property name="can-focus">True</property>
+                                        <property name="width-chars">4</property>
+                                        <property name="text" translatable="yes">1.01</property>
+                                      </object>
+                                      <packing>
+                                        <property name="expand">False</property>
+                                        <property name="fill">True</property>
+                                        <property name="position">8</property>
                                       </packing>
                                     </child>
                                     <child>
@@ -1197,7 +1222,7 @@ Gain</property>
                                       <packing>
                                         <property name="expand">False</property>
                                         <property name="fill">True</property>
-                                        <property name="position">7</property>
+                                        <property name="position">9</property>
                                       </packing>
                                     </child>
                                   </object>
