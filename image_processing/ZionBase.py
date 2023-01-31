@@ -113,6 +113,25 @@ def extract_spot_data(img, roi_labels, csvFileName = None, kinetic=False):
 
     return df_total
 
+def csv_to_data(csvfile):
+    df_total = pd.from_csv(csvfile)
+    df_total.set_index(["roi", "time", "cycle", "wavelength"], inplace=True)
+    df_total = df_total.unstack()
+    w_idx = []
+    for w in img.wavelengths:
+        w_idx =+ 3*[w]
+    ch_idx = []
+    # Note: dependent on df_cols def above
+    for c in [2,5,8,11,14,17,20,23]:
+        ch_idx += len(img.wavelengths) * df_cols[c:(c+3)]
+    try:
+        mi = pd.MultiIndex.from_arrays([ch_idx, int(len(ch_idx)/len(w_idx))*w_idx])
+    except ValueError as e:
+        print(f"ch_idx = {ch_idx}, w_idx = {w_idx}")
+        raise e
+    df_total = df_total.reindex(columns=mi)
+    return df_total
+
 def crosstalk_correct(data, X, numCycles, spotlist, measure="mean", append=False):
     '''
     Takes in dataframe, Kx4 "crosstalk" matrix X (which is actually just the color basis vectors), and number of cycles.
@@ -157,7 +176,7 @@ def crosstalk_correct(data, X, numCycles, spotlist, measure="mean", append=False
     if append:
         return pd.concat([data, coeffs_df], axis=1)
     else:
-        return coeffs, stds_out#, coeffs_norm
+        return coeffs#, stds_out#, coeffs_norm
 
 def base_call(data, p:float=0.0, q:float=0.0, base_key:list=["A", "C", "G" "T"]):
     ''' This takes the 4 coefficients found from crosstalk correction and 

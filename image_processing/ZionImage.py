@@ -262,8 +262,8 @@ class ZionImageProcessor(multiprocessing.Process):
 		while True:
 			filepath_args = image_file_queue.get()
 			filepath = filepath_args[0]
-			if filepath is None:
-				print("_convert_jpeg thread -- received stop signal!")
+			if filepath is None: # basically a stop signal
+				print("_convert_jpeg -- received stop signal!")
 				break
 			if mp_namespace.bEnable:
 				print(f"Converting jpeg {filepath}")
@@ -313,6 +313,7 @@ class ZionImageProcessor(multiprocessing.Process):
 			while not mp_namespace.bEnable:
 				continue
 			print(f"_image_handler thread: begin processing new cycle {new_cycle}")
+			self.mp_namespace.ip_cycle_ind = new_cycle
 			if new_cycle == 0:
 				#TODO: do any calibration here
 				print("Cycle 0 calibration (none yet)")
@@ -515,6 +516,14 @@ class ZionImageProcessor(multiprocessing.Process):
 			np.save(os.path.join(self.file_output_path, f"M.npy"), self.M)
 		else:
 			print("ROIs not detected yet!")
+
+	def generate_report(self):
+		#todo kinetics
+		# ~ self.mp_namespace.ip_cycle_ind
+		basecall_csv = os.path.join(self.file_output_path, "basecaller_spot_data.csv")
+		#todo print options M, and roi labels to text file?
+		basecall_pd = csv_to_data(basecall_csv)
+		signal_pre_basecall = crosstalk_correct(basecall_pd, self.M, self.mp_namespace.ip_cycle_ind, 
 
 	### for testing:
 	def do_test(self):
