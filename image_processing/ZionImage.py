@@ -13,7 +13,7 @@ from tifffile import imread, imwrite
 from matplotlib import pyplot as plt
 
 from image_processing.raw_converter import jpg_to_raw, get_wavelength_from_filename, get_cycle_from_filename, get_time_from_filename
-from image_processing.ZionBase import df_cols, extract_spot_data
+from image_processing.ZionBase import df_cols, extract_spot_data, csv_to_data, crosstalk_correct, display_signals, base_call
 
 
 # TODO rebase most skimage stuff into opencv (raspberry pi opencv by default doesn't deal with 16 bit images)
@@ -519,18 +519,57 @@ class ZionImageProcessor(multiprocessing.Process):
 
 	def generate_report(self):
 		#todo kinetics
-		# ~ self.mp_namespace.ip_cycle_ind
+		reportfile = os.path.join(self.file_output_path, "report.txt")
+		M = np.load(os.path.join(self.file_output_path, "M.npy"))
+
+		# todo kinetics figure, similar to below
+		# generate pre-phase-correction histograms:
 		basecall_csv = os.path.join(self.file_output_path, "basecaller_spot_data.csv")
-		#todo print options M, and roi labels to text file?
 		basecall_pd = csv_to_data(basecall_csv)
-		signal_pre_basecall = crosstalk_correct(basecall_pd, self.M, self.mp_namespace.ip_cycle_ind, 
+		signal_pre_basecall, spotlist = crosstalk_correct(basecall_pd, M, self.mp_namespace.ip_cycle_ind)
+		signal_pre_basecall.to_csv(os.path.join(self.file_output_path, "basecaller_output_data_1.csv"))
+		f1,f2 = display_signals(signal_pre_basecall, spotlist, self.mp_namespace.ip_cycle_ind)
+		#now perform phase correction
+		# ~ base_call
+		# ~ f3,f4 = 
+
+		plt.show()
+		f1.savefig(os.path.join(self.file_output_path, "Purity Pre-Phase.png"))
+		f2.savefig(os.path.join(self.file_output_path, "Signal Pre-Phase.png"))
+		# ~ f3.savefig(os.path.join(self.file_output_path, "Signal Post-Phase.png")
+		# ~ f4.savefig(os.path.join(self.file_output_path, "Signal Post-Phase.png")
+
+		with open(reportfile, 'w') as f:
+			if self.bUseDifferenceImages:
+				print(f"Difference = Temporal", file=f)
+			else:
+				print(f"Difference = Dark", file=f)
+
+			print(f"Median Filter Kernel Size = {self.mp_namespace.median_ks}", file=f)
+			print(f"Erosion Kernel Size = {self.mp_namespace.erode_ks}", file=f)
+			print(f"Dilation Kernel Size = {self.mp_namespace.dilate_ks}", file=f)
+			print(f"Mean Threshold Scale Factor = {self.mp_namespace.threshold_scale}", file=f)
+			print(f"ROI labels at {os.path.join(self.file_output_path, 'rois.jpg')}", file=f)
+			print(f"'Cross-talk' matrix M = {M}", file=f)
+			#todo list where output csv is?
+			print(f"Pre-phase corrected Purity at {os.path.join(self.file_output_path, 'Purity Pre-Phase.png')}", file=f)
+			print(f"Pre-phase corrected Signal {os.path.join(self.file_output_path, 'Signal Pre-Phase.png')}", file=f)
+			print(f"Base-caller p = {self.mp_namespace.p}", file=f)
+			print(f"Base-caller q = {self.mp_namespace.q}", file=f)
+			# ~ print(f"Post-phase corrected Purity at {os.path.join(self.file_output_path, 'Purity Post-Phase.png')}", file=f)
+			# ~ print(f"Post-phase corrected Signal {os.path.join(self.file_output_path, 'Signal Post-Phase.png')}", file=f)
 
 	### for testing:
 	def do_test(self):
-		filelist = ['/home/pi/Desktop/zion/rois.tiff']
-		wavelengths = ['525']
-		test_img = ZionImage(filelist, wavelengths, cycle=1)
-		self.gui.IpViewWrapper.images = test_img.view_4D
+		#todo kinetics
+		# ~ self.mp_namespace.ip_cycle_ind
+		basecall_csv = os.path.join("/home/pi/Desktop/zion/sessions/20230131_0955_TS_0192/processed_images_v1", "basecaller_spot_data.csv")
+		#todo print options, M, and roi labels to text file?
+		M = np.load(os.path.join("/home/pi/Desktop/zion/sessions/20230131_0955_TS_0192/processed_images_v1", "M.npy"))
+		basecall_pd = csv_to_data(basecall_csv)
+		signal_pre_basecall, spotlist, basecall_pd = crosstalk_correct(basecall_pd, M, 2)
+		basecall_pd.to_csv(os.path.join(self.file_output_path, "basecaller_output_data.csv"))
+		display_signals(signal_pre_basecall, spotlist, 2)
 
 	def do_something(self):
 		filelist = [os.path.join("/home/pi/Desktop/zion/image_sets/S24/cycle1", fname)

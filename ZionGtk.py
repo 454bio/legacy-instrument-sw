@@ -1244,7 +1244,7 @@ class Handlers:
 
     def on_test1_button_clicked(self, button):
         print("Test 1 Button clicked")
-        self.parent.parent.ImageProcessor.do_something()
+        self.parent.parent.ImageProcessor.do_test()
         return
 
     def check_fixed_settings(self):
