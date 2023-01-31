@@ -150,6 +150,7 @@ class ZionGUI():
         self.median_ks_entry = self.builder.get_object("median_ks_entry")
         self.erode_ks_entry = self.builder.get_object("erode_ks_entry")
         self.dilate_ks_entry = self.builder.get_object("dilate_ks_entry")
+        self.threshold_scale_entry = self.builder.get_object("threshold_scale_entry")
         self.basecall_p_entry = self.builder.get_object("basecall_p_entry")
         self.basecall_q_entry = self.builder.get_object("basecall_p_entry")
 
@@ -903,7 +904,13 @@ class Handlers:
             self.parent.printToLog("ROI Values must be integers!")
             return
         #todo check for non-positive values
-        self.parent.parent.ImageProcessor.set_roi_params(median_ks, erode_ks, dilate_ks)
+        try:
+            threshold_scale = float(self.parent.threshold_scale_entry.get_text())
+        except ValueError:
+            self.parent.printToLog("ROI threshold needs to be numeric!")
+        #todo check for negative
+
+        self.parent.parent.ImageProcessor.set_roi_params(median_ks, erode_ks, dilate_ks, threshold_scale)
         try:
             p = float(self.parent.basecall_p_entry.get_text())
             q = float(self.parent.basecall_q_entry.get_text())
@@ -1158,7 +1165,12 @@ class Handlers:
             self.parent.printToLog("ROI Values must be integers!")
             return
         #todo check for non-positive values
-        self.parent.parent.ImageProcessor.set_roi_params(median_ks, erode_ks, dilate_ks)
+        try:
+            threshold_scale = float(self.parent.threshold_scale_entry.get_text())
+        except ValueError:
+            self.parent.printToLog("ROI threshold needs to be numeric!")
+        #todo check for negative value
+        self.parent.parent.ImageProcessor.set_roi_params(median_ks, erode_ks, dilate_ks, threshold_scale)
         # ~ self.parent.parent.ImageProcessor.mp_namespace.bEnable = False
         self.parent.parent.ImageProcessor.basis_spots_chosen_queue.put( 'redo_roi' )
 

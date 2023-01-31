@@ -67,45 +67,50 @@ def extract_spot_data(img, roi_labels, csvFileName = None, kinetic=False):
     #TODO check to see that csvFileName exists since we are appending later
     
     for s_idx in range(1,numSpots+1): #spots go from [1, numSpots]
-        for w_ind, w in enumerate(img.wavelengths):
-            w_idx += 3*[w]
-            spot_data[df_cols[0]] = f"spot_{s_idx:03d}"
-            spot_data[df_cols[1]] = w
-            hsv_intensities = rgb2hsv(img[w][roi_labels==s_idx])
-            rgb_intensities = img[w][roi_labels==s_idx]
-            spot_data[df_cols[2]], spot_data[df_cols[3]], spot_data[df_cols[4]] = np.mean(rgb_intensities, axis=0).tolist()
-            spot_data[df_cols[5]], spot_data[df_cols[6]], spot_data[df_cols[7]] = np.median(rgb_intensities, axis=0).tolist()
-            spot_data[df_cols[8]], spot_data[df_cols[9]], spot_data[df_cols[10]] = np.mean(hsv_intensities, axis=0).tolist()
-            spot_data[df_cols[11]], spot_data[df_cols[12]], spot_data[df_cols[13]] = np.median(hsv_intensities, axis=0).tolist()
-            spot_data[df_cols[14]], spot_data[df_cols[15]], spot_data[df_cols[16]] = np.std(rgb_intensities, axis=0).tolist()
-            spot_data[df_cols[17]], spot_data[df_cols[18]], spot_data[df_cols[19]] = np.std(hsv_intensities, axis=0).tolist()
-            spot_data[df_cols[20]], spot_data[df_cols[21]], spot_data[df_cols[22]] = np.min(rgb_intensities, axis=0).tolist()
-            spot_data[df_cols[23]], spot_data[df_cols[24]], spot_data[df_cols[25]] = np.max(rgb_intensities, axis=0).tolist()
-            spot_data[df_cols[26]] = int(img.cycle)
-            if not kinetic:
-                spot_data[df_cols[27]] = int(img.time_avg)
-            else:
-                spot_data[df_cols[27]] = int(img.time[w_ind])
+        if roi_labels[roi_labels==s_idx].size > 0: #we removed ones that are too big but didn't change the labels...
+            for w_ind, w in enumerate(img.wavelengths):
+                spot_data[df_cols[0]] = f"spot_{s_idx:03d}"
+                spot_data[df_cols[1]] = w
+                hsv_intensities = rgb2hsv(img[w][roi_labels==s_idx])
+                rgb_intensities = img[w][roi_labels==s_idx]
+                spot_data[df_cols[2]], spot_data[df_cols[3]], spot_data[df_cols[4]] = np.mean(rgb_intensities, axis=0).tolist()
+                spot_data[df_cols[5]], spot_data[df_cols[6]], spot_data[df_cols[7]] = np.median(rgb_intensities, axis=0).tolist()
+                spot_data[df_cols[8]], spot_data[df_cols[9]], spot_data[df_cols[10]] = np.mean(hsv_intensities, axis=0).tolist()
+                spot_data[df_cols[11]], spot_data[df_cols[12]], spot_data[df_cols[13]] = np.median(hsv_intensities, axis=0).tolist()
+                spot_data[df_cols[14]], spot_data[df_cols[15]], spot_data[df_cols[16]] = np.std(rgb_intensities, axis=0).tolist()
+                spot_data[df_cols[17]], spot_data[df_cols[18]], spot_data[df_cols[19]] = np.std(hsv_intensities, axis=0).tolist()
+                spot_data[df_cols[20]], spot_data[df_cols[21]], spot_data[df_cols[22]] = np.min(rgb_intensities, axis=0).tolist()
+                spot_data[df_cols[23]], spot_data[df_cols[24]], spot_data[df_cols[25]] = np.max(rgb_intensities, axis=0).tolist()
+                spot_data[df_cols[26]] = int(img.cycle)
+                if not kinetic:
+                    spot_data[df_cols[27]] = int(img.time_avg)
+                else:
+                    spot_data[df_cols[27]] = int(img.times[w_ind])
 
-            if csvFileName is not None:
-                with open(csvFileName, "a") as f:
-                    lineToWrite = ','.join( [str(spot_data[k]) for k in df_cols])
-                    f.write( lineToWrite + '\n')
-                    print(f"Appending to {csvFileName}:\n{lineToWrite}")
-            df_total = pd.concat([df_total, pd.DataFrame(spot_data, index=[pd_idx])], axis=0)
-            pd_idx += 1
+                if csvFileName is not None:
+                    with open(csvFileName, "a") as f:
+                        lineToWrite = ','.join( [str(spot_data[k]) for k in df_cols])
+                        f.write( lineToWrite + '\n')
+                        print(f"Appending to {csvFileName}:\n{lineToWrite}")
+                df_total = pd.concat([df_total, pd.DataFrame(spot_data, index=[pd_idx])], axis=0)
+                pd_idx += 1
     df_total.set_index(["roi", "time", "cycle", "wavelength"], inplace=True)
     df_total = df_total.unstack()
 
+    w_idx = []
+    for w in img.wavelengths:
+        w_idx =+ 3*[w]
     ch_idx = []
     # Note: dependent on df_cols def above
     for c in [2,5,8,11,14,17,20,23]:
         ch_idx += len(img.wavelengths) * df_cols[c:(c+3)]
-    print(f"ch_idx = {ch_idx}, w_idx = {w_idx}")
-    mi = pd.MultiIndex.from_arrays([ch_idx, int(len(ch_idx)/len(w_idx))*w_idx])
+    try:
+        mi = pd.MultiIndex.from_arrays([ch_idx, int(len(ch_idx)/len(w_idx))*w_idx])
+    except ValueError as e:
+        print(f"ch_idx = {ch_idx}, w_idx = {w_idx}")
+        raise e
     df_total = df_total.reindex(columns=mi)
 
-    print(df_total)
     return df_total
 
 def crosstalk_correct(data, X, numCycles, spotlist, measure="mean", append=False):

@@ -43,11 +43,14 @@ def create_labeled_rois(labels, filepath=None, color=[1,0,1], img=None, font=cv2
 	out_img = segmentation.mark_boundaries(img, labels, color=color, outline_color=color, mode='thick')
 	out_img = (255*out_img).astype('uint8')
 	rp = measure.regionprops(labels)
+	s_idx = 0
 	for s in range(1, np.max(labels)+1):
-		centroid = rp[s-1]['centroid']
-		text = str(s)
-		text_size = cv2.getTextSize(text, font,1,2)[0]
-		cv2.putText(out_img, str(s), (int(centroid[1]-text_size[0]/2), int(centroid[0]+text_size[1]/2)), font, 1, (255, 0, 255), 2)
+		if labels[labels==s].size > 0:
+			centroid = rp[s_idx]['centroid']
+			s_idx += 1
+			text = str(s)
+			text_size = cv2.getTextSize(text, font,1,2)[0]
+			cv2.putText(out_img, str(s), (int(centroid[1]-text_size[0]/2), int(centroid[0]+text_size[1]/2)), font, 1, (255, 0, 255), 2)
 	if filepath is not None:
 		cv2.imwrite(filepath+".jpg", out_img)
 	return out_img
@@ -63,7 +66,6 @@ class ZionImage(UserDict):
 		for wavelength, imagefile in zip(lstWavelengths, lstImageFiles):
 			#TODO check validity (uint16, RGB, consistent sizes)
 			image = imread(imagefile)
-			self.times.append( get_time_from_filename(imagefile) )
 			self.filenames[wavelength] = imagefile
 
 			if subtrahends is not None:
@@ -71,10 +73,12 @@ class ZionImage(UserDict):
 					continue
 				elif wavelength in wl_subs:
 					d[wavelength] = image - imread(subtrahends[wl_subs.index(wavelength)])
+					self.times.append( get_time_from_filename(imagefile) )
 					# ~ print(f"adding {imagefile} - {subtrahends[wl_subs.index(wavelength)]}")
 					# ~ print(f"image shape: {image.shape}")
 				else:
 					d[wavelength] = image
+					self.times.append( get_time_from_filename(imagefile) )
 					# ~ print(f"adding {imagefile}")
 					# ~ print(f"image shape: {image.shape}")
 			else: #not using difference image
@@ -82,10 +86,12 @@ class ZionImage(UserDict):
 					continue
 				if '000' in lstWavelengths:
 					d[wavelength] = image - imread(lstImageFiles[lstWavelengths.index('000')])
+					self.times.append( get_time_from_filename(imagefile) )
 					# ~ print(f"adding {imagefile} - {lstImageFiles[lstWavelengths.index('000')]}")
 					# ~ print(f"image shape: {image.shape}")
 				else:
 					d[wavelength] = image
+					self.times.append( get_time_from_filename(imagefile) )
 					# ~ print(f"adding {imagefile}")
 					# ~ print(f"image shape: {image.shape}")
 
@@ -193,22 +199,24 @@ class ZionImageProcessor(multiprocessing.Process):
 		print("Received stop signal!")
 		self._cleanup()
 
-	def _cleanup():
-		mp_namespace.bEnable = False
+	def _cleanup(self):
+		self.mp_namespace.bEnable = False
+
+		# TODO do proper ending of each thread by sending each a null object via its queue...
 
 		self._convert_image_thread.join(12.0)
 		if self._convert_image_thread.is_alive():
 			print("_convert_image_thread is still alive!")
 
-		self._image_processing_thread.join(1.0)
-		if self._image_processing_handle.is_alive():
+		self._image_processing_thread.join(10.0)
+		if self._image_processing_thread.is_alive():
 			print("_image_processing_thread is still alive!")
 
-		self._base_calling_thread.join(1.0)
+		self._base_calling_thread.join(10.0)
 		if self._base_calling_thread.is_alive():
 			print("_base_calling_thread is still alive!")
 
-		self._kinetics_thread.join(1.0)
+		self._kinetics_thread.join(10.0)
 		if self._kinetics_thread.is_alive():
 			print("_kinetics_thread is still alive!")
 
@@ -414,10 +422,11 @@ class ZionImageProcessor(multiprocessing.Process):
 		self.convert_files_queue.put_nowait( (fpath,) )
 		# ~ self.convert_files_queue.put( (fpath,) )
 
-	def set_roi_params(self, median_ks, erode_ks, dilate_ks):
+	def set_roi_params(self, median_ks, erode_ks, dilate_ks, threshold_scale):
 		self.mp_namespace.median_ks = median_ks
 		self.mp_namespace.erode_ks = erode_ks
 		self.mp_namespace.dilate_ks = dilate_ks
+		self.mp_namespace.threshold_scale = threshold_scale
 
 	def set_basecall_params(self, p, q):
 		self.mp_namespace.p = p
@@ -460,13 +469,13 @@ class ZionImageProcessor(multiprocessing.Process):
 
 	def detect_rois(self, in_img, uv_wl='365'):
 
-		print(f"Detecting ROIs using median={self.mp_namespace.median_ks}, erode={self.mp_namespace.erode_ks}, dilate={self.mp_namespace.dilate_ks}")
+		print(f"Detecting ROIs using median={self.mp_namespace.median_ks}, erode={self.mp_namespace.erode_ks}, dilate={self.mp_namespace.dilate_ks}, scale={self.mp_namespace.threshold_scale}")
 
 		#Convert to grayscale (needs to access UV channel here when above change occurs):
 		img_gs = rgb2gray(in_img.data[uv_wl])
 
 		img_gs = median_filter(img_gs, self.mp_namespace.median_ks)
-		thresh = filters.threshold_mean(img_gs)
+		thresh = self.mp_namespace.threshold_scale * filters.threshold_mean(img_gs)
 		#TODO: adjust threshold? eg make it based on stats?
 		img_bin = img_gs > thresh
 
@@ -484,7 +493,13 @@ class ZionImageProcessor(multiprocessing.Process):
 		# snew_cnew_orted(centroids, key=lambda c: [c[1], c[0])
 
 
-		# TODO: get stats, centroids of spots, further invalidate improper spots. ()
+		# TODO: get stats, centroids of spots, further invalidate improper spots.
+		for s in range(1, nSpots+1):
+			size = spot_labels[spot_labels==s].shape[0]
+			if size > 2500:
+				print(f"removing spot {s} with area {size}")
+				spot_labels[spot_labels==s] = 0
+				nSpots -= 1
 
 		self.roi_labels = spot_labels
 		np.save(os.path.join(self.file_output_path, f"rois.npy"), spot_labels)
