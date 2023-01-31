@@ -2502,6 +2502,7 @@ Gain</property>
                         <child>
                           <object class="GtkButton" id="test1_button">
                             <property name="label" translatable="yes">Test1</property>
+                            <property name="visible">True</property>
                             <property name="can-focus">True</property>
                             <property name="receives-default">True</property>
                             <property name="valign">center</property>

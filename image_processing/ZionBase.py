@@ -3,6 +3,7 @@ from collections import UserDict, UserString
 import numpy as np
 import pandas as pd
 from skimage.color import rgb2hsv
+from scipy.optimize import nnls
 from matplotlib import pyplot as plt
 
 # ~ from image_processing.ZionImage import ZionImage
@@ -114,16 +115,17 @@ def extract_spot_data(img, roi_labels, csvFileName = None, kinetic=False):
     return df_total
 
 def csv_to_data(csvfile):
-    df_total = pd.from_csv(csvfile)
-    df_total.set_index(["roi", "time", "cycle", "wavelength"], inplace=True)
+    df_total = pd.read_csv(csvfile)
+    df_total.set_index(["roi", "cycle", "wavelength"], inplace=True)
+    wavelengths = list(set(df_total.index.get_level_values('wavelength').to_list()))
     df_total = df_total.unstack()
     w_idx = []
-    for w in img.wavelengths:
+    for w in wavelengths:
         w_idx =+ 3*[w]
     ch_idx = []
     # Note: dependent on df_cols def above
     for c in [2,5,8,11,14,17,20,23]:
-        ch_idx += len(img.wavelengths) * df_cols[c:(c+3)]
+        ch_idx += len(wavelengths) * df_cols[c:(c+3)]
     try:
         mi = pd.MultiIndex.from_arrays([ch_idx, int(len(ch_idx)/len(w_idx))*w_idx])
     except ValueError as e:
@@ -132,24 +134,30 @@ def csv_to_data(csvfile):
     df_total = df_total.reindex(columns=mi)
     return df_total
 
-def crosstalk_correct(data, X, numCycles, spotlist, measure="mean", append=False):
+def crosstalk_correct(data, X, numCycles, spotlist=None, exclusions=None, factor_method = "nnls", measure="mean"):
     '''
     Takes in dataframe, Kx4 "crosstalk" matrix X (which is actually just the color basis vectors), and number of cycles.
-    Spotlist is a way to exclude spots or assign names to rois/spots
+    Spotlist/exclusions is a way to exclude spots or assign names to rois/spots
     Outputs coefficients which represent how much of each base are in each spot, also outputs stds if necessary
     '''
+    if exclusions is None:
+        exclusions = []
+
+    if spotlist is None:
+        spotlist = list(set(data.index.get_level_values('roi').to_list()))
 
     meas_cols = [measure+"_"+ch for ch in ["R","G","B"]]
-    std_cols = ["std_"+ch for ch in ["R","G","B"]]
-    std_index = [("std"+i[0][-2:], i[1]) for i in X.index]
+    # ~ std_cols = ["std_"+ch for ch in ["R","G","B"]]
+    # ~ std_index = [("std"+i[0][-2:], i[1]) for i in X.index]
     #print(std_cols)
     
-    pinv = np.linalg.pinv(X.to_numpy().T)
+    pinv = np.linalg.pinv(X.T)
     
-    coeffs_df = pd.DataFrame(index = data.index, columns = [("Signal",base) for base in Bases])
+    coeffs_df = pd.DataFrame(index = data.index, columns = [("Signal",base) for base in BASES])
+    # ~ print(coeffs_df)
     coeffs = np.zeros(shape=(len(spotlist), numCycles, 4))
     #coeffs_norm = np.zeros(shape=(len(spotlist), numCycles, 4))
-    stds_out = np.zeros(shape=(len(spotlist), numCycles, 4))
+    # ~ stds_out = np.zeros(shape=(len(spotlist), numCycles, 4))
     
     for s_idx, spot in enumerate(spotlist):
         if spot not in exclusions:
@@ -157,26 +165,25 @@ def crosstalk_correct(data, X, numCycles, spotlist, measure="mean", append=False
             #TODO: columns getting re-ordered here
             #x_vec = data[meas_cols].loc[spot].values
             x = data[meas_cols].loc[spot]
-            stds_in = data[std_cols].loc[spot]
+            # ~ stds_in = data[std_cols].loc[spot]
             
             #print(X.index)
-            stds_in_vec = stds_in[std_index].values
-            stds_out[s_idx, :, :] = np.matmul(stds_in_vec, pinv)
+            # ~ stds_in_vec = stds_in[std_index].values
+            # ~ stds_out[s_idx, :, :] = np.matmul(stds_in_vec, pinv)
             
-            x_vec = x[X.index].values
+            x_vec = x[meas_cols].values
             if factor_method == "pinv":
                 coeffs[s_idx,:,:] = np.matmul(x_vec, pinv)
             elif factor_method == "nnls":                
                 for cycle in range(numCycles):
-                    coeffs[s_idx, cycle, :], _ = nnls(X.values, x_vec[cycle,:])
+                    coeffs[s_idx, cycle, :], _ = nnls(X, x_vec[cycle,:])
+            # ~ print(f"coeffs[s_idx, cycle,:] shape = {coeffs[s_idx, cycle, :].shape}")
+            # ~ print(f"coeffs_df.loc[(spot, cycle+1)] shape = {coeffs_df.loc[(spot, cycle+1)].shape}")
             for cycle in range(numCycles):
                 coeffs_df.loc[(spot, cycle+1)] = coeffs[s_idx, cycle, :]
             #coeffs_norm[s_idx,:,:] = np.transpose( coeffs[s_idx,:,:].T / np.sum(coeffs[s_idx,:,:], axis=1) )
             #basecalls[s_idx,:] = np.argmax(scores_norm, axis=1)
-    if append:
-        return pd.concat([data, coeffs_df], axis=1)
-    else:
-        return coeffs#, stds_out#, coeffs_norm
+    return coeffs, spotlist, pd.concat([data, coeffs_df], axis=1)
 
 def base_call(data, p:float=0.0, q:float=0.0, base_key:list=["A", "C", "G" "T"]):
     ''' This takes the 4 coefficients found from crosstalk correction and 
@@ -213,19 +220,18 @@ def base_call(data, p:float=0.0, q:float=0.0, base_key:list=["A", "C", "G" "T"])
     
     return z_qinv, bases
 
-def display_signals(coeffs, spotlist, numCycles, numRows, numPages=1, exclusions=None, prefix=None, noSignal=False, labels=True, stds=None):
-    
+def display_signals(coeffs, spotlist, numCycles, numRows=1, numPages=1, exclusions=None, prefix=None, noSignal=False, labels=True, stds=None):
+
     base_colors = {"A": "orange", "C": "green", "G":"blue", "T":"red"} #TODO yellow?
-    
+
     if exclusions is None:
         exclusions = []
-    
+
     numSpots = len(spotlist)
-    
+
     width = len(spotlist)/ (numRows*numPages)
     numCols = int(width)
-    
-    
+
     fig1 = []
     ax1 = []
     fig2 = []
@@ -241,7 +247,7 @@ def display_signals(coeffs, spotlist, numCycles, numRows, numPages=1, exclusions
 
     for s_idx_orig, spot in enumerate(spotlist):
         page, s_idx = divmod(s_idx_orig, numSpots//numPages)
-        # print(f"s_idx_org={s_idx_orig}, page={page}, s_idx={s_idx}")
+        print(f"s_idx_org={s_idx_orig}, page={page}, s_idx={s_idx}")
         if spot not in exclusions:
             scores_norm = np.transpose( coeffs[s_idx_orig,:numCycles,:].T / np.sum(coeffs[s_idx_orig,:numCycles,:], axis=1) )
             if stds is not None:
@@ -250,18 +256,18 @@ def display_signals(coeffs, spotlist, numCycles, numRows, numPages=1, exclusions
             for base in range(4):
                  if s_idx == 0:
                      if stds is not None:
-                         ax1[page].flat[s_idx].bar( np.arange(1,numCycles+1)+(base-2)/6, scores_norm[:,base], 1/6, align="edge", color = base_colors[Bases[base]], label = Bases[base], yerr=stds_norm[:,base])
+                         ax1[page].flat[s_idx].bar( np.arange(1,numCycles+1)+(base-2)/6, scores_norm[:,base], 1/6, align="edge", color = base_colors[BASES[base]], label = BASES[base], yerr=stds_norm[:,base])
                      else:
-                         ax1[page].flat[s_idx].bar( np.arange(1,numCycles+1)+(base-2)/6, scores_norm[:,base], 1/6, align="edge", color = base_colors[Bases[base]], label = Bases[base])
+                         ax1[page].flat[s_idx].bar( np.arange(1,numCycles+1)+(base-2)/6, scores_norm[:,base], 1/6, align="edge", color = base_colors[BASES[base]], label = BASES[base])
                      if not noSignal:
-                         ax2[page].flat[s_idx].plot(np.arange(1, numCycles+1), coeffs[s_idx_orig,:,base]/kinetic_total, color = base_colors[Bases[base]], label = Bases[base])
+                         ax2[page].flat[s_idx].plot(np.arange(1, numCycles+1), coeffs[s_idx_orig,:,base]/kinetic_total, color = base_colors[BASES[base]], label = BASES[base])
                  else:
                      if stds is not None:
-                         ax1[page].flat[s_idx].bar( np.arange(1,numCycles+1)+(base-2)/6, scores_norm[:,base], 1/6, align="edge", color = base_colors[Bases[base]], yerr=stds_norm[:,base])
+                         ax1[page].flat[s_idx].bar( np.arange(1,numCycles+1)+(base-2)/6, scores_norm[:,base], 1/6, align="edge", color = base_colors[BASES[base]], yerr=stds_norm[:,base])
                      else:
-                         ax1[page].flat[s_idx].bar( np.arange(1,numCycles+1)+(base-2)/6, scores_norm[:,base], 1/6, align="edge", color = base_colors[Bases[base]])
+                         ax1[page].flat[s_idx].bar( np.arange(1,numCycles+1)+(base-2)/6, scores_norm[:,base], 1/6, align="edge", color = base_colors[BASES[base]])
                      if not noSignal:
-                         ax2[page].flat[s_idx].plot(np.arange(1, numCycles+1), coeffs[s_idx_orig,:,base]/kinetic_total, color = base_colors[Bases[base]])
+                         ax2[page].flat[s_idx].plot(np.arange(1, numCycles+1), coeffs[s_idx_orig,:,base]/kinetic_total, color = base_colors[BASES[base]])
             purity = np.max(scores_norm, axis=-1)
             called_base_idx = np.argmax(scores_norm, axis=-1)
             for cycle in range(numCycles):
@@ -272,7 +278,7 @@ def display_signals(coeffs, spotlist, numCycles, numRows, numPages=1, exclusions
                     ax1[page].flat[s_idx].text(cycle+1+(called_base_idx[cycle]-1.5)/6, purity[cycle]+0.01, f"{100*purity[cycle]:.1f}", color='black', fontsize=7, horizontalalignment='center')
                     #ax1[page].flat[s_idx].text(cycle+1+(called_base_idx[cycle]-1.5)/6, purity[cycle]+0.01, f"{chastity:.2f}", color='black', fontsize=7, horizontalalignment='center')
             ax1[page].flat[s_idx].set_ylim([-0.1,1.1])
-            
+
             if not noSignal:
                 ax2[page].flat[s_idx].set_xticks(np.arange(1,numCycles+1))
                 
@@ -283,7 +289,7 @@ def display_signals(coeffs, spotlist, numCycles, numRows, numPages=1, exclusions
                 # ax1.flat[s_idx].set_title(''.join(f"{matrix_key[basecalls[s_idx_orig,cycle]]}" for cycle in range(numCycles))+f" ({gt_data[s_idx_orig]})")
                 ax2[page].flat[s_idx].set_title(spot, fontsize=10)
             ax1[page].flat[s_idx].set_title(spot, fontsize=10)
-            
+
     if prefix:
         prefix += " "
     else:
@@ -291,9 +297,10 @@ def display_signals(coeffs, spotlist, numCycles, numRows, numPages=1, exclusions
 
     for page in range(numPages):
         fig1[page].legend(loc='upper right', ncol=1)
-        fig1[page].suptitle(prefix+'Purity')
+        fig1[page].suptitle('Purity (Pre-Phase-Corrected)')
         fig1[page].subplots_adjust(hspace=0.5, wspace=0.2)
         if not noSignal:
             fig2[page].legend(loc='upper right', ncol=1)
             fig2[page].subplots_adjust(hspace=0.5, wspace=0.2)
-            fig2[page].suptitle(prefix+'Signal')
+            fig2[page].suptitle('Signal')
+    return fig1, fig2
