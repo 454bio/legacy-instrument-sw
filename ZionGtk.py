@@ -153,6 +153,7 @@ class ZionGUI():
         self.threshold_scale_entry = self.builder.get_object("threshold_scale_entry")
         self.basecall_p_entry = self.builder.get_object("basecall_p_entry")
         self.basecall_q_entry = self.builder.get_object("basecall_p_entry")
+        self.report_button = self.builder.get_object("report_button")
 
         self.handlers = Handlers(self)
         self.builder.connect_signals(self.handlers)
@@ -889,6 +890,7 @@ class Handlers:
         self.parent.greenSwitch.set_sensitive(False)
         self.parent.orangeSwitch.set_sensitive(False)
         self.parent.redSwitch.set_sensitive(False)
+        self.parent.report_button.set_sensitive(False)
 
         # ~ self.parent.expModeComboBox.set_active(0)
         comment = self.parent.commentBox.get_text()
@@ -911,13 +913,6 @@ class Handlers:
         #todo check for negative
 
         self.parent.parent.ImageProcessor.set_roi_params(median_ks, erode_ks, dilate_ks, threshold_scale)
-        try:
-            p = float(self.parent.basecall_p_entry.get_text())
-            q = float(self.parent.basecall_q_entry.get_text())
-        except ValueError:
-            self.parent.printToLog("p and q must be numeric!")
-            return
-        self.parent.parent.ImageProcessor.set_basecall_params(p,q)
 
         self.stop_run_thread.clear()
         self.parent.parent.Camera.stop_preview()
@@ -1186,6 +1181,16 @@ class Handlers:
         #TODO check for ranges
         basis = (a,c,g,t)
         self.parent.parent.ImageProcessor.basis_spots_chosen_queue.put( basis )
+
+    def on_report_button_clicked(self, button):
+        try:
+            p = float(self.parent.basecall_p_entry.get_text())
+            q = float(self.parent.basecall_q_entry.get_text())
+        except ValueError:
+            self.parent.printToLog("p and q must be numeric!")
+            return
+        self.parent.parent.ImageProcessor.set_basecall_params(p,q)
+        self.parent.parent.ImageProcessor.generate_report()
 
     def on_spot_A_entry_activate(self, entry):
         #TODO

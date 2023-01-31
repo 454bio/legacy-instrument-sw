@@ -418,12 +418,15 @@ class ZionSession():
             if self.buffer_thread.is_alive():
                 print("WARNING: buffer_thread is still alive!!!")
 
+            self.ImageProcessor.add_to_convert_queue(None)
+
             GLib.idle_add(self.gui.ProtocolProgressBar.set_fraction, 1.0)
             GLib.idle_add(self.gui.CurrentEventProgressBar.set_fraction, 1.0)
             GLib.idle_add(self.gui.cameraPreviewWrapper.clear_image)
             GLib.idle_add(partial(self.gui.handlers._update_camera_preview, force=True))
             GLib.idle_add(self.gui.runProgramButton.set_sensitive, True)
             GLib.idle_add(self.gui.stopProgramButton.set_sensitive, False)
+            GLib.idle_add(self.gui.report_button.set_sensitive, True)
             #TODO: led switches named here
             GLib.idle_add(self.gui.uvSwitch.set_sensitive, True)
             GLib.idle_add(self.gui.blueSwitch.set_sensitive, True)
