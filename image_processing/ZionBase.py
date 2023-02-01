@@ -92,7 +92,7 @@ def extract_spot_data(img, roi_labels, csvFileName = None, kinetic=False):
                     with open(csvFileName, "a") as f:
                         lineToWrite = ','.join( [str(spot_data[k]) for k in df_cols])
                         f.write( lineToWrite + '\n')
-                        print(f"Appending to {csvFileName}:\n{lineToWrite}")
+                        # ~ print(f"Appending to {csvFileName}:\n{lineToWrite}")
                 df_total = pd.concat([df_total, pd.DataFrame(spot_data, index=[pd_idx])], axis=0)
                 pd_idx += 1
     df_total.set_index(["roi", "time", "cycle", "wavelength"], inplace=True)
@@ -185,6 +185,15 @@ def crosstalk_correct(data, X, numCycles, spotlist=None, exclusions=None, factor
             #basecalls[s_idx,:] = np.argmax(scores_norm, axis=1)
     return coeffs, spotlist, pd.concat([data, coeffs_df], axis=1)
 
+def add_basecall_result_to_dataframe(data, df):
+    spotlist = list(set(df.index.get_level_values('roi').to_list()))
+    coeffs_pd = pd.DataFrame(index=df.index, columns = [("Signal", base) for base in BASES])
+    numCycles = data.shape[1]
+    for s_idx, spot in enumerate(spotlist):
+        for cycle in range(numCycles):
+            coeffs_df.loc[(spot, cycle+1)] = data[s_idx, cycle, :]
+    return pd.concat([df, coeffs_pd], axis=1)
+
 def base_call(data, p:float=0.0, q:float=0.0, base_key:list=["A", "C", "G" "T"]):
     ''' This takes the 4 coefficients found from crosstalk correction and 
         does phase correction. Right now using simple model until we get more data.
@@ -247,7 +256,7 @@ def display_signals(coeffs, spotlist, numCycles, numRows=1, numPages=1, exclusio
 
     for s_idx_orig, spot in enumerate(spotlist):
         page, s_idx = divmod(s_idx_orig, numSpots//numPages)
-        print(f"s_idx_org={s_idx_orig}, page={page}, s_idx={s_idx}")
+        # ~ print(f"s_idx_org={s_idx_orig}, page={page}, s_idx={s_idx}")
         if spot not in exclusions:
             scores_norm = np.transpose( coeffs[s_idx_orig,:numCycles,:].T / np.sum(coeffs[s_idx_orig,:numCycles,:], axis=1) )
             if stds is not None:

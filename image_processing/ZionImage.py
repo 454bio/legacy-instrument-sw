@@ -13,7 +13,7 @@ from tifffile import imread, imwrite
 from matplotlib import pyplot as plt
 
 from image_processing.raw_converter import jpg_to_raw, get_wavelength_from_filename, get_cycle_from_filename, get_time_from_filename
-from image_processing.ZionBase import df_cols, extract_spot_data, csv_to_data, crosstalk_correct, display_signals, base_call
+from image_processing.ZionBase import df_cols, extract_spot_data, csv_to_data, crosstalk_correct, display_signals, base_call, add_basecall_result_to_dataframe
 
 
 # TODO rebase most skimage stuff into opencv (raspberry pi opencv by default doesn't deal with 16 bit images)
@@ -526,16 +526,38 @@ class ZionImageProcessor(multiprocessing.Process):
 		# generate pre-phase-correction histograms:
 		basecall_csv = os.path.join(self.file_output_path, "basecaller_spot_data.csv")
 		basecall_pd = csv_to_data(basecall_csv)
-		signal_pre_basecall, spotlist = crosstalk_correct(basecall_pd, M, self.mp_namespace.ip_cycle_ind)
-		signal_pre_basecall.to_csv(os.path.join(self.file_output_path, "basecaller_output_data_1.csv"))
-		f1,f2 = display_signals(signal_pre_basecall, spotlist, self.mp_namespace.ip_cycle_ind)
+		signal_pre_basecall, spotlist, basecall_pd_pre = crosstalk_correct(basecall_pd, M, self.mp_namespace.ip_cycle_ind)
+		basecall_pd_pre.to_csv(os.path.join(self.file_output_path, "basecaller_output_data_pre.csv"))
+		f1, f2 = display_signals(signal_pre_basecall, spotlist, self.mp_namespace.ip_cycle_ind)
 		#now perform phase correction
-		# ~ base_call
-		# ~ f3,f4 = 
 
-		plt.show()
-		f1.savefig(os.path.join(self.file_output_path, "Purity Pre-Phase.png"))
-		f2.savefig(os.path.join(self.file_output_path, "Signal Pre-Phase.png"))
+		#Transition matrix is numCycles+1 x numCycles+1
+		P  = np.diag((self.mp_namespace.ip_cycle_ind+1)*[self.mp_namespace.p])
+		P += np.diag((self.mp_namespace.ip_cycle_ind)*[1-self.mp_namespace.p-self.mp_namespace.q], k=1)
+		P += np.diag((self.mp_namespace.ip_cycle_ind-1)*[self.mp_namespace.q], k=2)
+
+		Q = np.zeros(shape=(self.mp_namespace.ip_cycle_ind,self.mp_namespace.ip_cycle_ind))
+		for t in range(self.mp_namespace.ip_cycle_ind):
+			Q[:,t] = np.linalg.matrix_power(P,t+1)[0,1:]
+		Qinv = np.linalg.inv(Q)
+
+		signal_post_basecall = np.transpose( (np.transpose(signal_pre_basecall, axes=(0,2,1)) @ Qinv)[:,:,:-1], axes=(0,2,1))
+		basecall_pd_post = add_basecall_result_to_dataframe(signal_post_basecall, basecall_pd)
+		basecall_pd_post.to_csv(os.path.join(self.file_output_path, "basecaller_output_data_post.csv"))
+
+		# ~ base_call
+		f3,f4 = display_signals(signal_post_basecall, spotlist, self.mp_namespace.ip_cycle_ind-1)
+
+		# ~ plt.show() #this hangs
+		for f_idx, f in enumerate(f1):
+			f.savefig(os.path.join(self.file_output_path, f"Purity Pre-Phase {f_idx+1}.png"))
+		for f_idx, f in enumerate(f2):
+			f.savefig(os.path.join(self.file_output_path, f"Signal Pre-Phase {f_idx+1}.png"))
+		for f_idx, f in enumerate(f3):
+			f.savefig(os.path.join(self.file_output_path, f"Purity Post-Phase {f_idx+1}.png"))
+		for f_idx, f in enumerate(f4):
+			f.savefig(os.path.join(self.file_output_path, f"Signal Post-Phase {f_idx+1}.png"))
+
 		# ~ f3.savefig(os.path.join(self.file_output_path, "Signal Post-Phase.png")
 		# ~ f4.savefig(os.path.join(self.file_output_path, "Signal Post-Phase.png")
 
@@ -556,8 +578,8 @@ class ZionImageProcessor(multiprocessing.Process):
 			print(f"Pre-phase corrected Signal {os.path.join(self.file_output_path, 'Signal Pre-Phase.png')}", file=f)
 			print(f"Base-caller p = {self.mp_namespace.p}", file=f)
 			print(f"Base-caller q = {self.mp_namespace.q}", file=f)
-			# ~ print(f"Post-phase corrected Purity at {os.path.join(self.file_output_path, 'Purity Post-Phase.png')}", file=f)
-			# ~ print(f"Post-phase corrected Signal {os.path.join(self.file_output_path, 'Signal Post-Phase.png')}", file=f)
+			print(f"Post-phase corrected Purity at {os.path.join(self.file_output_path, 'Purity Post-Phase.png')}", file=f)
+			print(f"Post-phase corrected Signal {os.path.join(self.file_output_path, 'Signal Post-Phase.png')}", file=f)
 
 	### for testing:
 	def do_test(self):
