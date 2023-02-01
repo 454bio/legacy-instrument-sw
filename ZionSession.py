@@ -26,6 +26,8 @@ from ZionProtocols import ZionProtocol
 from ZionGtk import ZionGUI
 from picamera.exc import mmal
 from ZionEvents import ZionEvent
+from image_processing.ZionImage import ZionImageProcessor, ZionImage
+from image_processing.raw_converter import jpg_to_raw, get_cycle_from_filename
 
 # ~ mod_path = os.path.dirname(os.path.abspath(__file__))
 
@@ -72,8 +74,14 @@ class ZionSession():
         self.gui = ZionGUI(Initial_Values, self)
 
         self.TimeOfLife = time.time()
+
         self.update_last_capture_path = None
         self.update_last_capture_lock = threading.Lock()
+
+        self.all_image_paths = []
+        self.ImageProcessor = ZionImageProcessor(self.gui, self.Dir)
+        # ~ self.ImageProcessor.start() moved to when running program
+        self.ip_enable_lock = threading.Lock()
 
     def CaptureImageThread(self, cropping=(0,0,1,1), group=None, verbose=False, comment='', suffix='', protocol=True):
         """ This is running in a thread. It should not call any GTK functions """
@@ -180,6 +188,9 @@ class ZionSession():
             protocol_capture_count = str(self.captureCountThisProtocol).zfill(ZionSession.captureCountPerProtocolDigits)
             group = event.group or ''
 
+            if event.cycle_index:
+                group += f"_C{event.cycle_index:03d}"
+
             filename = "_".join([
                 capture_count,
                 protocol_count,
@@ -195,6 +206,11 @@ class ZionSession():
                 self.gui.printToLog,
                 f"Writing event image to file {filepath}"
             )
+
+            #Keep record of file saved for loading later in different thread
+            self.ImageProcessor.add_to_convert_queue(filepath)
+            self.all_image_paths.append(filepath)
+
             with open(filepath, "wb") as out:
                 out.write(buffer)
 
@@ -212,6 +228,9 @@ class ZionSession():
                     if call_update:
                         GLib.idle_add(self.update_last_capture)
 
+                    # ~ if event.group and event.group != '000':
+
+
             except Exception as e:
                 tb = "".join(traceback.format_exception(type(e), e, e.__traceback__))
                 GLib.idle_add(self.gui.printToLog,  "ERROR Updating last capture!")
@@ -223,11 +242,17 @@ class ZionSession():
         # Check if the shared queue is empty at the end?
         # Do I unroll _all_ the events?
 
+        self.ImageProcessor.start()
+        self.roi_thread = threading.Thread(target=self.update_roi_image, args=(self.ImageProcessor.basis_spots_chosen_queue, ) )
+        self.roi_thread.daemon=True
+        self.roi_thread.start()
+
         try:
             self.TimeOfLife = time.time()
 
             events = self.Protocol.get_entries()
             all_flat_events = self.Protocol.flatten()
+
             GLib.idle_add(
                 self.gui.printToLog,
                 "Starting protocol!"
@@ -251,6 +276,7 @@ class ZionSession():
             grouped_flat_events = []
             events_group = []
             for event in all_flat_events:
+
                 if event.is_wait:
                     grouped_flat_events.append(events_group)
                     grouped_flat_events.append(event)
@@ -271,13 +297,19 @@ class ZionSession():
             # Pre-allocate enough space
             seq_stream = io.BytesIO()
             buffer_queue = multiprocessing.Queue()
+            #image_files_queue = multiprocessing.Queue()
 
             # self.buffer_thread = multiprocessing.Process(target=self._save_event_image, args=(buffer_queue, ) )
             self.buffer_thread = threading.Thread(target=self._save_event_image, args=(buffer_queue, ) )
             self.buffer_thread.daemon=True  # TODO: Should make this non-daemonic so files get save even if program is shutdown
             self.buffer_thread.start()
 
+            # ~ self.load_image_thread = threading.Thread(target=self.ImageProcessor._convert_jpeg, args=(self.image_files_queue, ) )
+            # ~ self.load_image_thread.daemon = True
+            # ~ self.load_image_thread.start()
+
             total_number_of_groups = float(len(grouped_flat_events))
+            cycle_index = 0
             for gow_ind, group_or_wait in enumerate(grouped_flat_events):
                 GLib.idle_add(self.gui.ProtocolProgressBar.set_fraction, gow_ind / total_number_of_groups)
 
@@ -287,6 +319,18 @@ class ZionSession():
                     #     self.gui.printToLog,
                     #     f"Waiting for {group_or_wait.cycle_time / 1000} seconds..."
                     # )
+
+                    # ~ image_files_queue.put_nowait((self.load_image_paths))
+                    # ~ self.all_image_paths.extend(self.load_image_paths)
+                    # ~ with self.load_image_lock:
+                        # ~ self.load_image_paths = []
+
+                    # ~ if self.load_image_lock.locked():
+                        # ~ print(f"Unlocking _load_image thread")
+                        # ~ self.load_image_lock.release()
+                    with self.ip_enable_lock:
+                        self.ImageProcessor.mp_namespace.bEnable = True
+
                     group_or_wait.sleep(
                         stop_event=stop_event,
                         progress_log_func=partial(GLib.idle_add, self.gui.printToLog),
@@ -298,6 +342,8 @@ class ZionSession():
                         break
 
                 else:
+                    with self.ip_enable_lock:
+                        self.ImageProcessor.mp_namespace.bEnable = False
                     flat_events = group_or_wait
 
                     # This will pre-program the pigpio with the waveforms for our LEDs
@@ -334,6 +380,8 @@ class ZionSession():
 
                         if stop_event.is_set():
                             print("Received stop!")
+                            with self.ip_enable_lock:
+                                self.ImageProcessor.mp_namespace.bEnable = True
                             break
 
                     end_fstrobe = self.GPIO.get_num_fstrobes()
@@ -351,7 +399,8 @@ class ZionSession():
                     num_fstrobe = end_fstrobe - start_fstrobe
                     if num_fstrobe != num_captured_frames:
                         print(f"WARNING: We did not receive all of the frames actually captured!!  num_fstrobe: {num_fstrobe}  expected: {expected_num_frames}")
-
+            with self.ip_enable_lock:
+                self.ImageProcessor.mp_namespace.bEnable = True
             print("RunProgram Finished!")
 
         except Exception as e:
@@ -374,12 +423,15 @@ class ZionSession():
             if self.buffer_thread.is_alive():
                 print("WARNING: buffer_thread is still alive!!!")
 
+            self.ImageProcessor.add_to_convert_queue(None)
+
             GLib.idle_add(self.gui.ProtocolProgressBar.set_fraction, 1.0)
             GLib.idle_add(self.gui.CurrentEventProgressBar.set_fraction, 1.0)
             GLib.idle_add(self.gui.cameraPreviewWrapper.clear_image)
             GLib.idle_add(partial(self.gui.handlers._update_camera_preview, force=True))
             GLib.idle_add(self.gui.runProgramButton.set_sensitive, True)
             GLib.idle_add(self.gui.stopProgramButton.set_sensitive, False)
+            GLib.idle_add(self.gui.report_button.set_sensitive, True)
             #TODO: led switches named here
             GLib.idle_add(self.gui.uvSwitch.set_sensitive, True)
             GLib.idle_add(self.gui.blueSwitch.set_sensitive, True)
@@ -400,6 +452,7 @@ class ZionSession():
     def QuitSession(self):
         self.Camera.quit()
         self.GPIO.quit()
+        self.ImageProcessor.stop_event.set()
 
         # Delete the session folder if it's empty
         if os.path.isdir(self.Dir) and not any(os.scandir(self.Dir)):
@@ -413,6 +466,12 @@ class ZionSession():
             self.update_last_capture_path = None
             self.gui.cameraPreviewWrapper.image_path = t_path
         # self.gui.cameraPreview.get_parent().queue_draw()
+
+    def update_roi_image(self, basis_spot_queue):
+        while True:
+            self.ImageProcessor.rois_detected_event.wait()
+            GLib.idle_add(self.gui.load_roi_image, (os.path.join(self.ImageProcessor.file_output_path, "rois_365.jpg"), basis_spot_queue))
+            self.ImageProcessor.rois_detected_event.clear()
 
     def get_temperature(self):
         self.Temperature = self.GPIO.read_temperature()
