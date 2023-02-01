@@ -6,7 +6,7 @@ gi.require_version('Gtk', '3.0')
 gi.require_version('Gst', '1.0')
 from gi.repository import Gtk, GObject, GLib
 import threading
-from ZionGtkHelpers import PictureView
+from ZionGtkHelpers import PictureViewFromFile, PictureViewFromMem
 from ZionLED import ZionLEDs, ZionLEDColor
 from ZionCamera import ZionCameraParameters
 
@@ -49,7 +49,7 @@ class ZionGUI():
         self.SharpnessEntry = self.builder.get_object("sharpness_entry")
         self.SharpnessScale.set_value(initial_values.sharpness)
 
-        self.AutoAwbButton = self.builder.get_object("auto_wb_switch")
+        # ~ self.AutoAwbButton = self.builder.get_object("auto_wb_switch")
         self.redGainEntry = self.builder.get_object("red_gain_entry")
         self.redGainScale = self.builder.get_object("red_gain_scale")
         self.redGainScale.set_value(initial_values.red_gain)
@@ -58,18 +58,14 @@ class ZionGUI():
         self.blueGainScale.set_value(initial_values.blue_gain)
 
         if initial_values.awb_mode == 'off':
-            self.AutoAwbButton.set_active(False)
+            # ~ self.AutoAwbButton.set_active(False)
             self.redGainScale.set_sensitive(True)
             self.blueGainScale.set_sensitive(True)
         else:
-            self.AutoAwbButton.set_active(True)
+            # ~ self.AutoAwbButton.set_active(True)
             self.redGainScale.set_sensitive(False)
             self.blueGainScale.set_sensitive(False)
 
-        self.expModeLockButton = self.builder.get_object("exp_mode_lock_button")
-        self.expModeComboBox = self.builder.get_object("exposure_mode_combobox")
-        self.isoButtonBox = self.builder.get_object("iso_button_box")
-        self.expCompScale = self.builder.get_object("exposure_comp_scale")
         self.expTimeBuffer = self.builder.get_object("exposure_time_buffer")
         self.expTimeBox = self.builder.get_object("exposure_time_entry")
         self.analogGainBuffer = self.builder.get_object("analog_gain_buffer")
@@ -108,33 +104,8 @@ class ZionGUI():
 
         self.imageDenoiseButton = self.builder.get_object("denoise_button")
 
-        self.isoButtonAuto = self.builder.get_object("radiobutton0")
-        self.isoButton100 = self.builder.get_object("radiobutton1")
-        self.isoButton200 = self.builder.get_object("radiobutton2")
-        self.isoButton320 = self.builder.get_object("radiobutton3")
-        self.isoButton400 = self.builder.get_object("radiobutton4")
-        self.isoButton500 = self.builder.get_object("radiobutton5")
-        self.isoButton640 = self.builder.get_object("radiobutton6")
-        self.isoButton800 = self.builder.get_object("radiobutton7")
-
         self.commentBox = self.builder.get_object("comment_entry")
         self.suffixBox = self.builder.get_object("suffix_entry")
-
-
-        if initial_values.exposure_mode == 'off':
-            self.expModeLockButton.set_active(True)
-            self.isoButtonBox.set_sensitive(False)
-            self.expCompScale.set_sensitive(False)
-            self.expModeComboBox.set_active(0)
-            self.Def_row_idx = 0
-        else:
-            self.expModeLockButton.set_active(False)
-            self.isoButtonBox.set_sensitive(True)
-            self.expCompScale.set_sensitive(True)
-            listStore = self.expModeComboBox.get_model()
-            rowList = [row[0] for row in listStore]
-            self.Def_row_idx = rowList.index(initial_values.exposure_mode)
-            self.expModeComboBox.set_active(self.Def_row_idx)
 
         self.paramFileChooser = self.builder.get_object('param_file_chooser_dialog')
         self.filter_protocol = Gtk.FileFilter()
@@ -151,24 +122,6 @@ class ZionGUI():
         self.EventTreeViewGtk = self.builder.get_object("event_tree")
         self.DeleteEntryButton = self.builder.get_object("delete_entry_button")
 
-        # blue_led = ZionLEDs({ZionLEDColor.BLUE: 100})
-        # orange_led = ZionLEDs({ZionLEDColor.ORANGE: 120})
-        # uv_led = ZionLEDs({ZionLEDColor.UV: 100})
-
-        # self.parent.Protocol.clear()
-        # g_1 = self.parent.Protocol.add_event_group(name="All Steps", cycles=5)
-
-        # g_2 = self.parent.Protocol.add_event_group(name="Extension", cycles=144, parent=g_1)
-        # self.parent.Protocol.add_event(name="Dark", group="D", capture=True, parent=g_2)
-        # self.parent.Protocol.add_event(name="Blue", group="B", capture=True, leds=blue_led, parent=g_2)
-        # self.parent.Protocol.add_event(name="Orange", group="O", capture=True, leds=orange_led, parent=g_2)
-
-        # g_3 = self.parent.Protocol.add_event_group(name="Cleaving", cycles=4, parent=g_1)
-        # self.parent.Protocol.add_event(name="UV", group="U", capture=True, leds=uv_led, parent=g_3)
-        # self.parent.Protocol.add_event(name="Dark", group="D", capture=True, parent=g_3)
-        # self.parent.Protocol.add_event(name="Blue", group="B", capture=True, leds=blue_led, parent=g_3)
-        # self.parent.Protocol.add_event(name="Orange", group="O", capture=True, leds=orange_led, parent=g_3)
-
         self.parent.Protocol.gtk_initialize_treeview(self.EventTreeViewGtk)
         # self.parent.Protocol.load_from_file(filename="brett_testing_protocol.txt")
         self.parent.Protocol.load_from_file(filename="example_v2_protocol.txt")
@@ -184,12 +137,30 @@ class ZionGUI():
         self.stopProgramButton  = self.builder.get_object("stop_program_button")
 
         self.cameraPreview = self.builder.get_object("camera_preview")
-        self.cameraPreviewWrapper = PictureView(self.cameraPreview, os.path.join(mod_path, "Logo.png"))
+        self.cameraPreviewWrapper = PictureViewFromFile(self.cameraPreview, os.path.join(mod_path, "Logo.png"))
+
+        self.NotebookRight = self.builder.get_object("notebook_right")
+        self.IpView = self.builder.get_object("image_processing_display")
+        self.IpViewWrapper = PictureViewFromFile(self.IpView, os.path.join(mod_path, "Logo.png"))
+        self.Spot_A_Entry = self.builder.get_object("spot_A_entry")
+        self.Spot_C_Entry = self.builder.get_object("spot_C_entry")
+        self.Spot_G_Entry = self.builder.get_object("spot_G_entry")
+        self.Spot_T_Entry = self.builder.get_object("spot_T_entry")
+        self.SelectSpotsButton = self.builder.get_object("select_spots_button")
+
+        self.median_ks_entry = self.builder.get_object("median_ks_entry")
+        self.erode_ks_entry = self.builder.get_object("erode_ks_entry")
+        self.dilate_ks_entry = self.builder.get_object("dilate_ks_entry")
+        self.threshold_scale_entry = self.builder.get_object("threshold_scale_entry")
+        self.basecall_p_entry = self.builder.get_object("basecall_p_entry")
+        self.basecall_q_entry = self.builder.get_object("basecall_p_entry")
+        self.report_button = self.builder.get_object("report_button")
 
         self.handlers = Handlers(self)
         self.builder.connect_signals(self.handlers)
 
         GLib.idle_add(self.handlers.check_fixed_settings)
+        self.mainWindow.maximize()
 
     def printToLog(self, text):
         text_iter_end = self.logBuffer.get_end_iter()
@@ -207,12 +178,23 @@ class ZionGUI():
     def set_file_chooser_for_parameter_files(self):
         self.paramFileChooser.set_filter(self.filter_parameter)
 
+    def load_roi_image(self, args):#filepath, queue):
+        filepath = args[0]
+        queue = args[1]
+        print("GUI displaying ROI, enabling spot entries")
+        self.NotebookRight.set_current_page(1)
+        self.IpViewWrapper.image_path = filepath
+        self.Spot_A_Entry.set_sensitive(True)
+        self.Spot_C_Entry.set_sensitive(True)
+        self.Spot_G_Entry.set_sensitive(True)
+        self.Spot_T_Entry.set_sensitive(True)
+        self.SelectSpotsButton.set_sensitive(True)
 
 class Handlers:
 
     def __init__(self, gui : ZionGUI):
         self.parent = gui
-        self.ExpModeLastChoice = self.parent.Def_row_idx if self.parent.Def_row_idx else 1
+        # ~ self.ExpModeLastChoice = self.parent.Def_row_idx if self.parent.Def_row_idx else 1
         self.updateExpParams()
         self.update_exp_params_sourceid = GObject.timeout_add(2000, self.updateExpParams)
         self.updateTemp()
@@ -912,12 +894,29 @@ class Handlers:
         self.parent.greenSwitch.set_sensitive(False)
         self.parent.orangeSwitch.set_sensitive(False)
         self.parent.redSwitch.set_sensitive(False)
+        self.parent.report_button.set_sensitive(False)
 
-        self.parent.expModeComboBox.set_active(0)
+        # ~ self.parent.expModeComboBox.set_active(0)
         comment = self.parent.commentBox.get_text()
         suffix = self.parent.suffixBox.get_text()
         self.parent.parent.SaveParameterFile(comment, True)
         self.parent.parent.SaveProtocolFile(comment=comment, suffix=suffix)
+
+        try:
+            median_ks = int(self.parent.median_ks_entry.get_text())
+            erode_ks = int(self.parent.erode_ks_entry.get_text())
+            dilate_ks = int(self.parent.dilate_ks_entry.get_text())
+        except ValueError:
+            self.parent.printToLog("ROI Values must be integers!")
+            return
+        #todo check for non-positive values
+        try:
+            threshold_scale = float(self.parent.threshold_scale_entry.get_text())
+        except ValueError:
+            self.parent.printToLog("ROI threshold needs to be numeric!")
+        #todo check for negative
+
+        self.parent.parent.ImageProcessor.set_roi_params(median_ks, erode_ks, dilate_ks, threshold_scale)
 
         self.stop_run_thread.clear()
         self.parent.parent.Camera.stop_preview()
@@ -1019,81 +1018,81 @@ class Handlers:
             self.parent.SharpnessScale.set_value(params.sharpness)
             self.parent.SharpnessScale.handler_unblock(handler_id)
 
-            handler_id = get_handler_id(self.parent.expCompScale, "value-changed")
-            self.parent.expCompScale.handler_block(handler_id)
-            self.parent.expCompScale.set_value(params.exposure_compensation)
-            self.parent.expCompScale.handler_unblock(handler_id)
+            # ~ handler_id = get_handler_id(self.parent.expCompScale, "value-changed")
+            # ~ self.parent.expCompScale.handler_block(handler_id)
+            # ~ self.parent.expCompScale.set_value(params.exposure_compensation)
+            # ~ self.parent.expCompScale.handler_unblock(handler_id)
 
             handler_id = get_handler_id(self.parent.imageDenoiseButton, "toggled")
             self.parent.imageDenoiseButton.handler_block(handler_id)
             self.parent.imageDenoiseButton.set_active(params.image_denoise)
             self.parent.imageDenoiseButton.handler_unblock(handler_id)
 
-            handler_id_1 = get_handler_id(self.parent.isoButtonAuto, "toggled")
-            self.parent.isoButtonAuto.handler_block(handler_id_1)
-            handler_id_2 = get_handler_id(self.parent.isoButton100, "toggled")
-            self.parent.isoButton100.handler_block(handler_id_2)
-            handler_id_3 = get_handler_id(self.parent.isoButton200, "toggled")
-            self.parent.isoButton200.handler_block(handler_id_3)
-            handler_id_4 = get_handler_id(self.parent.isoButton320, "toggled")
-            self.parent.isoButton320.handler_block(handler_id_4)
-            handler_id_5 = get_handler_id(self.parent.isoButton400, "toggled")
-            self.parent.isoButton400.handler_block(handler_id_5)
-            handler_id_6 = get_handler_id(self.parent.isoButton500, "toggled")
-            self.parent.isoButton500.handler_block(handler_id_6)
-            handler_id_7 = get_handler_id(self.parent.isoButton640, "toggled")
-            self.parent.isoButton640.handler_block(handler_id_7)
-            handler_id_8 = get_handler_id(self.parent.isoButton800, "toggled")
-            self.parent.isoButton800.handler_block(handler_id_8)
-            handler_id_9 = get_handler_id(self.parent.expModeComboBox, "changed")
-            handler_id_10 = get_handler_id(self.parent.expModeLockButton, "toggled")
-            handler_id_11 = get_handler_id(self.parent.expCompScale, "value-changed")
-            self.parent.expModeComboBox.handler_block(handler_id_9)
-            self.parent.expModeLockButton.handler_block(handler_id_10)
-            self.parent.expCompScale.handler_block(handler_id_11)
+            # ~ handler_id_1 = get_handler_id(self.parent.isoButtonAuto, "toggled")
+            # ~ self.parent.isoButtonAuto.handler_block(handler_id_1)
+            # ~ handler_id_2 = get_handler_id(self.parent.isoButton100, "toggled")
+            # ~ self.parent.isoButton100.handler_block(handler_id_2)
+            # ~ handler_id_3 = get_handler_id(self.parent.isoButton200, "toggled")
+            # ~ self.parent.isoButton200.handler_block(handler_id_3)
+            # ~ handler_id_4 = get_handler_id(self.parent.isoButton320, "toggled")
+            # ~ self.parent.isoButton320.handler_block(handler_id_4)
+            # ~ handler_id_5 = get_handler_id(self.parent.isoButton400, "toggled")
+            # ~ self.parent.isoButton400.handler_block(handler_id_5)
+            # ~ handler_id_6 = get_handler_id(self.parent.isoButton500, "toggled")
+            # ~ self.parent.isoButton500.handler_block(handler_id_6)
+            # ~ handler_id_7 = get_handler_id(self.parent.isoButton640, "toggled")
+            # ~ self.parent.isoButton640.handler_block(handler_id_7)
+            # ~ handler_id_8 = get_handler_id(self.parent.isoButton800, "toggled")
+            # ~ self.parent.isoButton800.handler_block(handler_id_8)
+            # ~ handler_id_9 = get_handler_id(self.parent.expModeComboBox, "changed")
+            # ~ handler_id_10 = get_handler_id(self.parent.expModeLockButton, "toggled")
+            # ~ handler_id_11 = get_handler_id(self.parent.expCompScale, "value-changed")
+            # ~ self.parent.expModeComboBox.handler_block(handler_id_9)
+            # ~ self.parent.expModeLockButton.handler_block(handler_id_10)
+            # ~ self.parent.expCompScale.handler_block(handler_id_11)
 
-            if params.iso == 0:
-                button_name = "isoButtonAuto"
-            else:
-                button_name = f"isoButton{params.iso}"
+            # ~ if params.iso == 0:
+                # ~ button_name = "isoButtonAuto"
+            # ~ else:
+                # ~ button_name = f"isoButton{params.iso}"
 
-            iso_button = getattr(self.parent, button_name, None)
-            if iso_button:
-                iso_button.set_active(True)
-            else:
-                self.parent.printToLog(f"WARNING: Unrecogonized ISO value ({params.iso})")
+            # ~ iso_button = getattr(self.parent, button_name, None)
+            # ~ if iso_button:
+                # ~ iso_button.set_active(True)
+            # ~ else:
+                # ~ self.parent.printToLog(f"WARNING: Unrecogonized ISO value ({params.iso})")
 
-            self.parent.expCompScale.set_value(params.exposure_compensation)
+            # ~ self.parent.expCompScale.set_value(params.exposure_compensation)
 
-            listStore = self.parent.expModeComboBox.get_model()
-            rowList = [row[0] for row in listStore]
-            row_idx = rowList.index(params.exposure_mode)
-            self.parent.expModeComboBox.set_active(row_idx)
-            if not row_idx:
-                self.parent.expModeLockButton.set_active(True)
-                self.parent.expCompScale.set_sensitive(False)
-                self.parent.isoButtonBox.set_sensitive(False)
-            else:
-                self.parent.expModeLockButton.set_active(False)
-                self.parent.expCompScale.set_sensitive(True)
-                self.parent.isoButtonBox.set_sensitive(True)
+            # ~ listStore = self.parent.expModeComboBox.get_model()
+            # ~ rowList = [row[0] for row in listStore]
+            # ~ row_idx = rowList.index(params.exposure_mode)
+            # ~ self.parent.expModeComboBox.set_active(row_idx)
+            # ~ if not row_idx:
+                # ~ self.parent.expModeLockButton.set_active(True)
+                # ~ self.parent.expCompScale.set_sensitive(False)
+                # ~ self.parent.isoButtonBox.set_sensitive(False)
+            # ~ else:
+                # ~ self.parent.expModeLockButton.set_active(False)
+                # ~ self.parent.expCompScale.set_sensitive(True)
+                # ~ self.parent.isoButtonBox.set_sensitive(True)
 
-            self.parent.expModeComboBox.handler_unblock(handler_id_9)
-            self.parent.expModeLockButton.handler_unblock(handler_id_10)
-            self.parent.expCompScale.handler_unblock(handler_id_11)
-            self.parent.isoButtonAuto.handler_unblock(handler_id_1)
-            self.parent.isoButton100.handler_unblock(handler_id_2)
-            self.parent.isoButton200.handler_unblock(handler_id_3)
-            self.parent.isoButton320.handler_unblock(handler_id_4)
-            self.parent.isoButton400.handler_unblock(handler_id_5)
-            self.parent.isoButton500.handler_unblock(handler_id_6)
-            self.parent.isoButton640.handler_unblock(handler_id_7)
-            self.parent.isoButton800.handler_unblock(handler_id_8)
+            # ~ self.parent.expModeComboBox.handler_unblock(handler_id_9)
+            # ~ self.parent.expModeLockButton.handler_unblock(handler_id_10)
+            # ~ self.parent.expCompScale.handler_unblock(handler_id_11)
+            # ~ self.parent.isoButtonAuto.handler_unblock(handler_id_1)
+            # ~ self.parent.isoButton100.handler_unblock(handler_id_2)
+            # ~ self.parent.isoButton200.handler_unblock(handler_id_3)
+            # ~ self.parent.isoButton320.handler_unblock(handler_id_4)
+            # ~ self.parent.isoButton400.handler_unblock(handler_id_5)
+            # ~ self.parent.isoButton500.handler_unblock(handler_id_6)
+            # ~ self.parent.isoButton640.handler_unblock(handler_id_7)
+            # ~ self.parent.isoButton800.handler_unblock(handler_id_8)
 
             handler_id_1 = get_handler_id(self.parent.AutoAwbButton, "notify::active")
-            handler_id_2 = get_handler_id(self.parent.redGainScale, "value-changed")
-            handler_id_3 = get_handler_id(self.parent.blueGainScale, "value-changed")
-            self.parent.AutoAwbButton.handler_block(handler_id_1)
+            # ~ handler_id_2 = get_handler_id(self.parent.redGainScale, "value-changed")
+            # ~ handler_id_3 = get_handler_id(self.parent.blueGainScale, "value-changed")
+            # ~ self.parent.AutoAwbButton.handler_block(handler_id_1)
             self.parent.redGainScale.handler_block(handler_id_2)
             self.parent.blueGainScale.handler_block(handler_id_3)
 
@@ -1108,7 +1107,7 @@ class Handlers:
                 self.parent.redGainScale.set_sensitive(False)
                 self.parent.blueGainScale.set_sensitive(True)
 
-            self.parent.AutoAwbButton.handler_unblock(handler_id_1)
+            # ~ self.parent.AutoAwbButton.handler_unblock(handler_id_1)
             self.parent.redGainScale.handler_unblock(handler_id_2)
             self.parent.blueGainScale.handler_unblock(handler_id_3)
 
@@ -1136,6 +1135,121 @@ class Handlers:
         self._update_camera_preview()
         # print("on_camera_preview_configure_event: done!")
         return False
+
+    def on_image_processing_display_draw(self, *args):
+        if not self.is_program_running():
+            self.parent.parent.Camera.stop_preview()
+        self.parent.IpViewWrapper.on_draw(*args)
+        return False
+
+    def on_image_processing_display_configure_event(self, *args):
+        self.parent.IpViewWrapper.on_configure(*args)
+        # ~ self._update_camera_preview()
+        return False
+
+    def on_ip_enable_checkbox_toggled(self, switch):
+        #TODO: lock/unlock rest of ip control section
+        if switch.get_active():
+            self.parent.parent.ImageProcessor.enable = True
+        else:
+            self.parent.parent.ImageProcessor.enable = False
+        return
+
+    def on_redo_roi_detection_button_clicked(self, button):
+        try:
+            median_ks = int(self.parent.median_ks_entry.get_text())
+            erode_ks = int(self.parent.erode_ks_entry.get_text())
+            dilate_ks = int(self.parent.dilate_ks_entry.get_text())
+        except ValueError:
+            self.parent.printToLog("ROI Values must be integers!")
+            return
+        #todo check for non-positive values
+        try:
+            threshold_scale = float(self.parent.threshold_scale_entry.get_text())
+        except ValueError:
+            self.parent.printToLog("ROI threshold needs to be numeric!")
+        #todo check for negative value
+        self.parent.parent.ImageProcessor.set_roi_params(median_ks, erode_ks, dilate_ks, threshold_scale)
+        # ~ self.parent.parent.ImageProcessor.mp_namespace.bEnable = False
+        self.parent.parent.ImageProcessor.basis_spots_chosen_queue.put( 'redo_roi' )
+
+    def on_select_spots_button_clicked(self, button):
+        try:
+            a = int(self.parent.Spot_A_Entry.get_text())
+            c = int(self.parent.Spot_C_Entry.get_text())
+            g = int(self.parent.Spot_G_Entry.get_text())
+            t = int(self.parent.Spot_T_Entry.get_text())
+        except ValueError:
+            print("Invalid Spot Choices")
+            return
+        #TODO check for ranges
+        basis = (a,c,g,t)
+        self.parent.parent.ImageProcessor.basis_spots_chosen_queue.put( basis )
+
+    def on_report_button_clicked(self, button):
+        try:
+            p = float(self.parent.basecall_p_entry.get_text())
+            q = float(self.parent.basecall_q_entry.get_text())
+        except ValueError:
+            self.parent.printToLog("p and q must be numeric!")
+            return
+        self.parent.parent.ImageProcessor.set_basecall_params(p,q)
+        self.parent.parent.ImageProcessor.generate_report()
+
+    def on_spot_A_entry_activate(self, entry):
+        #TODO
+        return
+
+    def on_spot_C_entry_activate(self, entry):
+        #TODO
+        return
+
+    def on_spot_G_entry_activate(self, entry):
+        #TODO
+        return
+
+    def on_spot_T_entry_activate(self, entry):
+        #TODO
+        return
+
+    def on_subtract_dark_checkbutton_activate(self, button):
+        #TODO
+        return
+
+    def on_subtract_temporal_checkbutton_activate(self, button):
+        #TODO
+        return
+
+    def on_subtract_bg_checkbutton_activate(self, button):
+        #TODO
+        return
+
+    def on_ip_back_button_clicked(self, button):
+        self.parent.IpViewWrapper.channel_decrement()
+
+    def on_ip_fwd_button_clicked(self, button):
+        self.parent.IpViewWrapper.channel_increment()
+
+    def on_ip_seek_back_button_clicked(self, button):
+        return
+
+    def on_ip_seek_fwd_button_clicked(self, button):
+        return
+
+    def on_ip_view_spots_checkbox_toggled(self, button):
+        self.parent.parent.ImageProcessor.do_test()
+        return
+
+    def on_ip_view_bases_checkbox_toggled(self, button):
+        return
+
+    def on_ip_use_diff_imgs_checkbox_toggled(self, button):
+        return
+
+    def on_test1_button_clicked(self, button):
+        print("Test 1 Button clicked")
+        self.parent.parent.ImageProcessor.do_test()
+        return
 
     def check_fixed_settings(self):
         is_fixed_capture, bad_params = self.parent.parent.Camera.is_fixed_capture()

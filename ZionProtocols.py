@@ -180,8 +180,9 @@ class ZionProtocol():
         The `event` is None then the following optional keyword arguments are available initalize the new event.
 
         name : str       : Descriptive name for the event (default: "")
-        cycles : int     : Number of cycles for the event (default: 1)
+        repeats : int     : Number of cycles for the event (default: 1)
         capture : list   : list of frame indices during which a capture should occur (default: [0] (formerly "True"))
+        # ~ cycle_index: int   : cycle label for image
         group : str      : Group string that's added to the image filename (default: "")
         _cycle_time : int: Number of milliseconds the event should take to complete (default: exposure_time)
         leds : ZionLEDs  : Led settings for the new event (default: ZionLEDs())
@@ -220,7 +221,7 @@ class ZionProtocol():
         """
         flat_events = []
         for event in self.Entries:
-            if isinstance(event, (ZionEvent, ZionEventGroup)):
+            if isinstance(event, (ZionEventGroup, ZionEvent)):
                 flat_events.extend(event.flatten())
             else:
                 raise RuntimeError(

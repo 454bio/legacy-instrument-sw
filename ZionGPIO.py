@@ -640,10 +640,10 @@ class ZionPigpioProcess(multiprocessing.Process):
             try:
                 test_lines = lines[0][-4:-1]
             except IndexError:
-                print('Serial communications issue!')
+                print('Serial communications issue (no lines)!')
                 return None
             if not lines[0][-4:-1]=='YES':
-                print('Serial communications issue!')
+                print('Serial communications issue (no "YES")!')
                 return None
             else:
                 equals_pos = lines[1].find('t=')
