@@ -191,7 +191,7 @@ def add_basecall_result_to_dataframe(data, df):
     numCycles = data.shape[1]
     for s_idx, spot in enumerate(spotlist):
         for cycle in range(numCycles):
-            coeffs_df.loc[(spot, cycle+1)] = data[s_idx, cycle, :]
+            coeffs_pd.loc[(spot, cycle+1)] = data[s_idx, cycle, :]
     return pd.concat([df, coeffs_pd], axis=1)
 
 def base_call(data, p:float=0.0, q:float=0.0, base_key:list=["A", "C", "G" "T"]):
