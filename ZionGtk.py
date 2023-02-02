@@ -345,11 +345,40 @@ class Handlers:
     def on_pid_enable_button_toggled(self, button):
         if button.get_active():
             self.parent.printToLog("Enabling PID")
+            # also set params
+            # first setpt
+            try:
+                val = int(self.parent.TargetTempEntry.get_text())
+            except ValueError:
+                self.parent.printToLog("Temperature must be integer!")
+                return
+            self.parent.parent.GPIO.set_target_temperature(val)
+            #next P
+            try:
+                val = float(self.parent.P_Entry.get_text())
+            except ValueError:
+                self.parent.printToLog("P Value must be non-negative and numeric!")
+                return
+            self.parent.parent.GPIO.pigpio_process.mp_namespace.P = val
+            if val<0:
+                self.parent.printToLog("P Value must be non-negative numeric!")
+                return
+            #now I
+            try:
+                val = float(self.parent.I_Entry.get_text())
+            except ValueError:
+                self.parent.printToLog("I Value must be non-negative numeric!")
+                return
+            if val<0:
+                self.parent.printToLog("I Value must be non-negative numeric!")
+                return
+            self.parent.parent.GPIO.pigpio_process.mp_namespace.I = val
+            #now enable:
             self.parent.parent.GPIO.enable_PID(True)
         else:
             self.parent.printToLog("Disabling PID")
             self.parent.parent.GPIO.enable_PID(False)
-            
+
     def on_pid_verbose_button_toggled(self, button):
         if button.get_active():
             self.parent.printToLog("PID is verbose")
@@ -357,7 +386,7 @@ class Handlers:
         else:
             self.parent.printToLog("PID is not verbose")
             self.parent.parent.GPIO.pigpio_process.mp_namespace.pid_verbose = False
-            
+
     def on_pid_temperature_entry_activate(self, entry):
         try:
             val = int(entry.get_text())
@@ -366,18 +395,18 @@ class Handlers:
             return
         # ~ self.parent.parent.GPIO.pigpio_process.mp_namespace.target_temp = val
         self.parent.parent.GPIO.set_target_temperature(val)
-        
+
     def on_pid_P_entry_activate(self, entry):
         try:
             val = float(entry.get_text())
         except ValueError:
             self.parent.printToLog("P Value must be non-negative and numeric!")
             return
-        self.parent.parent.GPIO.pigpio_process.mp_namespace.P = val
         if val<0:
             self.parent.printToLog("P Value must be non-negative numeric!")
             return
-            
+        self.parent.parent.GPIO.pigpio_process.mp_namespace.P = val
+
     def on_pid_I_entry_activate(self, entry):
         try:
             val = float(entry.get_text())
@@ -388,7 +417,7 @@ class Handlers:
             self.parent.printToLog("I Value must be non-negative numeric!")
             return
         self.parent.parent.GPIO.pigpio_process.mp_namespace.I = val
-        
+
     def on_pid_tDelta_entry_activate(self, entry):
         try:
             val = float(entry.get_text())
@@ -396,7 +425,7 @@ class Handlers:
             self.parent.printToLog("t_delta Value must be numeric!")
             return
         self.parent.parent.GPIO.pigpio_process.mp_namespace.pid_delta_t = val
-        
+
     def on_pid_threshold_entry_activate(self, entry):
         try:
             val = int(entry.get_text())
@@ -404,7 +433,7 @@ class Handlers:
             self.parent.printToLog("Ramp Threshold Value must be an integer!")
             return
         self.parent.parent.GPIO.pigpio_process.pid_ramp_threshold = val
-                        
+
     def reset_button_click(self, *args):
         self.parent.printToLog('Setting Video Params to Defaults')
         self.parent.BrightnessScale.set_value(self.parent.Default_Brightness)
