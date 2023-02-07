@@ -53,8 +53,8 @@ class ZionConfig(dict):
 				#TODO make an actual (python) warning?
 				print(f"WARNING: SMB Share {SHARE_FILEPATH} not found. Using local path {self['path']} instead.")
 		# TODO handle any exceptions?
-		except Exception as e:
-			raise e
+		except PermissionError:
+			self["path"] = None
 
 def get_cpu_serial():
 	cpu_serial = INVALID_SERIAL

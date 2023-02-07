@@ -207,18 +207,17 @@ class ZionImageProcessor(multiprocessing.Process):
 		self._convert_image_thread.join(12.0)
 		if self._convert_image_thread.is_alive():
 			print("_convert_image_thread is still alive!")
+		# ~ self._image_processing_thread.join(10.0)
+		# ~ if self._image_processing_thread.is_alive():
+			# ~ print("_image_processing_thread is still alive!")
 
-		self._image_processing_thread.join(10.0)
-		if self._image_processing_thread.is_alive():
-			print("_image_processing_thread is still alive!")
+		# ~ self._base_calling_thread.join(10.0)
+		# ~ if self._base_calling_thread.is_alive():
+			# ~ print("_base_calling_thread is still alive!")
 
-		self._base_calling_thread.join(10.0)
-		if self._base_calling_thread.is_alive():
-			print("_base_calling_thread is still alive!")
-
-		self._kinetics_thread.join(10.0)
-		if self._kinetics_thread.is_alive():
-			print("_kinetics_thread is still alive!")
+		# ~ self._kinetics_thread.join(10.0)
+		# ~ if self._kinetics_thread.is_alive():
+			# ~ print("_kinetics_thread is still alive!")
 
 	def _start_child_threads(self):
 
@@ -229,30 +228,30 @@ class ZionImageProcessor(multiprocessing.Process):
 		self._convert_image_thread.daemon = True
 		self._convert_image_thread.start()
 
-		self._image_processing_thread = threading.Thread(
-			target=self._image_handler,
-			args=(self.mp_namespace, self.new_cycle_detected, self.rois_detected_event, self.basis_spots_chosen_queue, self.base_caller_queue, self.kinetics_analyzer_queue)
-		)
-		self._image_processing_thread.daemon = True
-		self._image_processing_thread.start()
+		# ~ self._image_processing_thread = threading.Thread(
+			# ~ target=self._image_handler,
+			# ~ args=(self.mp_namespace, self.new_cycle_detected, self.rois_detected_event, self.basis_spots_chosen_queue, self.base_caller_queue, self.kinetics_analyzer_queue)
+		# ~ )
+		# ~ self._image_processing_thread.daemon = True
+		# ~ self._image_processing_thread.start()
 
-		self._base_calling_thread = threading.Thread(
-			target=self._base_caller,
-			args=(self.mp_namespace, self.base_caller_queue, self.bases_called_event)
-		)
+		# ~ self._base_calling_thread = threading.Thread(
+			# ~ target=self._base_caller,
+			# ~ args=(self.mp_namespace, self.base_caller_queue, self.bases_called_event)
+		# ~ )
 
-		self._base_calling_thread.daemon = True
-		self._base_calling_thread.start()
+		# ~ self._base_calling_thread.daemon = True
+		# ~ self._base_calling_thread.start()
 
-		self._kinetics_thread = threading.Thread(
-			target=self._kinetics_analyzer,
-			args=(self.mp_namespace, self.kinetics_analyzer_queue, self.kinetics_analyzed_event)
-		)
+		# ~ self._kinetics_thread = threading.Thread(
+			# ~ target=self._kinetics_analyzer,
+			# ~ args=(self.mp_namespace, self.kinetics_analyzer_queue, self.kinetics_analyzed_event)
+		# ~ )
 
-		self._kinetics_thread.daemon = True
-		self._kinetics_thread.start()
+		# ~ self._kinetics_thread.daemon = True
+		# ~ self._kinetics_thread.start()
 
-		#todo: same for other threads
+		# ~ #todo: same for other threads
 
 	def _convert_jpeg(self, mp_namespace : Namespace, image_file_queue : multiprocessing.Queue, new_cycle_queue : multiprocessing.Queue, output_queue : multiprocessing.Queue):
 		print("Starting _convert_jpeg thread")
