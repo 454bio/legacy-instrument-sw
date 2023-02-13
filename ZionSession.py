@@ -48,7 +48,8 @@ class ZionSession():
         lastSuffix = 0
 
         self.Config = ZionConfig()
-        sessions_dir = os.path.join(self.Config["path"]) if self.Config["path"] is not None else os.path.join(os.path.dirname(os.path.abspath(__file__)), "sessions")
+        # ~ sessions_dir = os.path.join(self.Config["path"]) if self.Config["path"] is not None else os.path.join(os.path.dirname(os.path.abspath(__file__)), "sessions")
+        sessions_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "sessions")
 
         for f in glob(os.path.join(sessions_dir, f"*_{session_name}_*")):
             lastHyphenIdx = f.rfind('_')
