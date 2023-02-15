@@ -60,7 +60,7 @@ int jpg_to_raw(string in_filepath, string out_filepath)
 				// we want to look at lines 2*l and 2*l+1, which is the following:
 				//memcpy(dual_line_buffer, &input_buffer[2*l*BYTES_PER_LINE], BYTES_PER_LINE*2)
 				//now dual_line_buffer is set up as follows:
-				dual_line_start = &input_buffer[2*l*BYTES_PER_LINE]; //input_buffer + 2*l*BYTES_PER_LINE; //
+				dual_line_start = input_buffer + 2*l*BYTES_PER_LINE; //&input_buffer[2*l*BYTES_PER_LINE]; //
 				for (int i=0; i < USED_BYTES_PER_LINE; i=i+3) {
 					
 					GreenPixel1     = (uint16_t)( (*(i+dual_line_start) << 4) | (*(i+dual_line_start+2) & 0x0F) ); //green1
@@ -82,6 +82,7 @@ int jpg_to_raw(string in_filepath, string out_filepath)
 			TIFFClose(tif); //closing file here
 			if (output_line_buffer)
 				_TIFFfree(output_line_buffer);
+			free(input_buffer);
 		}
 		else {
 			cout << "Incorrect key" << endl;
