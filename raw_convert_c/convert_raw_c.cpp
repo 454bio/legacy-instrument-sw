@@ -2,6 +2,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
 #include "tiffio.h"
 
 
@@ -28,7 +29,7 @@ int jpg_to_raw(string in_filepath, string out_filepath)
 		key_buffer[4] = '\0';
 
 		if (strcmp((char*)key_buffer, key_literal) == 0) {
-			cout << "Valid key. Allocation input buffer." << endl;
+			//~ cout << "Valid key. Allocation input buffer." << endl;
 			
 			uint8_t * input_buffer = (uint8_t*)malloc(buffer_length);
 			fseek(f, -1 * buffer_length, SEEK_END);
@@ -46,7 +47,7 @@ int jpg_to_raw(string in_filepath, string out_filepath)
 			TIFFSetField(tif, TIFFTAG_ORIENTATION, ORIENTATION_TOPLEFT);
 			TIFFSetField(tif, TIFFTAG_PLANARCONFIG, PLANARCONFIG_CONTIG);
 			//todo: change rows per strip? does it increase speed?
-			//TIFFSetField(tif, TIFFTAG_ROWSPERSTRIP, 1);
+			TIFFSetField(tif, TIFFTAG_ROWSPERSTRIP, 1);
 
 			
 			uint8_t  * dual_line_start;
@@ -78,7 +79,7 @@ int jpg_to_raw(string in_filepath, string out_filepath)
 					ret ++;
 				}
 			}
-			cout << "done writing lines, closing tiff file here" << endl;
+			//~ cout << "done writing lines, closing tiff file here" << endl;
 			TIFFClose(tif); //closing file here
 			if (output_line_buffer)
 				_TIFFfree(output_line_buffer);
@@ -102,8 +103,12 @@ int main(int argc, char* argv[])
 	}
 	string filepath = argv[1];
 	string target_path = argv[2];
+	clock_t start = clock();
 	int out = jpg_to_raw(filepath, target_path);
 	ret = 0;
+	//~ clock_t end = clock();
+	//~ double time_used = ((double)(end-start))/ CLOCKS_PER_SEC;
+	//~ cout << time_used << endl;
 	return ret;
 }
 
