@@ -100,7 +100,7 @@ def extract_spot_data(img, roi_labels, csvFileName = None, kinetic=False):
 
     w_idx = []
     for w in img.wavelengths:
-        w_idx =+ 3*[w]
+        w_idx += 3*[w]
     ch_idx = []
     # Note: dependent on df_cols def above
     for c in [2,5,8,11,14,17,20,23]:
@@ -121,7 +121,7 @@ def csv_to_data(csvfile):
     df_total = df_total.unstack()
     w_idx = []
     for w in wavelengths:
-        w_idx =+ 3*[w]
+        w_idx += 3*[w]
     ch_idx = []
     # Note: dependent on df_cols def above
     for c in [2,5,8,11,14,17,20,23]:
