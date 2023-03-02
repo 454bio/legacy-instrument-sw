@@ -242,7 +242,6 @@ class ZionSession():
         # Check if the shared queue is empty at the end?
         # Do I unroll _all_ the events?
 
-        self.ImageProcessor.start()
         self.roi_thread = threading.Thread(target=self.update_roi_image, args=(self.ImageProcessor.basis_spots_chosen_queue, ) )
         self.roi_thread.daemon=True
         self.roi_thread.start()
