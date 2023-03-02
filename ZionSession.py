@@ -330,6 +330,7 @@ class ZionSession():
                         # ~ self.load_image_lock.release()
                     with self.ip_enable_lock:
                         self.ImageProcessor.mp_namespace.bEnable = True
+                        self.ImageProcessor.mp_namespace.bConvertEnable = True
 
                     group_or_wait.sleep(
                         stop_event=stop_event,
@@ -344,6 +345,7 @@ class ZionSession():
                 else:
                     with self.ip_enable_lock:
                         self.ImageProcessor.mp_namespace.bEnable = False
+                        self.ImageProcessor.mp_namespace.bConvertEnable = False
                     flat_events = group_or_wait
 
                     # This will pre-program the pigpio with the waveforms for our LEDs
@@ -382,6 +384,7 @@ class ZionSession():
                             print("Received stop!")
                             with self.ip_enable_lock:
                                 self.ImageProcessor.mp_namespace.bEnable = True
+                                self.ImageProcessor.mp_namespace.bConvertEnable = True
                             break
 
                     end_fstrobe = self.GPIO.get_num_fstrobes()
@@ -401,6 +404,7 @@ class ZionSession():
                         print(f"WARNING: We did not receive all of the frames actually captured!!  num_fstrobe: {num_fstrobe}  expected: {expected_num_frames}")
             with self.ip_enable_lock:
                 self.ImageProcessor.mp_namespace.bEnable = True
+                self.ImageProcessor.mp_namespace.bConvertEnable = True
             print("RunProgram Finished!")
 
         except Exception as e:
@@ -469,9 +473,10 @@ class ZionSession():
 
     def update_roi_image(self, basis_spot_queue):
         while True:
-            self.ImageProcessor.rois_detected_event.wait()
-            GLib.idle_add(self.gui.load_roi_image, (os.path.join(self.ImageProcessor.file_output_path, "rois_365.jpg"), basis_spot_queue))
-            self.ImageProcessor.rois_detected_event.clear()
+            if self.ImageProcessor.bEnable:
+                self.ImageProcessor.rois_detected_event.wait()
+                GLib.idle_add(self.gui.load_roi_image, (os.path.join(self.ImageProcessor.file_output_path, "rois_365.jpg"), basis_spot_queue))
+                self.ImageProcessor.rois_detected_event.clear()
 
     def get_temperature(self):
         self.Temperature = self.GPIO.read_temperature()

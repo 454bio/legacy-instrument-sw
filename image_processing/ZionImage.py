@@ -1,4 +1,5 @@
 import os
+from subprocess import call, check_call, check_output, run
 from glob import glob
 import time
 import multiprocessing
@@ -12,9 +13,22 @@ from multiprocessing.managers import Namespace
 from tifffile import imread, imwrite
 from matplotlib import pyplot as plt
 
-from image_processing.raw_converter import jpg_to_raw, get_wavelength_from_filename, get_cycle_from_filename, get_time_from_filename
+from image_processing.raw_converter import get_wavelength_from_filename, get_cycle_from_filename, get_time_from_filename
+from image_processing.raw_converter import jpg_to_raw as jpg_to_raw_py
 from image_processing.ZionBase import df_cols, extract_spot_data, csv_to_data, crosstalk_correct, display_signals, base_call, add_basecall_result_to_dataframe
 
+def jpg_to_raw(filepath, target_path):
+	# ~ ret = check_output(["./raw_convert_c/convert_raw_c", filepath, target_path])
+	# ~ ret = run([f"./raw_convert_c/convert_raw_c {filepath} {target_path}"], shell=True)
+	ret = run(["./raw_convert_c/convert_raw_c", filepath, target_path])
+	# ~ os.system(f"./raw_convert_c/convert_raw_c {filepath} {target_path}")
+	#todo add timer
+	# ~ print(f"Wrote {filename}.tif in _ sec"}
+	retcode = ret.returncode
+	if retcode == 0:
+		return ret.returncode
+	else:
+		raise OSError(f"raw converter failed on image {filepath} with error {retcode}")
 
 # TODO rebase most skimage stuff into opencv (raspberry pi opencv by default doesn't deal with 16 bit images)
 
@@ -153,6 +167,7 @@ class ZionImageProcessor(multiprocessing.Process):
 		self.gui = gui
 		self.session_path = session_path
 		self.file_output_path = os.path.join(session_path, f"processed_images_v{self.IMAGE_PROCESS_VERSION}")
+		self.raws_path = os.path.join(session_path, f"raws")
 
 		self.roi_labels = None
 		self.numSpots = None
@@ -166,6 +181,7 @@ class ZionImageProcessor(multiprocessing.Process):
 		# ~ self._enable_condition = self._mp_manager.Condition()
 		# ~ self._enable_lock = self._mp_manager.Lock()
 		self.mp_namespace.bEnable = False
+		self.mp_namespace.bConvertEnable = False
 
 		self.bUseDifferenceImages = False
 		self.mp_namespace.bShowSpots = False
@@ -189,9 +205,6 @@ class ZionImageProcessor(multiprocessing.Process):
 		self._image_viewer_queue = self._mp_manager.Queue()
 
 	def run(self):
-		if not os.path.isdir(self.file_output_path):
-			os.makedirs(self.file_output_path)
-			print(f"Creating directory {self.file_output_path} for processing")
 		self._start_child_threads()
 		print("Image Processor threads started!")
 		#Now wait for stop event:
@@ -256,20 +269,20 @@ class ZionImageProcessor(multiprocessing.Process):
 	def _convert_jpeg(self, mp_namespace : Namespace, image_file_queue : multiprocessing.Queue, new_cycle_queue : multiprocessing.Queue, output_queue : multiprocessing.Queue):
 		print("Starting _convert_jpeg thread")
 		mp_namespace.convert_cycle_ind = 0
-		mp_namespace.bEnable = True
 		lock = False
+		if not os.path.isdir(self.raws_path):
+			os.makedirs(self.raws_path)
+			print(f"Creating directory {self.raws_path} for raws")
 		while True:
 			filepath_args = image_file_queue.get()
 			filepath = filepath_args[0]
 			if filepath is None: # basically a stop signal
 				print("_convert_jpeg -- received stop signal!")
 				break
-			if mp_namespace.bEnable:
+			if mp_namespace.bConvertEnable:
 				print(f"Converting jpeg {filepath}")
-
-				out_dir = os.path.join(os.path.dirname(filepath), "raws")
 				filename = os.path.splitext(os.path.basename(filepath))[0]
-				rgbs = jpg_to_raw(filepath, os.path.join(out_dir, filename+".tif"))
+				jpg_to_raw(filepath, os.path.join(self.raws_path, filename+".tif"))
 				cycle = get_cycle_from_filename(filename)
 				if cycle is not None:
 					if cycle != mp_namespace.convert_cycle_ind:
@@ -283,15 +296,11 @@ class ZionImageProcessor(multiprocessing.Process):
 						print(f"_convert_jpg thread: Cycle {mp_namespace.convert_cycle_ind} event being set")
 						lock = True # only do this once
 			else:
-				while not mp_namespace.bEnable:
+				while not mp_namespace.bConvertEnable:
 					continue
 				print(f"Converting jpeg {filepath} after wait")
-
-				out_dir = os.path.join(os.path.dirname(filepath), "raws")
 				filename = os.path.splitext(os.path.basename(filepath))[0]
-				rgbs = jpg_to_raw(filepath, os.path.join(out_dir, filename+".tif"))
-				# TODO: do something with rgb data?
-
+				jpg_to_raw(filepath, os.path.join(self.raws_path, filename+".tif"))
 
 	def _image_handler(self, mp_namespace : Namespace, image_ready_queue : multiprocessing.Queue, rois_detected_event, basis_chosen_queue, base_caller_queue, kinetics_queue):
 		''' High level handler... will use cycle number (before incrementing)
@@ -299,8 +308,11 @@ class ZionImageProcessor(multiprocessing.Process):
 		'''
 
 		mp_namespace.ip_cycle_ind = 0
-		in_path = os.path.join(self.session_path, "raws")
+		in_path = self.raws_path
 		out_path = self.file_output_path
+		if not os.path.isdir(self.file_output_path):
+			os.makedirs(self.file_output_path)
+			print(f"Creating directory {self.file_output_path} for processing")
 		rois_detected_event.clear()
 		# ~ lock = False
 
