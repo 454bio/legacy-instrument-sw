@@ -41,13 +41,11 @@ class ZionConfig(dict):
 		try:
 			if os.path.isdir(SHARE_FILEPATH):
 				# Now see if serial number folder exists
-				if os.path.isdir(self["path"]):
-					return
-				else:
+				if not os.path.isdir(self["path"]):
 					os.makedirs(self["path"])
 					print(f"Creating data directory {self['path']}")
 			else: #create local directory instead
-				cfg["path"] = os.path.join(os.path.dirname(os.path.abspath(__file__)), "sessions")
+				self["path"] = os.path.join(os.path.dirname(os.path.abspath(__file__)), "sessions")
 				if not os.path.isdir(self["path"]):
 					os.makedirs(self["path"])
 				#TODO make an actual (python) warning?
