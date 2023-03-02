@@ -155,6 +155,7 @@ class ZionGUI():
         self.basecall_p_entry = self.builder.get_object("basecall_p_entry")
         self.basecall_q_entry = self.builder.get_object("basecall_p_entry")
         self.report_button = self.builder.get_object("report_button")
+        self.cloud_button = self.builder.get_object("cloud_push_button")
 
         self.handlers = Handlers(self)
         self.builder.connect_signals(self.handlers)
@@ -1224,6 +1225,10 @@ class Handlers:
             return
         self.parent.parent.ImageProcessor.set_basecall_params(p,q)
         self.parent.parent.ImageProcessor.generate_report()
+
+    def on_cloud_push_button_clicked(self, button):
+        #TODO add cloud push enable here
+        return
 
     def on_spot_A_entry_activate(self, entry):
         #TODO
