@@ -13,7 +13,6 @@ from multiprocessing.managers import Namespace
 from tifffile import imread, imwrite
 from matplotlib import pyplot as plt
 
-from image_processing.raw_converter import get_wavelength_from_filename, get_cycle_from_filename, get_time_from_filename
 from image_processing.raw_converter import jpg_to_raw as jpg_to_raw_py
 from image_processing.ZionBase import df_cols, extract_spot_data, csv_to_data, crosstalk_correct, display_signals, base_call, add_basecall_result_to_dataframe
 
@@ -30,8 +29,20 @@ def jpg_to_raw(filepath, target_path):
 	else:
 		raise OSError(f"raw converter failed on image {filepath} with error {retcode}")
 
-# TODO rebase most skimage stuff into opencv (raspberry pi opencv by default doesn't deal with 16 bit images)
+def get_wavelength_from_filename(filepath):
+	return filepath.split('_')[-3]
 
+def get_cycle_from_filename(filepath):
+	cycle_str = filepath.split('_')[-2]
+	if cycle_str[0]=='C':
+		return int(cycle_str[1:])
+	else:
+		return None
+
+def get_time_from_filename(filepath):
+	return int( os.path.splitext(filepath)[0].split('_')[-1] )
+
+# TODO rebase most skimage stuff into opencv (raspberry pi opencv by default doesn't deal with 16 bit images)
 def rgb2gray(img, weights=None):
 	if weights is None:
 		return np.mean(img, axis=-1).round().astype('uint16')
@@ -155,6 +166,46 @@ class ZionImage(UserDict):
 		else:
 			raise ValueError(f"Invalid datatype given!")
 		return img_8b
+
+	def detect_rois(self, out_path, uv_wl='365', median_ks=9, erode_ks=16, dilate_ks=13, threshold_scale=1):
+
+		print(f"Detecting ROIs using median={median_ks}, erode={erode_ks}, dilate={dilate_ks}, scale={threshold_scale}")
+
+		#Convert to grayscale (needs to access UV channel here when above change occurs):
+		img_gs = rgb2gray(self.data[uv_wl])
+
+		img_gs = median_filter(img_gs, median_ks)
+		thresh = threshold_scale * filters.threshold_mean(img_gs)
+		#TODO: adjust threshold? eg make it based on stats?
+		img_bin = img_gs > thresh
+
+		img_bin = morphology.binary_erosion(img_bin, morphology.disk(erode_ks))
+		img_bin = morphology.binary_dilation(img_bin, morphology.disk(dilate_ks))
+		img_bin = morphology.binary_erosion(img_bin, morphology.disk(4))
+
+		spot_labels, nSpots = measure.label(img_bin, return_num=True)
+		print(f"{nSpots} spot candidates found")
+		spot_props = measure.regionprops(spot_labels)
+		# sort spot labels by centroid locations because we want to identify homopolymer spots by array coords
+		# sorted left to right, top to bottom (like 
+		# TODO: add some additional channel (eg 525) that suffers from scatter/noise, and test against it to invalidate spots that include bloom of scatter.
+		centroids = [p.centroid for p in spot_props]
+		# snew_cnew_orted(centroids, key=lambda c: [c[1], c[0])
+
+
+		# TODO: get stats, centroids of spots, further invalidate improper spots.
+		#for s in range(1, nSpots+1):
+		#	size = spot_labels[spot_labels==s].shape[0]
+		#	if size > 2500:
+		#		print(f"removing spot {s} with area {size}")
+		#		spot_labels[spot_labels==s] = 0
+		#		nSpots -= 1
+
+		np.save(os.path.join(out_path, f"rois.npy"), spot_labels)
+		roi_img = [create_labeled_rois(spot_labels, filepath=os.path.join(out_path, f"rois"), color=[1,0,1])]
+		for w_ind, w in enumerate(self.wavelengths):
+			roi_img.append( create_labeled_rois(spot_labels, filepath=os.path.join(out_path, f"rois_{w}"), color=[1,0,1], img=self[w]) )
+		return roi_img, spot_labels, nSpots
 
 class ZionImageProcessor(multiprocessing.Process):
 
@@ -620,3 +671,22 @@ class ZionImageProcessor(multiprocessing.Process):
 		self.gui.IpViewWrapper.images = test_img.view_8bit
 		# ~ plt.imshow(test_img['525'])
 		return
+
+def get_imageset_from_cycle(new_cycle, input_dir_path, uv_wl, useDifferenceImage):
+	cycle_str = f"C{new_cycle:03d}"
+	cycle_files = sorted(glob(os.path.join(input_dir_path, f"*_{cycle_str}_*.tif")))
+	wls = list(set(sorted([get_wavelength_from_filename(f) for f in cycle_files])))
+	if not uv_wl in wls:
+		raise ValueError(f"No {uv_wl} images in cycle {new_cycle}!")
+	nWls = len(wls)-1
+	imgFileList = []
+	diffImgSubtrahends = []
+	for wl in wls:
+		if wl==uv_wl:
+			imgFileList.append(cycle_files[[f"_{wl}_" in fp for fp in cycle_files].index(True)]) #first uv image
+		else:
+			lst_tmp = [f"_{wl}_" in fp for fp in cycle_files]
+			imgFileList.append(cycle_files[ len(lst_tmp) - lst_tmp[-1::-1].index(True) - 1]) # last vis led image
+			diffImgSubtrahends.append(cycle_files[[f"_{wl}_" in fp for fp in cycle_files].index(True)]) # first vis led image
+	currImageSet = ZionImage(imgFileList, wls, cycle=new_cycle, subtrahends=diffImgSubtrahends) if useDifferenceImage else ZionImage(imgFileList, wls, cycle=new_cycle)
+	return currImageSet
