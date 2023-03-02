@@ -100,7 +100,7 @@ def extract_spot_data(img, roi_labels, csvFileName = None, kinetic=False):
 
     w_idx = []
     for w in img.wavelengths:
-        w_idx =+ 3*[w]
+        w_idx += 3*[w]
     ch_idx = []
     # Note: dependent on df_cols def above
     for c in [2,5,8,11,14,17,20,23]:
@@ -121,7 +121,7 @@ def csv_to_data(csvfile):
     df_total = df_total.unstack()
     w_idx = []
     for w in wavelengths:
-        w_idx =+ 3*[w]
+        w_idx += 3*[w]
     ch_idx = []
     # Note: dependent on df_cols def above
     for c in [2,5,8,11,14,17,20,23]:
@@ -228,6 +228,17 @@ def base_call(data, p:float=0.0, q:float=0.0, base_key:list=["A", "C", "G" "T"])
     z_qinv = np.transpose(z_qinv, axes=(0,2,1))
     
     return z_qinv, bases
+
+def create_phase_correct_matrix(p,q,numCycles,r=0):
+    P  = np.diag((numCycles+1)*[p])
+    P += np.diag((numCycles)*[1-p-q], k=1)
+    P += np.diag((numCycles-1)*[q], k=2)
+
+    Q = np.zeros(shape=(numCycles,numCycles))
+    for t in range(numCycles):
+        Q[:,t] = np.linalg.matrix_power(P,t+1)[0,1:]
+    Qinv = np.linalg.inv(Q)
+    return Qinv
 
 def display_signals(coeffs, spotlist, numCycles, numRows=1, numPages=1, exclusions=None, prefix=None, noSignal=False, labels=True, stds=None):
 
