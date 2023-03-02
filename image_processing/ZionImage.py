@@ -255,6 +255,8 @@ class ZionImageProcessor(multiprocessing.Process):
 
 		self._image_viewer_queue = self._mp_manager.Queue()
 
+		self.start()
+
 	def run(self):
 		self._start_child_threads()
 		print("Image Processor threads started!")
