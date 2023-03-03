@@ -1,6 +1,7 @@
 import multiprocessing
 from operator import attrgetter, methodcaller
 import os
+import shutil
 from glob import glob
 import time
 from datetime import datetime
@@ -477,11 +478,25 @@ class ZionSession():
                 GLib.idle_add(self.gui.load_roi_image, (os.path.join(self.ImageProcessor.file_output_path, "rois_365.jpg"), basis_spot_queue))
                 self.ImageProcessor.rois_detected_event.clear()
 
-    def push_to_cloud(self, from_path=None, to_path=None):
-        print("Starting push to cloud process")
-        #TODO change from from_path and to_path to self.{}
-        if from_path is not None and to_path is not None:
-            shutil.copytree(from_path, to_path, dirs_exist_ok=True)
+    def push_to_cloud(self, source_path=None, target_parent=None):
+        if source_path is not None and target_parent is not None:
+            print("Starting push to cloud process")
+            target_path = os.path.join(target_parent, os.path.basename(source_path))
+            for root, dirs, files in os.walk(source_path):
+                pathsplit = root.split(os.sep)
+                ref_idx = pathsplit.index(os.path.basename(source_path))
+                target= os.path.join( *([target_path]+pathsplit[ref_idx+1:]) )
+                for f in files:
+                    file_target = os.path.join(target, f)
+                    os.makedirs(os.path.dirname(file_target), exist_ok=True)
+                    if not os.path.exists(file_target):
+                        shutil.copy2(os.path.join(root, f), os.path.join(target, f))
+                        print(f"Copied {os.path.join(root,f)} to {os.path.join(target,f)}")
+                    elif not os.path.getsize(os.path.join(root,f)) == os.path.getsize(os.path.join(target,f)):
+                        shutil.copy2(os.path.join(root, f), os.path.join(target, f))
+                        print(f"Copied (OW) {os.path.join(root,f)} to {os.path.join(target,f)}")
+                    else:
+                        print(f"{os.path.join(target,f)} already exists!")
 
     def get_temperature(self):
         self.Temperature = self.GPIO.read_temperature()
