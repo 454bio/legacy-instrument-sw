@@ -426,7 +426,7 @@ class ZionSession():
             if self.buffer_thread.is_alive():
                 print("WARNING: buffer_thread is still alive!!!")
 
-            self.ImageProcessor.add_to_convert_queue(None)
+            # ~ self.ImageProcessor.add_to_convert_queue(None)
 
             GLib.idle_add(self.gui.ProtocolProgressBar.set_fraction, 1.0)
             GLib.idle_add(self.gui.CurrentEventProgressBar.set_fraction, 1.0)
