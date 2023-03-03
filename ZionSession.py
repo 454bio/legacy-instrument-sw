@@ -477,5 +477,11 @@ class ZionSession():
                 GLib.idle_add(self.gui.load_roi_image, (os.path.join(self.ImageProcessor.file_output_path, "rois_365.jpg"), basis_spot_queue))
                 self.ImageProcessor.rois_detected_event.clear()
 
+    def push_to_cloud(self, from_path=None, to_path=None):
+        print("Starting push to cloud process")
+        #TODO change from from_path and to_path to self.{}
+        if from_path is not None and to_path is not None:
+            shutil.copytree(from_path, to_path, dirs_exist_ok=True)
+
     def get_temperature(self):
         self.Temperature = self.GPIO.read_temperature()
