@@ -240,7 +240,7 @@ def create_phase_correct_matrix(p,q,numCycles,r=0):
     Qinv = np.linalg.inv(Q)
     return Qinv
 
-def display_signals(coeffs, spotlist, numCycles, numRows=1, numPages=1, exclusions=None, prefix=None, noSignal=False, labels=True, stds=None):
+def display_signals(coeffs, spotlist, numCycles, numRows=1, numPages=1, exclusions=None, prefix=None, noSignal=False, labels=True, stds=None, preOrPost="pre"):
 
     base_colors = {"A": "orange", "C": "green", "G":"blue", "T":"red"} #TODO yellow?
 
@@ -317,7 +317,13 @@ def display_signals(coeffs, spotlist, numCycles, numRows=1, numPages=1, exclusio
 
     for page in range(numPages):
         fig1[page].legend(loc='upper right', ncol=1)
-        fig1[page].suptitle('Purity (Pre-Phase-Corrected)')
+        if preOrPost == "pre":
+            suptitle = 'Purity (Pre-Phase-Corrected)'
+        elif preOrPost == "post":
+            suptitle = 'Purity (Phase-Corrected)'
+        else:
+            suptitle = 'Purity'
+        fig1[page].suptitle(suptitle)
         fig1[page].subplots_adjust(hspace=0.5, wspace=0.2)
         if not noSignal:
             fig2[page].legend(loc='upper right', ncol=1)
