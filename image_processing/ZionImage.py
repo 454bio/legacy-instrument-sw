@@ -674,9 +674,9 @@ class ZionImageProcessor(multiprocessing.Process):
 		# ~ plt.imshow(test_img['525'])
 		return
 
-def get_imageset_from_cycle(new_cycle, input_dir_path, uv_wl, useDifferenceImage):
+def get_imageset_from_cycle(new_cycle, input_dir_path, uv_wl, useDifferenceImage, useTiff=False):
 	cycle_str = f"C{new_cycle:03d}"
-	cycle_files = sorted(glob(os.path.join(input_dir_path, f"*_{cycle_str}_*.tif")))
+	cycle_files = sorted(glob(os.path.join(input_dir_path, f"*_{cycle_str}_*.tiff"))) if useTiff else sorted(glob(os.path.join(input_dir_path, f"*_{cycle_str}_*.tif")))
 	wls = list(set(sorted([get_wavelength_from_filename(f) for f in cycle_files])))
 	if not uv_wl in wls:
 		raise ValueError(f"No {uv_wl} images in cycle {new_cycle}!")
