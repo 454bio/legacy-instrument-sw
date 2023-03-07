@@ -1,5 +1,6 @@
 
 from collections import UserDict, UserString
+import math
 import numpy as np
 import pandas as pd
 from skimage.color import rgb2hsv
@@ -249,8 +250,8 @@ def display_signals(coeffs, spotlist, numCycles, numRows=1, numPages=1, exclusio
 
     numSpots = len(spotlist)
 
-    width = len(spotlist)/ (numRows*numPages)
-    numCols = int(width)
+    width = len(spotlist) / (numRows*numPages)
+    numCols = math.ceil(width)
 
     fig1 = []
     ax1 = []
