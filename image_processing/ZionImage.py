@@ -44,10 +44,7 @@ def get_time_from_filename(filepath):
 
 # TODO rebase most skimage stuff into opencv (raspberry pi opencv by default doesn't deal with 16 bit images)
 def rgb2gray(img, weights=None):
-	if weights is None:
-		return np.mean(img, axis=-1).round().astype('uint16')
-	else:
-		raise ValueError("Invalid weights option!")
+	return np.average(img, axis=-1, weights=weights).round().astype('uint16')
 
 def median_filter(in_img, kernel_size, behavior='ndimage'): #rank?
 	#TODO make for whole imageset?
@@ -167,12 +164,12 @@ class ZionImage(UserDict):
 			raise ValueError(f"Invalid datatype given!")
 		return img_8b
 
-	def detect_rois(self, out_path, uv_wl='365', median_ks=9, erode_ks=16, dilate_ks=13, threshold_scale=1):
+	def detect_rois(self, out_path, uv_wl='365', median_ks=9, erode_ks=16, dilate_ks=13, threshold_scale=1, minSize=None, maxSize=None, gray_weights=None):
 
 		print(f"Detecting ROIs using median={median_ks}, erode={erode_ks}, dilate={dilate_ks}, scale={threshold_scale}")
 
 		#Convert to grayscale (needs to access UV channel here when above change occurs):
-		img_gs = rgb2gray(self.data[uv_wl])
+		img_gs = rgb2gray(self.data[uv_wl], weights=gray_weights)
 
 		img_gs = median_filter(img_gs, median_ks)
 		thresh = threshold_scale * filters.threshold_mean(img_gs)
@@ -192,14 +189,17 @@ class ZionImage(UserDict):
 		centroids = [p.centroid for p in spot_props]
 		# snew_cnew_orted(centroids, key=lambda c: [c[1], c[0])
 
-
 		# TODO: get stats, centroids of spots, further invalidate improper spots.
-		#for s in range(1, nSpots+1):
-		#	size = spot_labels[spot_labels==s].shape[0]
-		#	if size > 2500:
-		#		print(f"removing spot {s} with area {size}")
-		#		spot_labels[spot_labels==s] = 0
-		#		nSpots -= 1
+		for s in range(1, nSpots+1):
+			size = spot_labels[spot_labels==s].shape[0]
+			if maxSize is not None and size > maxSize:
+				print(f"removing spot {s} with area {size} -- too large")
+				spot_labels[spot_labels==s] = 0
+				nSpots -= 1
+			elif minSize is not None and size < minSize:
+				print(f"removing spot {s} with area {size} -- too small")
+				spot_labels[spot_labels==s] = 0
+				nSpots -= 1
 
 		np.save(os.path.join(out_path, f"rois.npy"), spot_labels)
 		roi_img = [create_labeled_rois(spot_labels, filepath=os.path.join(out_path, f"rois"), color=[1,0,1])]
