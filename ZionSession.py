@@ -49,15 +49,21 @@ class ZionSession():
         lastSuffix = 0
 
         self.Config = ZionConfig()
-        # ~ sessions_dir = os.path.join(self.Config["path"]) if self.Config["path"] is not None else os.path.join(os.path.dirname(os.path.abspath(__file__)), "sessions")
-        sessions_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "sessions")
+        if self.Config["remote_path"] is not None:
+            self.CloudConnection = True
+        else:
+            self.CloudConnection = False
 
-        for f in glob(os.path.join(sessions_dir, f"*_{session_name}_*")):
+        # self.SessionsDir is the local folder containing all sessions
+        # self.Dir is the session directory
+        self.SessionsDir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "sessions")
+
+        for f in glob(os.path.join(self.SessionsDir, f"*_{session_name}_*")):
             lastHyphenIdx = f.rfind('_')
             newSuffix = int(f[(lastHyphenIdx+1):])
             lastSuffix = newSuffix if newSuffix>lastSuffix else lastSuffix
 
-        self.Dir = os.path.join(sessions_dir, f"{filename}_{lastSuffix+1:04d}")
+        self.Dir = os.path.join(self.SessionsDir, f"{filename}_{lastSuffix+1:04d}")
         print('Creating directory '+str(self.Dir))
         os.makedirs(self.Dir)
         
@@ -429,6 +435,10 @@ class ZionSession():
 
             self.ImageProcessor.add_to_convert_queue(None)
 
+            self.nas_push_thread = threading.Thread(target=self.push_to_cloud)
+            self.nas_push_thread.daemon=True
+            self.nas_push_thread.start()
+
             GLib.idle_add(self.gui.ProtocolProgressBar.set_fraction, 1.0)
             GLib.idle_add(self.gui.CurrentEventProgressBar.set_fraction, 1.0)
             GLib.idle_add(self.gui.cameraPreviewWrapper.clear_image)
@@ -478,8 +488,10 @@ class ZionSession():
                 GLib.idle_add(self.gui.load_roi_image, (os.path.join(self.ImageProcessor.file_output_path, "rois_365.jpg"), basis_spot_queue))
                 self.ImageProcessor.rois_detected_event.clear()
 
-    def push_to_cloud(self, source_path=None, target_parent=None):
-        if source_path is not None and target_parent is not None:
+    def push_to_cloud(self):
+        if self.CloudConnection:
+            source_path = self.Dir
+            target_parent = self.Config["remote_path"]
             print("Starting push to cloud process")
             target_path = os.path.join(target_parent, os.path.basename(source_path))
             for root, dirs, files in os.walk(source_path):

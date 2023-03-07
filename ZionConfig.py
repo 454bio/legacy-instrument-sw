@@ -2,17 +2,20 @@ import os
 import glob
 import json
 from collections import UserDict
+import signal
 
 CONFIG_FILEPATH = "/home/pi/zion.cfg"
 SHARE_FILEPATH = "/home/pi/SharedData"
 DATA_FILEPATH_REL = "GoogleData/InstrumentData"
 INVALID_SERIAL = "_INVALID"
+CPUID_DIGITS = 8
 
 class ZionConfig(dict):
 
-	DEVICE_CPUID_REGISTERY = { # (cpuid, )
+	DEVICE_CPUID_REGISTRY = { # (cpuid, )
 		# {serial}: cpuid  #can add things later by turning into tuple
 		"Zach_Dev": "417c8eb2",
+		"SAPPHIRE": "cdfc750b",
 		"MK26_03F": "fe04ffd5",
 		"MK27_01":  "8273400a",
 		"MK27_02":  "28a62a16",
@@ -23,50 +26,57 @@ class ZionConfig(dict):
 	}
 
 	def __init__(self):
+		print(f"Reading config file {CONFIG_FILEPATH}...")
 		super().__init__(read_config_file())
 		cpu_serial = get_cpu_serial()
 		if cpu_serial == INVALID_SERIAL:
 			raise ValueError("Couldn't read cpu serial number!")
 		else:
 			try:
-				if cpu_serial != self.DEVICE_CPUID_REGISTERY[self["serial"]]:
+				if cpu_serial != self.DEVICE_CPUID_REGISTRY[self["serial"]]:
 					raise ValueError(f"CPU ID {cpu_serial} is not registered to unit with serial number '{self['serial']}'")
 				else:
 					self["cpusn"] = cpu_serial
 					print(f"CPU ID {cpu_serial} is registered to this unit (SN: '{self['serial']}')")
 			except KeyError:
-				raise KeyError(f"Serial number '{self['serial']}' is not in device directory!")
-		self["path"] = os.path.join(SHARE_FILEPATH, DATA_FILEPATH_REL, self["serial"].strip())
+				raise KeyError(f"Serial number '{self['serial']}' is not in device registry!")
+		remote_path = os.path.join(SHARE_FILEPATH, DATA_FILEPATH_REL, self["serial"].strip())
 
+		print(f"Testing connectivity to cloud...")
 		try:
-			if os.path.isdir(SHARE_FILEPATH):
-				# Now see if serial number folder exists
-				if not os.path.isdir(self["path"]):
-					os.makedirs(self["path"])
-					print(f"Creating data directory {self['path']}")
-			else: #create local directory instead
-				self["path"] = os.path.join(os.path.dirname(os.path.abspath(__file__)), "sessions")
-				if not os.path.isdir(self["path"]):
-					os.makedirs(self["path"])
-				#TODO make an actual (python) warning?
-				print(f"WARNING: SMB Share {SHARE_FILEPATH} not found. Using local path {self['path']} instead.")
-		# TODO handle any exceptions?
-		except PermissionError:
-			self["path"] = None
+			ismount = os.path.ismount(SHARE_FILEPATH)
+		except OSError as e:
+			ismount = False
+
+		if ismount: #see if it's a mount point
+			if not os.path.isdir(remote_path):
+				os.makedirs(self["remote_path"])
+				print(f"Creating cloud directory {remote_path}")
+				self["remote_path"] = remote_path
+			else:
+				print(f"Cloud directory {remote_path} already exists")
+				self["remote_path"] = remote_path
+
+		else: #create local directory instead
+			print(f"Could not find network mount point at {SHARE_FILEPATH}")
+			self["remote_path"] = None
 
 def get_cpu_serial():
 	cpu_serial = INVALID_SERIAL
+	print(f"Reading CPU ID...")
 	try:
 		with open("/proc/cpuinfo", 'r') as f:
 			for line in f:
 				if line[0:6] == "Serial":
 					cpu_serial = line[10:26]
+		print(f"CPU ID = {cpu_serial}, using last {CPUID_DIGITS} digits: {cpu_serial[-CPUID_DIGITS:]}")
 	except:
 		cpu_serial = INVALID_SERIAL
-	return cpu_serial[-8:]
+	return cpu_serial[-CPUID_DIGITS:]
 
 def read_config_file():
 	cfg = dict()
+	#TODO error handle here
 	with open(CONFIG_FILEPATH) as f:
 		for line in f:
 			if line:
@@ -76,5 +86,3 @@ def read_config_file():
 				else:
 					print(f"Skipping parameter, too many colons in line {line}")
 	return cfg
-
-
