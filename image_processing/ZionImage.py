@@ -59,7 +59,7 @@ def median_filter(in_img, kernel_size, behavior='ndimage'): #rank?
 				out_img[:,:,ch] = filters.median(in_img[:,:,ch], morphology.disk(kernel_size), behavior=behavior)
 	return out_img
 
-def create_labeled_rois(labels, filepath=None, color=[1,0,1], img=None, font=cv2.FONT_HERSHEY_SIMPLEX):
+def create_labeled_rois(labels, filepath=None, color=[1,0,1], img=None, font=cv2.FONT_HERSHEY_SIMPLEX, notebook=False):
 	img = np.zeros_like(labels) if img is None else img
 	h,w = labels.shape
 	out_img = segmentation.mark_boundaries(img, labels, color=color, outline_color=color, mode='thick')
