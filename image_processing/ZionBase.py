@@ -265,6 +265,8 @@ def display_signals(coeffs, spotlist, numCycles, numRows=1, numPages=1, exclusio
             fig, ax = plt.subplots(numRows,numCols)
             fig2.append(fig)
             ax2.append(ax)
+            
+    #TODO account for when there is only one spot (no need for any subplots)
 
     for s_idx_orig, spot in enumerate(spotlist):
         page, s_idx = divmod(s_idx_orig, numSpots//numPages)
