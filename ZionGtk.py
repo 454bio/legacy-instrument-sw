@@ -1227,8 +1227,7 @@ class Handlers:
         self.parent.parent.ImageProcessor.generate_report()
 
     def on_cloud_push_button_clicked(self, button):
-        #TODO add cloud push enable here
-        return
+        self.parent.parent.push_to_cloud()
 
     def on_spot_A_entry_activate(self, entry):
         #TODO
