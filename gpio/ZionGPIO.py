@@ -11,11 +11,11 @@ from multiprocessing.managers import Namespace
 from queue import Empty, Full
 from typing import Optional, Iterable, Dict
 
-from ZionErrors import ZionInvalidLEDColor, ZionInvalidLEDPulsetime
-
 import pigpio
-from ZionEvents import ZionEvent
-from ZionLED import ZionLEDs, ZionLEDColor, ZionLEDTimings
+
+from ZionErrors import ZionInvalidLEDColor, ZionInvalidLEDPulsetime
+from Protocol.ZionEvents import ZionEvent
+from GUI.ZionLED import ZionLEDs, ZionLEDColor, ZionLEDTimings
 
 # multiprocessing.set_start_method('spawn')
 

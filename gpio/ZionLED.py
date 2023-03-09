@@ -4,11 +4,7 @@ from typing import TypeVar, Union, Dict, Optional
 from collections import UserDict
 from operator import attrgetter
 
-from ZionErrors import (
-    ZionInvalidLEDColor,
-    ZionInvalidLEDPulsetime,
-    ZionInvalidLEDMaxPulsetime,
-)
+from ZionErrors import ZionInvalidLEDColor, ZionInvalidLEDPulsetime, ZionInvalidLEDMaxPulsetime
 
 class ZionLEDColor(IntEnum):
     UV = 0

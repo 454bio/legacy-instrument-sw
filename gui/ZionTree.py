@@ -2,36 +2,15 @@ import time
 
 from dataclasses import fields
 from functools import partial
-from typing import (
-    Union,
-    NamedTuple,
-    Dict,
-    List,
-    Optional,
-    Tuple,
-)
+from typing import Union, NamedTuple, Dict, List, Optional, Tuple
 
-from ZionEvents import (
-    ZionEvent,
-    ZionEventGroup,
-    CaptureList
-)
-
-from ZionLED import (
-    ZionLEDs,
-    ZionLEDColor,
-)
-
-from ZionGPIO import LED_GPIOS
+from Protocol.ZionEvents import ZionEvent, ZionEventGroup, CaptureList
+from GPIO.ZionLED import ZionLEDs, ZionLEDColor
+from GPIO.ZionGPIO import LED_GPIOS
 
 import gi
 gi.require_version('Gtk', '3.0')
-from gi.repository import (
-    Gtk,
-    GObject,
-    GLib,
-)
-
+from gi.repository import Gtk, GObject, GLib
 
 class ZionTreeSelection(NamedTuple):
     entry:          Union[ZionEvent, ZionEventGroup, None]
@@ -40,7 +19,6 @@ class ZionTreeSelection(NamedTuple):
     parent_iter:    Union[Gtk.TreeIter, None]
     num_siblings:   int
     num_children:   int
-
 
 class ZionTreeStore(Gtk.TreeStore):
 

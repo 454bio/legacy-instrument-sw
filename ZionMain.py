@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 from fractions import Fraction
+
 from ZionSession import ZionSession
 from ZionCamera import ZionCameraParameters
-from ZionGtk import check_for_valid_filename
+from GUI.ZionGtk import check_for_valid_filename
 
 ########################################################################
 ######################### User-Level Settings ##########################
