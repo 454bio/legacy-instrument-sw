@@ -2,27 +2,12 @@ import math
 import threading
 import time
 from collections import UserList
-
-from dataclasses import (
-    dataclass,
-    field,
-    asdict,
-    replace
-)
-
-
-from typing import (
-    List,
-    Optional,
-    Union,
-    ClassVar,
-    Callable,
-)
-
+from dataclasses import dataclass, field, asdict, replace
+from typing import List, Optional, Union, ClassVar, Callable
 from functools import reduce
 from operator import add, attrgetter
 
-from ZionLED import ZionLEDs
+from GPIO.ZionLED import ZionLEDs
 
 class CaptureList(UserList):
     def __init__(self, lst:list=None):

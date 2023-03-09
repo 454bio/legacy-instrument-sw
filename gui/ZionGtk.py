@@ -1,14 +1,16 @@
 #!/usr/bin/python3
 import os
 import time
+import threading
+
 import gi
 gi.require_version('Gtk', '3.0')
 gi.require_version('Gst', '1.0')
 from gi.repository import Gtk, GObject, GLib
-import threading
-from ZionGtkHelpers import PictureViewFromFile, PictureViewFromMem
-from ZionLED import ZionLEDs, ZionLEDColor
+
+from GUI.ZionGtkHelpers import PictureViewFromFile, PictureViewFromMem
 from ZionCamera import ZionCameraParameters
+from GPIO.ZionLED import ZionLEDs, ZionLEDColor
 
 mod_path = os.path.dirname(os.path.abspath(__file__))
 

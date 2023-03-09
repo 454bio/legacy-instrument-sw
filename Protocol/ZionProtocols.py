@@ -5,40 +5,18 @@ import time
 from functools import partial
 from fractions import Fraction
 from types import SimpleNamespace
-from dataclasses import (
-    is_dataclass,
-    asdict,
-    fields,
-)
-from typing import (
-    List,
-    Optional,
-    Union,
-    Dict,
-    Tuple,
-)
-
-from ZionLED import (
-    ZionLEDColor,
-    ZionLEDs,
-)
-
-from ZionEvents import (
-    ZionEvent,
-    ZionEventGroup,
-    CaptureList
-)
-from ZionCamera import ZionCameraParameters
-from ZionErrors import ZionProtocolVersionError
-from ZionTree import (
-    ZionTreeSelection,
-    ZionProtocolTree,
-)
+from dataclasses import is_dataclass, asdict, fields
+from typing import List, Optional, Union, Dict, Tuple
 
 import gi
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk
 
+from GPIO.ZionLED import ZionLEDColor, ZionLEDs
+from Protocol.ZionEvents import ZionEvent, ZionEventGroup, CaptureList
+from ZionCamera import ZionCameraParameters
+from ZionErrors import ZionProtocolVersionError
+from GUI.ZionTree import ZionTreeSelection, ZionProtocolTree
 
 class ZionProtocolEncoder(json.JSONEncoder):
     def default(self, obj):

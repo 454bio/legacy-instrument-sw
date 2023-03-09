@@ -17,18 +17,19 @@ try:
 except:
     rprint = print
 
+from picamera.exc import mmal
 import gi
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk, GLib
+
 from ZionConfig import ZionConfig
 from ZionCamera import ZionCamera, ZionCameraParameters
-from ZionGPIO import ZionGPIO
-from ZionProtocols import ZionProtocol
-from ZionGtk import ZionGUI
-from picamera.exc import mmal
-from ZionEvents import ZionEvent
-from image_processing.ZionImage import ZionImageProcessor, ZionImage
-from image_processing.raw_converter import jpg_to_raw, get_cycle_from_filename
+from GPIO.ZionGPIO import ZionGPIO
+from GUI.ZionGtk import ZionGUI
+from Protocol.ZionProtocols import ZionProtocol
+from Protocol.ZionEvents import ZionEvent
+from ImageProcessing.ZionImage import ZionImageProcessor, ZionImage
+from ImageProcessing.raw_converter import jpg_to_raw, get_cycle_from_filename
 
 # ~ mod_path = os.path.dirname(os.path.abspath(__file__))
 

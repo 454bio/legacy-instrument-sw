@@ -3,10 +3,6 @@ from fractions import Fraction
 from operator import eq, gt
 from dataclasses import dataclass,  asdict, fields, is_dataclass
 import json
-from ZionLED import ZionLEDs, ZionLEDTimings
-from picamera import PiCamera, PiRenderer, mmal, mmalobj, exc
-from picamera.array import PiRGBArray
-from picamera.mmalobj import to_rational
 import pigpio
 import numpy as np
 from io import BytesIO
@@ -15,7 +11,13 @@ from time import sleep
 import time
 import os
 import math
+
+from picamera import PiCamera, PiRenderer, mmal, mmalobj, exc
+from picamera.array import PiRGBArray
+from picamera.mmalobj import to_rational
 from gi.repository import GLib
+
+from GPIO.ZionLED import ZionLEDs, ZionLEDTimings
 
 MMAL_PARAMETER_ANALOG_GAIN = mmal.MMAL_PARAMETER_GROUP_CAMERA + 0x59
 MMAL_PARAMETER_DIGITAL_GAIN = mmal.MMAL_PARAMETER_GROUP_CAMERA + 0x5A

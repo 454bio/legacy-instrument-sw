@@ -13,8 +13,8 @@ from multiprocessing.managers import Namespace
 from tifffile import imread, imwrite
 from matplotlib import pyplot as plt
 
-from image_processing.raw_converter import jpg_to_raw as jpg_to_raw_py
-from image_processing.ZionBase import df_cols, extract_spot_data, csv_to_data, crosstalk_correct, display_signals, base_call, add_basecall_result_to_dataframe
+from ImageProcessing.raw_converter import jpg_to_raw as jpg_to_raw_py
+from ImageProcessing.ZionBase import df_cols, extract_spot_data, csv_to_data, crosstalk_correct, display_signals, base_call, add_basecall_result_to_dataframe
 
 def jpg_to_raw(filepath, target_path):
 	# ~ ret = check_output(["./raw_convert_c/convert_raw_c", filepath, target_path])
