@@ -3,7 +3,7 @@
 from fractions import Fraction
 
 from ZionSession import ZionSession
-from ZionCamera import ZionCameraParameters
+from Camera.ZionCamera import ZionCameraParameters
 from GUI.ZionGtk import check_for_valid_filename
 
 ########################################################################

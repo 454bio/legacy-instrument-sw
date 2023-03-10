@@ -23,7 +23,7 @@ gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk, GLib
 
 from ZionConfig import ZionConfig
-from ZionCamera import ZionCamera, ZionCameraParameters
+from Camera.ZionCamera import ZionCamera, ZionCameraParameters
 from GPIO.ZionGPIO import ZionGPIO
 from Protocol.ZionProtocols import ZionProtocol
 from Protocol.ZionEvents import ZionEvent
