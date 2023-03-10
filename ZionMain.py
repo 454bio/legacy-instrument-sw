@@ -44,7 +44,7 @@ PID_Params = {
 'PWM_Frequency': 10,
 'P': 500,
 'I': 25,
-'delta_t': 1, #makes no difference as of now (TODO: speed up)
+'delta_t': 1, #makes no difference as of now (TODO: speed up?)
 'bias': 0,
 }
 
@@ -54,12 +54,6 @@ PID_Params = {
 
 # Initialization Block:
 mySession = ZionSession(Session_Name, Binning, Initial_Values, PID_Params)
-
-#Next line perform events defined above:
-# ~ mySession.RunProgram()
-
-# TODO: once we use high-power UVs, gonna want to turn them all off for safety:
-# ~ myGPIO.turn_off_led('UV')
 
 #Start preview:
 # ~ mySession.InteractivePreview(window=(560,75,640,480))
