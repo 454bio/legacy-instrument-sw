@@ -7,6 +7,10 @@ from matplotlib import pyplot as plt
 
 from ImageProcessing.ZionReport import ZionReport
 
+'''
+    This module defines the runtime image handler mp.Process
+'''
+
 class ZionImageProcessor(multiprocessing.Process):
 
     # TODO: is this the best way to handle versions?

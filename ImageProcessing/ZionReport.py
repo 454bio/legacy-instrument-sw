@@ -4,6 +4,9 @@ import pandas as pd
 from matplotlib import pyplot as plt
 from fpdf import FPDF
 
-class ZionReport(FPDF):
+class ZionReportText:
     pass
 
+class ZionReport(FPDF):
+    # TODO flesh out to create pdf report
+    pass
