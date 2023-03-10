@@ -12,10 +12,10 @@ import gi
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk
 
+from ZionErrors import ZionProtocolVersionError
+from ZionCamera import ZionCameraParameters
 from GPIO.ZionLED import ZionLEDColor, ZionLEDs
 from Protocol.ZionEvents import ZionEvent, ZionEventGroup, CaptureList
-from ZionCamera import ZionCameraParameters
-from ZionErrors import ZionProtocolVersionError
 from GUI.ZionTree import ZionTreeSelection, ZionProtocolTree
 
 class ZionProtocolEncoder(json.JSONEncoder):

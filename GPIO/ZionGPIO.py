@@ -14,8 +14,8 @@ from typing import Optional, Iterable, Dict
 import pigpio
 
 from ZionErrors import ZionInvalidLEDColor, ZionInvalidLEDPulsetime
-from Protocol.ZionEvents import ZionEvent
 from GPIO.ZionLED import ZionLEDs, ZionLEDColor, ZionLEDTimings
+from Protocol.ZionEvents import ZionEvent
 
 # multiprocessing.set_start_method('spawn')
 
