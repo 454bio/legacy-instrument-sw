@@ -13,12 +13,12 @@ from collections import UserDict
 from ImageProcessing.ZionBase import df_cols, extract_spot_data, csv_to_data, crosstalk_correct, display_signals, base_call, add_basecall_result_to_dataframe
 
 def jpg_to_raw(filepath, target_path):
+
     # ~ ret = check_output(["./raw_convert_c/convert_raw_c", filepath, target_path])
     # ~ ret = run([f"./raw_convert_c/convert_raw_c {filepath} {target_path}"], shell=True)
+
+    # This runs the C raw converter, which is placed here
     ret = run(["./raw_convert_c/convert_raw_c", filepath, target_path])
-    # ~ os.system(f"./raw_convert_c/convert_raw_c {filepath} {target_path}")
-    #todo add timer
-    # ~ print(f"Wrote {filename}.tif in _ sec"}
     retcode = ret.returncode
     if retcode == 0:
         return ret.returncode
