@@ -28,8 +28,8 @@ from GPIO.ZionGPIO import ZionGPIO
 from GUI.ZionGtk import ZionGUI
 from Protocol.ZionProtocols import ZionProtocol
 from Protocol.ZionEvents import ZionEvent
-from ImageProcessing.ZionImage import ZionImageProcessor, ZionImage
-from ImageProcessing.raw_converter import jpg_to_raw, get_cycle_from_filename
+from ImageProcessing.ZionImage import ZionImage, jpg_to_raw, get_cycle_from_filename
+from ImageProcessing.ZionImageProcessor import ZionImageProcessor
 
 # ~ mod_path = os.path.dirname(os.path.abspath(__file__))
 

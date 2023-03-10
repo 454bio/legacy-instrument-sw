@@ -1,6 +1,9 @@
 import os
 import multiprocessing
 import threading
+from multiprocessing.managers import Namespace
+from tifffile import imread, imwrite
+from matplotlib import pyplot as plt
 
 class ZionImageProcessor(multiprocessing.Process):
 

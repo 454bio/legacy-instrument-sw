@@ -9,9 +9,6 @@ import pandas as pd
 import cv2
 from skimage import filters, morphology, segmentation, measure
 from collections import UserDict
-from multiprocessing.managers import Namespace
-from tifffile import imread, imwrite
-from matplotlib import pyplot as plt
 
 from ImageProcessing.ZionBase import df_cols, extract_spot_data, csv_to_data, crosstalk_correct, display_signals, base_call, add_basecall_result_to_dataframe
 
