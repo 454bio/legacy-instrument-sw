@@ -4,6 +4,6 @@ import pandas as pd
 from matplotlib import pyplot as plt
 from fpdf import FPDF
 
-class ZionReport:
+class ZionReport(FPDF):
     pass
 
