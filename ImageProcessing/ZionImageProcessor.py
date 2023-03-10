@@ -182,12 +182,17 @@ class ZionImageProcessor(multiprocessing.Process):
                 continue
             print(f"_image_handler thread: begin processing new cycle {new_cycle}")
             self.mp_namespace.ip_cycle_ind = new_cycle
+
             if new_cycle == 0:
                 #TODO: do any calibration here
                 print("Cycle 0 calibration (none yet)")
                 continue
 
             else:
+            
+            
+            
+            
                 # TODO: clean this up, allow for no cycles?
                 cycle_str = f"C{new_cycle:03d}"
                 cycle_files = sorted(glob(os.path.join(in_path, f"*_{cycle_str}_*.tif")))
@@ -242,6 +247,9 @@ class ZionImageProcessor(multiprocessing.Process):
                     for cf in range(0, len(vis_cycle_files), nWls):
                         wls = [ get_wavelength_from_filename(f) for f in vis_cycle_files[cf:cf+nWls] ]
                         kinetics_queue.put( ZionImage(vis_cycle_files[cf:cf+nWls], wls, cycle=new_cycle) )
+
+
+
 
                 else:
                     raise ValueError(f"Invalid cycle index {new_cycle}!")
@@ -385,6 +393,10 @@ class ZionImageProcessor(multiprocessing.Process):
         else:
             print("ROIs not detected yet!")
 
+
+
+
+    # TODO: replace with / move to ZionReport
     def generate_report(self):
         #todo kinetics
         reportfile = os.path.join(self.file_output_path, "report.txt")

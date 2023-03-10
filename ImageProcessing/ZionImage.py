@@ -22,8 +22,9 @@ def jpg_to_raw(filepath, target_path):
         raise OSError(f"raw converter failed on image {filepath} with error {retcode}")
 
 def get_wavelength_from_filename(filepath):
-    #TODO: make compatible with non-cycle-indexed files
-    return filepath.split('_')[-3]
+    fp_splt = filepath.split('_')
+    #TODO: make compatible with non-cycle-indexed files!
+    return fp_splt[-3]
 
 def get_cycle_from_filename(filepath):
     cycle_str = filepath.split('_')[-2]
