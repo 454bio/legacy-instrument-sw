@@ -7,7 +7,8 @@ import cv2
 from skimage import filters, morphology, segmentation, measure
 from collections import UserDict
 
-from ImageProcessing.ZionBaseCaller import df_cols, extract_spot_data, csv_to_data, crosstalk_correct, display_signals, base_call, add_basecall_result_to_dataframe
+from ImageProcessing.ZionBaseCaller import crosstalk_correct, display_signals, base_call, add_basecall_result_to_dataframe
+from ImageProcessing.ZionData import extract_spot_data, csv_to_data, df_cols
 
 # First, some low-level image file handling functions:
 def jpg_to_raw(filepath, target_path):
