@@ -6,7 +6,7 @@ from skimage.color import rgb2hsv
 from scipy.optimize import nnls
 from matplotlib import pyplot as plt
 
-from ImageProcessing.ZionData import exract_spot_data, csv_to_data
+from ImageProcessing.ZionData import extract_spot_data, csv_to_data
 from ImageProcessing.ZionReport import ZionReport
 
 BASES = ('A', 'C', 'G', 'T') #, 'S') #todo: include scatter color as a base? 'N' for None?
