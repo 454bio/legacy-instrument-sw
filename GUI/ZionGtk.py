@@ -18,11 +18,9 @@ def get_handler_id(obj, signal_name):
     signal_id, detail = GObject.signal_parse_name(signal_name, obj, True)
     return GObject.signal_handler_find(obj, GObject.SignalMatchType.ID, signal_id, detail, None, None, None)
 
-GLADE_FILEPATH = os.path.join('GUI', 'zion_layout.glade')
-
 class ZionGUI():
 
-    def __init__(self, initial_values : ZionCameraParameters, parent : 'ZionSession', glade_file=GLADE_FILEPATH):
+    def __init__(self, initial_values : ZionCameraParameters, parent : 'ZionSession', glade_file=os.path.join(mod_path, 'zion_layout.glade')):
         #Create Window and Maximize:
         self.builder = Gtk.Builder.new_from_file(glade_file)
         self.mainWindow = self.builder.get_object("window1")

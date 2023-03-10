@@ -5,6 +5,8 @@ from multiprocessing.managers import Namespace
 from tifffile import imread, imwrite
 from matplotlib import pyplot as plt
 
+from ImageProcessing.ZionReport import ZionReport
+
 class ZionImageProcessor(multiprocessing.Process):
 
     # TODO: is this the best way to handle versions?
@@ -443,7 +445,7 @@ class ZionImageProcessor(multiprocessing.Process):
             print(f"Post-phase corrected Purity at {os.path.join(self.file_output_path, 'Purity Post-Phase.png')}", file=f)
             print(f"Post-phase corrected Signal {os.path.join(self.file_output_path, 'Signal Post-Phase.png')}", file=f)
 
-    ### for testing:
+    ### below only for testing:
     def do_test(self):
         #todo kinetics
         # ~ self.mp_namespace.ip_cycle_ind

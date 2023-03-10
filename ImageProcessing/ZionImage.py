@@ -1,9 +1,6 @@
 import os
 from subprocess import call, check_call, check_output, run
 from glob import glob
-import time
-import multiprocessing
-import threading
 import numpy as np
 import pandas as pd
 import cv2
@@ -12,13 +9,11 @@ from collections import UserDict
 
 from ImageProcessing.ZionBase import df_cols, extract_spot_data, csv_to_data, crosstalk_correct, display_signals, base_call, add_basecall_result_to_dataframe
 
+# First, some low-level image file handling functions:
 def jpg_to_raw(filepath, target_path):
-
-    # ~ ret = check_output(["./raw_convert_c/convert_raw_c", filepath, target_path])
-    # ~ ret = run([f"./raw_convert_c/convert_raw_c {filepath} {target_path}"], shell=True)
-
-    # This runs the C raw converter, which is placed here
+    # This runs the C raw converter, which must be in the following location
     ret = run(["./raw_convert_c/convert_raw_c", filepath, target_path])
+    # ~ ret = check_output(["./raw_convert_c/convert_raw_c", filepath, target_path])
     retcode = ret.returncode
     if retcode == 0:
         return ret.returncode
@@ -26,6 +21,7 @@ def jpg_to_raw(filepath, target_path):
         raise OSError(f"raw converter failed on image {filepath} with error {retcode}")
 
 def get_wavelength_from_filename(filepath):
+    #TODO: make compatible with non-cycle-indexed files
     return filepath.split('_')[-3]
 
 def get_cycle_from_filename(filepath):
@@ -38,17 +34,20 @@ def get_cycle_from_filename(filepath):
 def get_time_from_filename(filepath):
     return int( os.path.splitext(filepath)[0].split('_')[-1] )
 
-# TODO rebase most skimage stuff into opencv (raspberry pi opencv by default doesn't deal with 16 bit images)
+# Now some image processing tools or shortcuts that are useful OUTSIDE of a "ZionImage":
+
 def rgb2gray(img, weights=None):
     return np.average(img, axis=-1, weights=weights).round().astype('uint16')
 
+# TODO rebase to opencv to preserve 16bit images (port to C for speed?)
+# (raspberry pi opencv by default doesn't deal with 16 bit images)
 def median_filter(in_img, kernel_size, behavior='ndimage'): #rank?
     #TODO make for whole imageset?
     if len(in_img.shape) == 2: # grayscale
         out_img = filters.median(in_img, morphology.disk(kernel_size), behavior=behavior)
     elif len(in_img.shape) == 3: # multi-channel
         if behavior == 'cv2':
-            # TODO
+            # see above TODO
             raise ValueError("Invalid behavior option!")
         else:
             for ch in range(in_img.shape[-1]):
@@ -74,6 +73,10 @@ def create_labeled_rois(labels, filepath=None, color=[1,0,1], img=None, font=cv2
     return out_img
 
 class ZionImage(UserDict):
+'''
+    This class is designed to hold a multichannel RGB imageset for a given timepoint (or cycle)
+    eg one RGB per excitation channel (000, 445, 525, 590, 645, 365)
+'''
     def __init__(self, lstImageFiles, lstWavelengths, cycle=None, subtrahends=None, bgIntensity=None):
 
         d = dict()
@@ -203,6 +206,7 @@ class ZionImage(UserDict):
             roi_img.append( create_labeled_rois(spot_labels, filepath=os.path.join(out_path, f"rois_{w}"), color=[1,0,1], img=self[w]) )
         return roi_img, spot_labels, nSpots
 
+# This is a useful way to construct a Zion Image given a directory of images and a cycle index of interest
 def get_imageset_from_cycle(new_cycle, input_dir_path, uv_wl, useDifferenceImage, useTiff=False):
     cycle_str = f"C{new_cycle:03d}"
     cycle_files = sorted(glob(os.path.join(input_dir_path, f"*_{cycle_str}_*.tiff"))) if useTiff else sorted(glob(os.path.join(input_dir_path, f"*_{cycle_str}_*.tif")))
