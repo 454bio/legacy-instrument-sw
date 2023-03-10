@@ -185,7 +185,6 @@ class ZionSession():
                 print("_save_event_image -- received stop signal!")
                 break
 
-            # print(f"_save_event_image -- Received buffer -- len(buffer): {len(buffer)}  event: {event}")
             print(f"_save_event_image -- Received buffer -- len(buffer): {len(buffer)}  event.name: {event.name}")
 
             self.CaptureCount += 1
@@ -237,7 +236,7 @@ class ZionSession():
                         GLib.idle_add(self.update_last_capture)
 
                     # ~ if event.group and event.group != '000':
-
+                            # exclude dark ones...
 
             except Exception as e:
                 tb = "".join(traceback.format_exception(type(e), e, e.__traceback__))
