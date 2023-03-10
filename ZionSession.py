@@ -25,9 +25,9 @@ from gi.repository import Gtk, GLib
 from ZionConfig import ZionConfig
 from ZionCamera import ZionCamera, ZionCameraParameters
 from GPIO.ZionGPIO import ZionGPIO
-from GUI.ZionGtk import ZionGUI
 from Protocol.ZionProtocols import ZionProtocol
 from Protocol.ZionEvents import ZionEvent
+from GUI.ZionGtk import ZionGUI
 from ImageProcessing.ZionImage import ZionImage, jpg_to_raw, get_cycle_from_filename
 from ImageProcessing.ZionImageProcessor import ZionImageProcessor
 

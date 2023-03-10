@@ -4,9 +4,9 @@ from dataclasses import fields
 from functools import partial
 from typing import Union, NamedTuple, Dict, List, Optional, Tuple
 
-from Protocol.ZionEvents import ZionEvent, ZionEventGroup, CaptureList
-from GPIO.ZionLED import ZionLEDs, ZionLEDColor
 from GPIO.ZionGPIO import LED_GPIOS
+from GPIO.ZionLED import ZionLEDs, ZionLEDColor
+from Protocol.ZionEvents import ZionEvent, ZionEventGroup, CaptureList
 
 import gi
 gi.require_version('Gtk', '3.0')
