@@ -7,7 +7,7 @@ import cv2
 from skimage import filters, morphology, segmentation, measure
 from collections import UserDict
 
-from ImageProcessing.ZionBase import df_cols, extract_spot_data, csv_to_data, crosstalk_correct, display_signals, base_call, add_basecall_result_to_dataframe
+from ImageProcessing.ZionBaseCaller import df_cols, extract_spot_data, csv_to_data, crosstalk_correct, display_signals, base_call, add_basecall_result_to_dataframe
 
 # First, some low-level image file handling functions:
 def jpg_to_raw(filepath, target_path):
@@ -73,10 +73,10 @@ def create_labeled_rois(labels, filepath=None, color=[1,0,1], img=None, font=cv2
     return out_img
 
 class ZionImage(UserDict):
-'''
+    '''
     This class is designed to hold a multichannel RGB imageset for a given timepoint (or cycle)
     eg one RGB per excitation channel (000, 445, 525, 590, 645, 365)
-'''
+    '''
     def __init__(self, lstImageFiles, lstWavelengths, cycle=None, subtrahends=None, bgIntensity=None):
 
         d = dict()
