@@ -8,14 +8,14 @@ from GUI.ZionGtk import check_for_valid_filename
 
 ########################################################################
 ######################### User-Level Settings ##########################
-######################################################################## 
+########################################################################
 
 # Session Name: This will be the name of the folder (prefixed with datetime info and suffixed with index).
 # NOTE: No underscores allowed in session name!
 Session_Name = 'TS'
 if not check_for_valid_filename(Session_Name):
     raise Exception("Invalid character (or whitespace) found in session name!")
-    
+
 # Camera Properties:
     # These can't change while camera is open:
 Binning = False
@@ -47,22 +47,6 @@ PID_Params = {
 'delta_t': 1, #makes no difference as of now (TODO: speed up)
 'bias': 0,
 }
-
-# Initial_Values = {
-#     'brightness':    50,      # between 0 and 100
-#     'contrast':      0,      # between -100 and 100
-#     'saturation':    0,       # between -100 and 100
-#     'sharpness':     0,       # between -100 and 100
-#     'awb':           'off',   # 'off' or 'auto'
-#     'red_gain':      1.00,     # 0.0 to 8.0
-#     'blue_gain':     1.00,     # 0.0 to 8.0
-#     'exposure_mode': 'off', # 'auto', 'night', 'verylong', etc. (***'off')
-#     'shutter_speed': 250,       # 0 is auto
-#     'analog_gain':  8.0,        # max is 16
-#     'digital_gain': 1.0,         #unity gain for avoiding quantization error
-#     'framerate':     4,         # min 0.1 max 42 if binning, else min 0.05 max 10
-#     }
-
 
 ########################################################################
 ############################# Main Script ##############################
