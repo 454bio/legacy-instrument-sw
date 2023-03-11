@@ -6,10 +6,16 @@ from skimage.color import rgb2hsv
 from scipy.optimize import nnls
 from matplotlib import pyplot as plt
 
-from ImageProcessing.ZionData import extract_spot_data, csv_to_data
+from ImageProcessing.ZionData import extract_spot_data, csv_to_data, add_basecall_result_to_dataframe
 from ImageProcessing.ZionReport import ZionReport
 
-BASES = ('A', 'C', 'G', 'T') #, 'S') #todo: include scatter color as a base? 'N' for None?
+'''
+    This file contains code for basecalling and kinetics analysis.
+    Also has code to map RGB/HSV data (X space) to base-amounts space (Z space)
+    
+'''
+
+BASES = ('A', 'C', 'G', 'T') #, 'S', 'N') #todo: include scatter color as a base? 'N' for None?
 
 # TODO: use instead of str
 # class ZionBase(UserString):
@@ -28,12 +34,47 @@ BASES = ('A', 'C', 'G', 'T') #, 'S') #todo: include scatter color as a base? 'N'
         # else:
             # super().__init__(char)
 
+def project_color(data, M, factor_method="nnls"):
+
+    '''
+    Takes in data as array (N, L, K) or (L,K) and matrix of basis vectors M (Kx4)
+    factor_method can be either:
+        "pinv" which uses the Moore-Penrose pseudo-inverse method
+        "nnls" is non negative least squares (we assume each color is some non-negative amount of each base)
+    '''
+
+    if data.dim == 2:
+        numCycles, numChannels = data.shape
+    elif data.dim == 3:
+        numSpots, numCycles, numChannels = data.shape
+    else:
+        raise ValueError(f"data dimentions {data.shape} are not valid")
+
+    if factor_method == "pinv":
+        data = data.T # KxL or (K,L,N)
+        m_pinv = np.linalg.pinv(M) # 4xK
+        ret = m_pinv @ data # (4,L,N)
+        ret = ret.T #(N, L, 4)
+
+    elif factor_method == "nnls":
+        ret = np.zeros(shape=(numSpots, numCycles, 4))
+        for s in range(numSpots):
+            for t in range(numCycles):
+                ret[s,t,:] = nnls(M, data[s,t,:])
+
+    else:
+        raise ValueError(f"Invalid factoring method {factor_method}")
+
+    return ret
+
 def crosstalk_correct(data, X, numCycles, spotlist=None, exclusions=None, factor_method = "nnls", measure="mean"):
+
     '''
     Takes in dataframe, Kx4 "crosstalk" matrix X (which is actually just the color basis vectors), and number of cycles.
     Spotlist/exclusions is a way to exclude spots or assign names to rois/spots
-    Outputs coefficients which represent how much of each base are in each spot, also outputs stds if necessary
+    Outputs coefficients which represent how much of each base are in each spot
     '''
+
     if exclusions is None:
         exclusions = []
 
@@ -41,6 +82,7 @@ def crosstalk_correct(data, X, numCycles, spotlist=None, exclusions=None, factor
         spotlist = list(set(data.index.get_level_values('roi').to_list()))
 
     meas_cols = [measure+"_"+ch for ch in ["R","G","B"]]
+    # include standard deviation? for confidence and/or quality?
     # ~ std_cols = ["std_"+ch for ch in ["R","G","B"]]
     # ~ std_index = [("std"+i[0][-2:], i[1]) for i in X.index]
     #print(std_cols)
@@ -79,60 +121,62 @@ def crosstalk_correct(data, X, numCycles, spotlist=None, exclusions=None, factor
             #basecalls[s_idx,:] = np.argmax(scores_norm, axis=1)
     return coeffs, spotlist, pd.concat([data, coeffs_df], axis=1)
 
-def add_basecall_result_to_dataframe(data, df):
-    spotlist = list(set(df.index.get_level_values('roi').to_list()))
-    coeffs_pd = pd.DataFrame(index=df.index, columns = [("Signal", base) for base in BASES])
-    numCycles = data.shape[1]
-    for s_idx, spot in enumerate(spotlist):
-        for cycle in range(numCycles):
-            coeffs_pd.loc[(spot, cycle+1)] = data[s_idx, cycle, :]
-    return pd.concat([df, coeffs_pd], axis=1)
+def create_phase_correct_matrix(p, q, numCycles, r=0):
 
-def base_call(data, p:float=0.0, q:float=0.0, base_key:list=["A", "C", "G" "T"]):
-    ''' This takes the 4 coefficients found from crosstalk correction and 
-        does phase correction. Right now using simple model until we get more data.
-    '''
-    # data is numpy array of shape (K,L,4) but needs to be (K,4,L):
-    data = np.transpose(data, axes=(0,2,1))
-    
-    # data is numpy array of shape (K,4,L)
-    numSpots, numBases, numCycles = data.shape
-    if not numBases == 4:
-        raise ValueError("Data array is not the correct shape!")
-
-    # p is probability that no new base is synthesized
-    # q is probability that 2 new bases are synthesized
-    # 1-p-q is probability that 1 new base is synthesized
-        
-    #TODO: do we need more p's & q's for N+2?
-    
-    #Transition matrix is numCycles+1 x numCycles+1
     P  = np.diag((numCycles+1)*[p])
-    P += np.diag((numCycles)*[1-p-q], k=1)
+    P += np.diag((numCycles)*[1-p-q-r], k=1)
     P += np.diag((numCycles-1)*[q], k=2)
-    
-    Q = np.zeros(shape=(numCycles,numCycles))
-    for t in range(numCycles):
-        Q[:,t] = np.linalg.matrix_power(P,t+1)[0,1:]
-    Qinv = np.linalg.inv(Q)
-    
-    z_qinv = data @ Qinv
-    bases = np.argmax(z_qinv, axis=1)
-    
-    z_qinv = np.transpose(z_qinv, axes=(0,2,1))
-    
-    return z_qinv, bases
 
-def create_phase_correct_matrix(p,q,numCycles,r=0):
-    P  = np.diag((numCycles+1)*[p])
-    P += np.diag((numCycles)*[1-p-q], k=1)
-    P += np.diag((numCycles-1)*[q], k=2)
+    #TODO test w/ nonzero values of r
+    P += np.diag((numCycles-2)*[r], k=3)
 
     Q = np.zeros(shape=(numCycles,numCycles))
     for t in range(numCycles):
         Q[:,t] = np.linalg.matrix_power(P,t+1)[0,1:]
     Qinv = np.linalg.inv(Q)
     return Qinv
+
+def base_call(data, p:float=0.0, q:float=0.0, r:float=0.0):
+
+    ''' Data is assumed to be numpy array of shape (N, L, 4) [spot index, cycle index, base index]
+        p is probability that no new base is synthesized (t-1 error)
+        q is probability that 2 new bases are synthesized (t+1 error)
+        r is probability that 3 new bases are synthesized (t+2 error)
+        
+        Returns z_qinv, which are the estimated "amounts" of each base as array same shape as input data
+        Returns bases, which are the bases called (by index eg 0,1,2,3 --> A,C,G,T)
+    '''
+    
+    # If there is only one spot, data will be Lx4, needs to be 4xL
+    if data.ndim == 2:
+        data = data.T #now 4xL
+        numSpots = 1
+        numBases, numCycles = data.shape
+    elif data.ndim == 3:
+        # data is numpy array of shape (N,L,4) but needs to be (N,4,L) for later matrix multiplication
+        data = np.transpose(data, axes=(0,2,1))
+        # now data is numpy array of shape (N,4,L)
+        numSpots, numBases, numCycles = data.shape
+    else:
+        raise ValueError(f"data dimentions {data.shape} are not valid")
+
+    if not numBases == 4:
+        #Print out assumed dimensions:
+        print(f"Data to be base-called has {numSpots} spots and {numCycles} cycles") 
+        raise ValueError("Data array is not the correct shape!")
+
+    Qinv = create_phase_correct_matrix(p, q, numCycles, r=r)
+
+    z_qinv = data @ Qinv
+    bases = np.argmax(z_qinv, axis=1)
+
+    # now reshape back to size (N,L,4)
+    if data.ndim == 2:
+        z_qinv = z_qinv.T
+    else: #data.ndim == 3:
+        z_qinv = np.transpose(z_qinv, axes=(0,2,1))
+
+    return z_qinv, bases
 
 def display_signals(coeffs, spotlist, numCycles, numRows=1, numPages=1, exclusions=None, prefix=None, noSignal=False, labels=True, stds=None, preOrPost="pre"):
 
