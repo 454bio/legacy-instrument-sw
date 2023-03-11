@@ -6,6 +6,9 @@ from ZionSession import ZionSession
 from Camera.ZionCamera import ZionCameraParameters
 from GUI.ZionGtk import check_for_valid_filename
 
+# TODO: make pip requirements file
+# TODO: move this to a double-clickable executable (ie no need to IDE)
+
 ########################################################################
 ######################### User-Level Settings ##########################
 ########################################################################

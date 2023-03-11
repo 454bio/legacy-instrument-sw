@@ -5,6 +5,8 @@ from multiprocessing.managers import Namespace
 from tifffile import imread, imwrite
 from matplotlib import pyplot as plt
 
+from ImageProcessing.ZionImage import ZionImage, get_imageset_from_cycle
+from ImageProcessing.ZionBaseCaller import project_color, base_call
 from ImageProcessing.ZionReport import ZionReport
 
 '''
@@ -27,6 +29,7 @@ class ZionImageProcessor(multiprocessing.Process):
         self.roi_labels = None
         self.numSpots = None
         self.M = None
+        self.Reports = []
 
         self._mp_manager = multiprocessing.Manager()
         self.mp_namespace = self._mp_manager.Namespace()
