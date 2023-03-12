@@ -186,44 +186,25 @@ class ZionImageProcessor(multiprocessing.Process):
             print(f"_image_handler thread: begin processing new cycle {new_cycle}")
             self.mp_namespace.ip_cycle_ind = new_cycle
 
+            # This is the main thread for handling imagesets by cycle.
+
+            # TODO: Program any special tasks based on first j cycles (eg fitting parameters based on fist 5 cycles)
+
             if new_cycle == 0:
                 #TODO: do any calibration here
                 print("Cycle 0 calibration (none yet)")
                 continue
 
             else:
-            
-            
-            
-            
-                # TODO: clean this up, allow for no cycles?
-                cycle_str = f"C{new_cycle:03d}"
-                cycle_files = sorted(glob(os.path.join(in_path, f"*_{cycle_str}_*.tif")))
-                # ~ print(f"cycle {new_cycle}'s file list: {cycle_files}")
-                wls = list(set(sorted([get_wavelength_from_filename(f) for f in cycle_files])))
-                # ~ print(f"cycle {new_cycle}'s wavelengths: {wls}")
-                if not uv_wl in wls:
-                    raise ValueError(f"No {uv_wl} images in cycle {new_cycle}!")
-                nWls = len(wls)-1
-
-                # Find earliest images of UV wavelength, but the latest of others:
-                imgFileList = []
-                diffImgSubtrahends = []
-
-                for wl in wls:
-                    if wl==uv_wl:
-                        imgFileList.append(cycle_files[[f"_{wl}_" in fp for fp in cycle_files].index(True)]) #first uv image
-                    else:
-                        lst_tmp = [f"_{wl}_" in fp for fp in cycle_files]
-                        imgFileList.append(cycle_files[ len(lst_tmp) - lst_tmp[-1::-1].index(True) - 1]) # last vis led image
-                        diffImgSubtrahends.append(cycle_files[[f"_{wl}_" in fp for fp in cycle_files].index(True)]) # first vis led image
-                currImageSet = ZionImage(imgFileList, wls, cycle=new_cycle, subtrahends=diffImgSubtrahends) if self.bUseDifferenceImages else ZionImage(imgFileList, wls, cycle=new_cycle)
+                currImageSet = get_imageset_from_cycle(new_cycle, in_path, uv_wl, self.bUseDifferenceImages)
+                # Now currImageSet is a ZionImage
 
                 if new_cycle == 1:
                     done = False
                     while not done:
                         while not mp_namespace.bEnable:
                             continue
+                        #TODO call new detect_rois
                         roi_imgs = self.detect_rois( currImageSet )
                         rois_detected_event.set()
                         basis_spots = basis_chosen_queue.get() #tuple of spot labels
@@ -232,9 +213,14 @@ class ZionImageProcessor(multiprocessing.Process):
                         else:
                             done = False
                             rois_detected_event.clear()
+
                     #this is a real set of basis spots
+
+                    #todo call new function for creating basis vector matrix
                     self.create_basis_vector_matrix(currImageSet, basis_spots)
                     print(f"\n\nBasis Vector = {self.M}, with shape {self.M.shape}\n\n")
+                    # done with all cycle-1 exclusive stuff
+
                     base_caller_queue.put(currImageSet)
                     vis_cycle_files = [ f for f in cycle_files if not get_wavelength_from_filename(f)==uv_wl]
                     # ~ print(f"kineticsImageSet = {vis_cycle_files}")
@@ -250,9 +236,6 @@ class ZionImageProcessor(multiprocessing.Process):
                     for cf in range(0, len(vis_cycle_files), nWls):
                         wls = [ get_wavelength_from_filename(f) for f in vis_cycle_files[cf:cf+nWls] ]
                         kinetics_queue.put( ZionImage(vis_cycle_files[cf:cf+nWls], wls, cycle=new_cycle) )
-
-
-
 
                 else:
                     raise ValueError(f"Invalid cycle index {new_cycle}!")
