@@ -204,10 +204,16 @@ class ZionImageProcessor(multiprocessing.Process):
                     while not done:
                         while not mp_namespace.bEnable:
                             continue
-                        #TODO call new detect_rois
-                        roi_imgs = self.detect_rois( currImageSet )
+                        # TODO add minSize and maxSize and gray_weights to GUI and to self.mp_namespace
+                        _, self.roi_labels, self.numSpots = currImageSet.detect_rois(self.file_output_path, uv_wl=uv_wl, median_ks=self.mp_namespace.median_ks, erode_ks=self.mp_namespace.erode_ks, dilate_ks=self.mp_namespace.dilate_ks, threshold_scale=mp_namespace.threshold_scale,
+                                                                                                 minSize=self.mp_namespace.minSpotSize, maxSize=self.mp_namespace.maxSpotSize, gray_weights=self.mp_namespace.grayWeights)
+                        # This is to notify that rois were detected:
                         rois_detected_event.set()
+
+                        # Now wait for info on which spots are basis color spots
                         basis_spots = basis_chosen_queue.get() #tuple of spot labels
+
+                        #TODO this will turn into a tuple of lists (of spot labels)
                         if isinstance(basis_spots, tuple) and len(basis_spots)==4:
                             done = True
                         else:
@@ -329,48 +335,6 @@ class ZionImageProcessor(multiprocessing.Process):
         #TODO: check whether bases are called/ready
         self.mp_namespace._bShowBases = bEnable
         print(f"View Spots enabled? {bEnable}")
-
-    def detect_rois(self, in_img, uv_wl='365'):
-
-        print(f"Detecting ROIs using median={self.mp_namespace.median_ks}, erode={self.mp_namespace.erode_ks}, dilate={self.mp_namespace.dilate_ks}, scale={self.mp_namespace.threshold_scale}")
-
-        #Convert to grayscale (needs to access UV channel here when above change occurs):
-        img_gs = rgb2gray(in_img.data[uv_wl])
-
-        img_gs = median_filter(img_gs, self.mp_namespace.median_ks)
-        thresh = self.mp_namespace.threshold_scale * filters.threshold_mean(img_gs)
-        #TODO: adjust threshold? eg make it based on stats?
-        img_bin = img_gs > thresh
-
-        img_bin = morphology.binary_erosion(img_bin, morphology.disk(self.mp_namespace.erode_ks))
-        img_bin = morphology.binary_dilation(img_bin, morphology.disk(self.mp_namespace.dilate_ks))
-        img_bin = morphology.binary_erosion(img_bin, morphology.disk(4))
-
-        spot_labels, nSpots = measure.label(img_bin, return_num=True)
-        print(f"{nSpots} spot candidates found")
-        spot_props = measure.regionprops(spot_labels)
-        # sort spot labels by centroid locations because we want to identify homopolymer spots by array coords
-        # sorted left to right, top to bottom (like 
-        # TODO: add some additional channel (eg 525) that suffers from scatter/noise, and test against it to invalidate spots that include bloom of scatter.
-        centroids = [p.centroid for p in spot_props]
-        # snew_cnew_orted(centroids, key=lambda c: [c[1], c[0])
-
-
-        # TODO: get stats, centroids of spots, further invalidate improper spots.
-        for s in range(1, nSpots+1):
-            size = spot_labels[spot_labels==s].shape[0]
-            if size > 2500:
-                print(f"removing spot {s} with area {size}")
-                spot_labels[spot_labels==s] = 0
-                nSpots -= 1
-
-        self.roi_labels = spot_labels
-        np.save(os.path.join(self.file_output_path, f"rois.npy"), spot_labels)
-        self.numSpots = nSpots
-        roi_img = [create_labeled_rois(self.roi_labels, filepath=os.path.join(self.file_output_path, f"rois"), color=[1,0,1])]
-        for w_ind, w in enumerate(in_img.wavelengths):
-            roi_img.append( create_labeled_rois(self.roi_labels, filepath=os.path.join(self.file_output_path, f"rois_{w}"), color=[1,0,1], img=in_img[w]) )
-        return roi_img
 
     def create_basis_vector_matrix(self, cycle1_imageset, spot_indices):
         if self.roi_labels is not None:
