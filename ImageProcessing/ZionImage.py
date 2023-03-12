@@ -229,3 +229,19 @@ def get_imageset_from_cycle(new_cycle, input_dir_path, uv_wl, useDifferenceImage
             diffImgSubtrahends.append(cycle_files[[f"_{wl}_" in fp for fp in cycle_files].index(True)]) # first vis led image
     currImageSet = ZionImage(imgFileList, wls, cycle=new_cycle, subtrahends=diffImgSubtrahends) if useDifferenceImage else ZionImage(imgFileList, wls, cycle=new_cycle)
     return currImageSet
+
+def create_color_matrix_from_spots(img:ZionImage, spot_labels:np.ndarray, spotlists:tuple, out_path:str=None):
+    M = np.zeros(shape=(3*(img.nChannels-1), 4))
+    #assume we've already re-indexed
+    nSpots = np.max(spot_labels)
+    for base_spot_ind, base_spotlist in enumerate(spotlists):
+        vec_list = []
+        for base_spot in base_spotlist:
+            vec_list.apend( img.get_mean_spot_vector(spot_labels==base_spot) )
+        # TODO should we normalize vectors here?
+        vec = np.mean(np.array(vec_list), axis=0)
+        M[:,base_spot_ind] = vec
+    if out_path is not None:
+        np.save(os.path.join(out_path, "M.npy"), M)
+    print(f"M = \n{M}")
+    return M
