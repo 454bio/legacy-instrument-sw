@@ -5,7 +5,7 @@ from multiprocessing.managers import Namespace
 from tifffile import imread, imwrite
 from matplotlib import pyplot as plt
 
-from ImageProcessing.ZionImage import ZionImage, get_imageset_from_cycle
+from ImageProcessing.ZionImage import ZionImage, get_imageset_from_cycle, create_color_matrix_from_spots
 from ImageProcessing.ZionBaseCaller import project_color, base_call
 from ImageProcessing.ZionReport import ZionReport
 
@@ -211,19 +211,17 @@ class ZionImageProcessor(multiprocessing.Process):
                         rois_detected_event.set()
 
                         # Now wait for info on which spots are basis color spots
-                        basis_spots = basis_chosen_queue.get() #tuple of spot labels
+                        basis_spotlists = basis_chosen_queue.get() #tuple of spot labels
 
                         #TODO this will turn into a tuple of lists (of spot labels)
-                        if isinstance(basis_spots, tuple) and len(basis_spots)==4:
+                        if isinstance(basis_spotlists, tuple) and len(basis_spotlists)==4:
                             done = True
                         else:
                             done = False
                             rois_detected_event.clear()
 
-                    #this is a real set of basis spots
-
                     #todo call new function for creating basis vector matrix
-                    self.create_basis_vector_matrix(currImageSet, basis_spots)
+                    self.create_basis_vector_matrix(currImageSet, basis_spotlists)
                     print(f"\n\nBasis Vector = {self.M}, with shape {self.M.shape}\n\n")
                     # done with all cycle-1 exclusive stuff
 
@@ -263,7 +261,6 @@ class ZionImageProcessor(multiprocessing.Process):
                 raise ValueError("No spots to use in basecalling!")
             else:
                 spot_data = extract_spot_data(imageset, self.roi_labels, csvFileName = csvfile)
-                # ~ print(f"roi label image = {self.roi_labels}")
 
     def _kinetics_analyzer(self, mp_namespace : Namespace, kinetics_queue : multiprocessing.Queue, kinetics_analyzed_event : multiprocessing.Event):
 
@@ -336,15 +333,11 @@ class ZionImageProcessor(multiprocessing.Process):
         self.mp_namespace._bShowBases = bEnable
         print(f"View Spots enabled? {bEnable}")
 
-    def create_basis_vector_matrix(self, cycle1_imageset, spot_indices):
-        if self.roi_labels is not None:
-            self.M = np.array([ cycle1_imageset.get_mean_spot_vector( self.roi_labels==basis_spot ) for basis_spot in spot_indices ]).T
-            np.save(os.path.join(self.file_output_path, f"M.npy"), self.M)
+    def create_basis_vector_matrix(self, cycle1_imageset, basis_spotlists, out_path=self.file_output_path):
+        if self.roi_labels is not None
+            self.M = create_color_matrix_from_spots(cycle1_imageset, self.roi_labels, basis_spotlists)
         else:
             print("ROIs not detected yet!")
-
-
-
 
     # TODO: replace with / move to ZionReport
     def generate_report(self):
