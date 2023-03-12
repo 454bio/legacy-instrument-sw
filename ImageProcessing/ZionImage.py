@@ -44,7 +44,7 @@ def rgb2gray(img, weights=None):
 # TODO rebase to opencv to preserve 16bit images (port to C for speed?)
 # (raspberry pi opencv by default doesn't deal with 16 bit images)
 def median_filter(in_img, kernel_size, behavior='ndimage'): #rank?
-    #TODO make for whole imageset?
+    #TODO make for whole imageset (aka ZionImage)?
     if len(in_img.shape) == 2: # grayscale
         out_img = filters.median(in_img, morphology.disk(kernel_size), behavior=behavior)
     elif len(in_img.shape) == 3: # multi-channel
@@ -216,6 +216,8 @@ def get_imageset_from_cycle(new_cycle, input_dir_path, uv_wl, useDifferenceImage
     if not uv_wl in wls:
         raise ValueError(f"No {uv_wl} images in cycle {new_cycle}!")
     nWls = len(wls)-1
+
+    # Find earliest images of UV wavelength, but the latest of others:
     imgFileList = []
     diffImgSubtrahends = []
     for wl in wls:
