@@ -1205,11 +1205,12 @@ class Handlers:
         self.parent.parent.ImageProcessor.basis_spots_chosen_queue.put( 'redo_roi' )
 
     def on_select_spots_button_clicked(self, button):
+        # TODO make user able to provide list of spots for each base
         try:
-            a = int(self.parent.Spot_A_Entry.get_text())
-            c = int(self.parent.Spot_C_Entry.get_text())
-            g = int(self.parent.Spot_G_Entry.get_text())
-            t = int(self.parent.Spot_T_Entry.get_text())
+            a = [int(self.parent.Spot_A_Entry.get_text())]
+            c = [int(self.parent.Spot_C_Entry.get_text())]
+            g = [int(self.parent.Spot_G_Entry.get_text())]
+            t = [int(self.parent.Spot_T_Entry.get_text())]
         except ValueError:
             print("Invalid Spot Choices")
             return
