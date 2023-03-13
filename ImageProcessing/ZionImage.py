@@ -1,11 +1,12 @@
 import os
+from collections import UserDict
 from subprocess import call, check_call, check_output, run
 from glob import glob
 import numpy as np
 import pandas as pd
 import cv2
 from skimage import filters, morphology, segmentation, measure
-from collections import UserDict
+from tifffile import imread
 
 from ImageProcessing.ZionBaseCaller import crosstalk_correct, display_signals, base_call, add_basecall_result_to_dataframe
 from ImageProcessing.ZionData import extract_spot_data, csv_to_data, df_cols
