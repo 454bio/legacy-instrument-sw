@@ -221,7 +221,7 @@ class ZionImageProcessor(multiprocessing.Process):
                             rois_detected_event.clear()
 
                     #todo call new function for creating basis vector matrix
-                    self.create_basis_vector_matrix(currImageSet, basis_spotlists)
+                    self.create_basis_vector_matrix(currImageSet, basis_spotlists, self.file_output_path)
                     print(f"\n\nBasis Vector = {self.M}, with shape {self.M.shape}\n\n")
                     # done with all cycle-1 exclusive stuff
 
@@ -333,8 +333,8 @@ class ZionImageProcessor(multiprocessing.Process):
         self.mp_namespace._bShowBases = bEnable
         print(f"View Spots enabled? {bEnable}")
 
-    def create_basis_vector_matrix(self, cycle1_imageset, basis_spotlists, out_path=self.file_output_path):
-        if self.roi_labels is not None
+    def create_basis_vector_matrix(self, cycle1_imageset, basis_spotlists, out_path):
+        if self.roi_labels is not None:
             self.M = create_color_matrix_from_spots(cycle1_imageset, self.roi_labels, basis_spotlists)
         else:
             print("ROIs not detected yet!")
