@@ -1012,6 +1012,7 @@ Gain</property>
                                   <object class="GtkCheckButton" id="ip_enable_checkbox">
                                     <property name="label" translatable="yes">Enable Thread</property>
                                     <property name="visible">True</property>
+                                    <property name="sensitive">False</property>
                                     <property name="can-focus">True</property>
                                     <property name="receives-default">False</property>
                                     <property name="margin-start">4</property>
@@ -1221,7 +1222,6 @@ Gain</property>
                                           <object class="GtkLabel">
                                             <property name="visible">True</property>
                                             <property name="can-focus">False</property>
-                                            <property name="margin-left">16</property>
                                             <property name="margin-start">16</property>
                                             <property name="label" translatable="yes">Min Spot Sz: </property>
                                           </object>
@@ -1234,7 +1234,6 @@ Gain</property>
                                           <object class="GtkLabel">
                                             <property name="visible">True</property>
                                             <property name="can-focus">False</property>
-                                            <property name="margin-left">16</property>
                                             <property name="margin-start">16</property>
                                             <property name="label" translatable="yes">Max Spot Sz</property>
                                           </object>
@@ -1272,7 +1271,6 @@ Gain</property>
                                             <property name="visible">True</property>
                                             <property name="can-focus">False</property>
                                             <property name="halign">end</property>
-                                            <property name="margin-left">16</property>
                                             <property name="margin-start">16</property>
                                             <property name="label" translatable="yes">RGB-GS Weights: R</property>
                                             <property name="justify">right</property>
@@ -1287,7 +1285,6 @@ Gain</property>
                                             <property name="visible">True</property>
                                             <property name="can-focus">False</property>
                                             <property name="halign">end</property>
-                                            <property name="margin-left">16</property>
                                             <property name="margin-start">16</property>
                                             <property name="label" translatable="yes">G</property>
                                             <property name="justify">right</property>
@@ -1302,7 +1299,6 @@ Gain</property>
                                             <property name="visible">True</property>
                                             <property name="can-focus">False</property>
                                             <property name="halign">end</property>
-                                            <property name="margin-left">16</property>
                                             <property name="margin-start">16</property>
                                             <property name="label" translatable="yes">B</property>
                                             <property name="justify">right</property>
@@ -1315,11 +1311,11 @@ Gain</property>
                                         <child>
                                           <object class="GtkEntry" id="rgb_weights_R_entry">
                                             <property name="visible">True</property>
+                                            <property name="sensitive">False</property>
                                             <property name="can-focus">True</property>
-                                            <property name="margin-right">16</property>
                                             <property name="margin-end">16</property>
                                             <property name="width-chars">4</property>
-                                            <property name="text" translatable="yes">9</property>
+                                            <property name="text" translatable="yes">1</property>
                                           </object>
                                           <packing>
                                             <property name="left-attach">1</property>
@@ -1329,11 +1325,11 @@ Gain</property>
                                         <child>
                                           <object class="GtkEntry" id="rgb_weights_G_entry">
                                             <property name="visible">True</property>
+                                            <property name="sensitive">False</property>
                                             <property name="can-focus">True</property>
-                                            <property name="margin-right">16</property>
                                             <property name="margin-end">16</property>
                                             <property name="width-chars">4</property>
-                                            <property name="text" translatable="yes">9</property>
+                                            <property name="text" translatable="yes">1</property>
                                           </object>
                                           <packing>
                                             <property name="left-attach">1</property>
@@ -1343,11 +1339,11 @@ Gain</property>
                                         <child>
                                           <object class="GtkEntry" id="rgb_weights_B_entry">
                                             <property name="visible">True</property>
+                                            <property name="sensitive">False</property>
                                             <property name="can-focus">True</property>
-                                            <property name="margin-right">16</property>
                                             <property name="margin-end">16</property>
                                             <property name="width-chars">4</property>
-                                            <property name="text" translatable="yes">9</property>
+                                            <property name="text" translatable="yes">1</property>
                                           </object>
                                           <packing>
                                             <property name="left-attach">1</property>

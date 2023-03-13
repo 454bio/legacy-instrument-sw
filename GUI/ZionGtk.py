@@ -153,6 +153,12 @@ class ZionGUI():
         self.erode_ks_entry = self.builder.get_object("erode_ks_entry")
         self.dilate_ks_entry = self.builder.get_object("dilate_ks_entry")
         self.threshold_scale_entry = self.builder.get_object("threshold_scale_entry")
+        self.spot_min_size_entry = self.builder.get_object("min_spot_size_entry")
+        self.spot_max_size_entry = self.builder.get_object("max_spot_size_entry")
+        self.weights_R_entry = self.builder.get_object("rgb_weights_R_entry")
+        self.weights_G_entry = self.builder.get_object("rgb_weights_G_entry")
+        self.weights_B_entry = self.builder.get_object("rgb_weights_B_entry")
+
         self.basecall_p_entry = self.builder.get_object("basecall_p_entry")
         self.basecall_q_entry = self.builder.get_object("basecall_p_entry")
         self.report_button = self.builder.get_object("report_button")
@@ -947,7 +953,16 @@ class Handlers:
             self.parent.printToLog("ROI threshold needs to be numeric!")
         #todo check for negative
 
-        self.parent.parent.ImageProcessor.set_roi_params(median_ks, erode_ks, dilate_ks, threshold_scale)
+        try:
+            min_sz = int(self.parent.spot_min_size_entry.get_text())
+        except ValueError:
+            min_sz = None
+        try:
+            max_sz = int(self.parent.spot_max_size_entry.get_text())
+        except ValueError:
+            max_sz = None
+
+        self.parent.parent.ImageProcessor.set_roi_params(median_ks, erode_ks, dilate_ks, threshold_scale, min_sz, max_sz)
 
         self.stop_run_thread.clear()
         self.parent.parent.Camera.stop_preview()
@@ -1200,7 +1215,17 @@ class Handlers:
         except ValueError:
             self.parent.printToLog("ROI threshold needs to be numeric!")
         #todo check for negative value
-        self.parent.parent.ImageProcessor.set_roi_params(median_ks, erode_ks, dilate_ks, threshold_scale)
+
+        try:
+            min_sz = int(self.parent.spot_min_size_entry.get_text())
+        except ValueError:
+            min_sz = None
+        try:
+            max_sz = int(self.parent.spot_max_size_entry.get_text())
+        except ValueError:
+            max_sz = None
+
+        self.parent.parent.ImageProcessor.set_roi_params(median_ks, erode_ks, dilate_ks, threshold_scale, min_sz, max_sz)
         # ~ self.parent.parent.ImageProcessor.mp_namespace.bEnable = False
         self.parent.parent.ImageProcessor.basis_spots_chosen_queue.put( 'redo_roi' )
 
@@ -1222,6 +1247,7 @@ class Handlers:
         try:
             p = float(self.parent.basecall_p_entry.get_text())
             q = float(self.parent.basecall_q_entry.get_text())
+            # ~ r = float(self.parent.basecall_r_entry.get_text())
         except ValueError:
             self.parent.printToLog("p and q must be numeric!")
             return

@@ -5,7 +5,7 @@ from multiprocessing.managers import Namespace
 from tifffile import imread, imwrite
 from matplotlib import pyplot as plt
 
-from ImageProcessing.ZionImage import ZionImage, get_imageset_from_cycle, create_color_matrix_from_spots
+from ImageProcessing.ZionImage import ZionImage, jpg_to_raw, get_imageset_from_cycle, get_cycle_from_filename, get_wavelength_from_filename, create_color_matrix_from_spots
 from ImageProcessing.ZionBaseCaller import project_color, base_call
 from ImageProcessing.ZionReport import ZionReport
 
@@ -288,15 +288,19 @@ class ZionImageProcessor(multiprocessing.Process):
         self.convert_files_queue.put_nowait( (fpath,) )
         # ~ self.convert_files_queue.put( (fpath,) )
 
-    def set_roi_params(self, median_ks, erode_ks, dilate_ks, threshold_scale):
+    def set_roi_params(self, median_ks, erode_ks, dilate_ks, threshold_scale, minSpotSize=None, maxSpotSize=None):
         self.mp_namespace.median_ks = median_ks
         self.mp_namespace.erode_ks = erode_ks
         self.mp_namespace.dilate_ks = dilate_ks
         self.mp_namespace.threshold_scale = threshold_scale
+        self.mp_namespace.minSpotSize = minSpotSize
+        self.mp_namespace.maxSpotSize = maxSpotSize
+        self.mp_namespace.grayWeights = None
 
-    def set_basecall_params(self, p, q):
+    def set_basecall_params(self, p, q, r=0):
         self.mp_namespace.p = p
         self.mp_namespace.q = q
+        self.mp_namespace.r = r
 
     @property
     def enable(self):
