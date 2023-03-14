@@ -11,6 +11,11 @@ from tifffile import imread
 from ImageProcessing.ZionBaseCaller import crosstalk_correct, display_signals, base_call, add_basecall_result_to_dataframe
 from ImageProcessing.ZionData import extract_spot_data, csv_to_data, df_cols
 
+'''
+    This module primarily the ZionImage class, which contains an imageset for a given snapshot/cycle. Contains image data from all excitation channels.
+    Also contains functions to interface with image files saved by instrument, and ZionImage instance functions to perform common image processing methods (eg median filtering).
+'''
+
 # First, some low-level image file handling functions:
 def jpg_to_raw(filepath, target_path):
     # This runs the C raw converter, which must be in the following location

@@ -1,6 +1,11 @@
 import numpy as np
 import pandas as pd
 
+'''
+    Module contains low-level interface to handle pandas dataframes (and associated csv files)
+    Originally came from ZionImage.py but refactored to be separate module.
+'''
+
 # TODO: change df_cols to df_cols2 below (contains measurement property, could add more props
 df_cols = [ "roi",
             "wavelength",

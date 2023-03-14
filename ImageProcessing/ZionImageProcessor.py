@@ -10,7 +10,7 @@ from ImageProcessing.ZionBaseCaller import project_color, base_call
 from ImageProcessing.ZionReport import ZionReport
 
 '''
-    This module defines the runtime image handler mp.Process
+    This module defines the runtime image handler thread (really a multiprocessing.Process). Also contains child threads which perform image processing functions.
 '''
 
 class ZionImageProcessor(multiprocessing.Process):
