@@ -19,7 +19,8 @@ from Protocol.ZionEvents import ZionEvent
 
 # multiprocessing.set_start_method('spawn')
 
-# Gpio Pin Lookup Table. Index is GPIO #, format is (pin #, enabled, alternate function)
+# Gpio Pin Lookup Table.
+# Index is GPIO #, format is (pin #, enabled, alternate function)
 GpioPins = (
     (None, None,  None  ), #No GPIO 0
     (None, None,  None  ), #No GPIO 1

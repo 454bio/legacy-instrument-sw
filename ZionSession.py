@@ -106,7 +106,7 @@ class ZionSession():
         else:
             filename += '_'+str(self.ProtocolCount).zfill(ZionSession.protocolCountDigits)+'M_'+str(self.captureCountThisProtocol).zfill(ZionSession.captureCountPerProtocolDigits)
             bayer = False
-        
+
         timestamp_ms = round(1000*(time.time()-self.TimeOfLife))
         filename += '_'+str(timestamp_ms).zfill(9)
         filename = filename+'_'+suffix if ( (not protocol) and (suffix) ) else filename
@@ -243,7 +243,7 @@ class ZionSession():
                 GLib.idle_add(self.gui.printToLog,  "ERROR Updating last capture!")
                 print(f"ERROR Updating last capture!\n{tb}")
 
-    def RunProgram(self, stop_event : threading.Event):
+    def RunProgram(self, stop_event : threading.Event): #This should really be called RunProtocol
         # For the events. I think I want to preload all the potential waveforms
         # Load up the shared queue for the fstrobe callback with the ids
         # Check if the shared queue is empty at the end?
@@ -506,7 +506,7 @@ class ZionSession():
                         print(f"Copied {os.path.join(root,f)} to {os.path.join(target,f)}")
                     elif not os.path.getsize(os.path.join(root,f)) == os.path.getsize(os.path.join(target,f)):
                         shutil.copy2(os.path.join(root, f), os.path.join(target, f))
-                        print(f"Copied (OW) {os.path.join(root,f)} to {os.path.join(target,f)}")
+                        print(f"Copied (overwrote) {os.path.join(root,f)} to {os.path.join(target,f)}")
                     else:
                         print(f"{os.path.join(target,f)} already exists!")
 
