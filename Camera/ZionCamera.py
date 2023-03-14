@@ -121,7 +121,7 @@ class ZionCameraParameters:
             json.dump(self, f, indent=1, cls=ZionCameraParametersEncoder)
 
 
-class ZionCamera(PiCamera):
+class ZionCamera(PiCamera): #REMINDER that this inherits (a lot) from PiCamera
 
     def __init__(self, binning : bool, initial_values : ZionCameraParameters, parent : 'ZionSession' = None):
         # from rich import print as rprint

@@ -12,7 +12,6 @@ from ImageProcessing.ZionReport import ZionReport
 '''
     This file contains code for basecalling and kinetics analysis.
     Also has code to map RGB/HSV data (X space) to base-amounts space (Z space)
-    
 '''
 
 BASES = ('A', 'C', 'G', 'T') #, 'S', 'N') #todo: include scatter color as a base? 'N' for None?
@@ -138,7 +137,7 @@ def create_phase_correct_matrix(p, q, numCycles, r=0):
 
 def base_call(data, p:float=0.0, q:float=0.0, r:float=0.0):
 
-    ''' Data is assumed to be numpy array of shape (N, L, 4) [spot index, cycle index, base index]
+    ''' Data is assumed to be numpy.ndarray of shape (N, L, 4) [spot index, cycle index, base index]
         p is probability that no new base is synthesized (t-1 error)
         q is probability that 2 new bases are synthesized (t+1 error)
         r is probability that 3 new bases are synthesized (t+2 error)
