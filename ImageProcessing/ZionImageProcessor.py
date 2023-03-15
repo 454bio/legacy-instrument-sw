@@ -8,8 +8,8 @@ from tifffile import imread, imwrite
 from matplotlib import pyplot as plt
 
 from ImageProcessing.ZionImage import ZionImage, jpg_to_raw, get_imageset_from_cycle, get_cycle_from_filename, get_wavelength_from_filename, create_color_matrix_from_spots
-from ImageProcessing.ZionData import df_cols, extract_spot_data
-from ImageProcessing.ZionBaseCaller import project_color, base_call
+from ImageProcessing.ZionData import df_cols, extract_spot_data, csv_to_data, add_basecall_result_to_dataframe
+from ImageProcessing.ZionBaseCaller import project_color, base_call, crosstalk_correct, display_signals
 from ImageProcessing.ZionReport import ZionReport
 
 '''
@@ -355,7 +355,7 @@ class ZionImageProcessor(multiprocessing.Process):
 
     def create_basis_vector_matrix(self, cycle1_imageset, basis_spotlists, out_path):
         if self.roi_labels is not None:
-            self.M = create_color_matrix_from_spots(cycle1_imageset, self.roi_labels, basis_spotlists)
+            self.M = create_color_matrix_from_spots(cycle1_imageset, self.roi_labels, basis_spotlists, out_path=out_path)
         else:
             print("ROIs not detected yet!")
 
@@ -370,26 +370,27 @@ class ZionImageProcessor(multiprocessing.Process):
         # generate pre-phase-correction histograms:
         basecall_csv = os.path.join(self.file_output_path, "basecaller_spot_data.csv")
         
-        #TODO check this and walk through it
         basecall_pd = csv_to_data(basecall_csv)
+        #TODO switch this to use project_color instead of crosstalk_correct
         signal_pre_basecall, spotlist, basecall_pd_pre = crosstalk_correct(basecall_pd, M, self.mp_namespace.ip_cycle_ind)
         basecall_pd_pre.to_csv(os.path.join(self.file_output_path, "basecaller_output_data_pre.csv"))
         f1, f2 = display_signals(signal_pre_basecall, spotlist, self.mp_namespace.ip_cycle_ind)
 
-
-
         #now perform phase correction
+        signal_post_basecall, Qinv = base_call(signal_pre_basecall, p=self.mp_namespace.p, q=self.mp_namespace.q, r=self.mp_namespace.r)
+        
         #Transition matrix is numCycles+1 x numCycles+1
-        P  = np.diag((self.mp_namespace.ip_cycle_ind+1)*[self.mp_namespace.p])
-        P += np.diag((self.mp_namespace.ip_cycle_ind)*[1-self.mp_namespace.p-self.mp_namespace.q], k=1)
-        P += np.diag((self.mp_namespace.ip_cycle_ind-1)*[self.mp_namespace.q], k=2)
+        
+        # ~ P  = np.diag((self.mp_namespace.ip_cycle_ind+1)*[self.mp_namespace.p])
+        # ~ P += np.diag((self.mp_namespace.ip_cycle_ind)*[1-self.mp_namespace.p-self.mp_namespace.q], k=1)
+        # ~ P += np.diag((self.mp_namespace.ip_cycle_ind-1)*[self.mp_namespace.q], k=2)
 
-        Q = np.zeros(shape=(self.mp_namespace.ip_cycle_ind,self.mp_namespace.ip_cycle_ind))
-        for t in range(self.mp_namespace.ip_cycle_ind):
-            Q[:,t] = np.linalg.matrix_power(P,t+1)[0,1:]
-        Qinv = np.linalg.inv(Q)
+        # ~ Q = np.zeros(shape=(self.mp_namespace.ip_cycle_ind,self.mp_namespace.ip_cycle_ind))
+        # ~ for t in range(self.mp_namespace.ip_cycle_ind):
+            # ~ Q[:,t] = np.linalg.matrix_power(P,t+1)[0,1:]
+        # ~ Qinv = np.linalg.inv(Q)
 
-        signal_post_basecall = np.transpose( (np.transpose(signal_pre_basecall, axes=(0,2,1)) @ Qinv)[:,:,:-1], axes=(0,2,1))
+        # ~ signal_post_basecall = np.transpose( (np.transpose(signal_pre_basecall, axes=(0,2,1)) @ Qinv)[:,:,:-1], axes=(0,2,1))
         basecall_pd_post = add_basecall_result_to_dataframe(signal_post_basecall, basecall_pd)
         basecall_pd_post.to_csv(os.path.join(self.file_output_path, "basecaller_output_data_post.csv"))
 
@@ -405,9 +406,6 @@ class ZionImageProcessor(multiprocessing.Process):
             f.savefig(os.path.join(self.file_output_path, f"Purity Post-Phase {f_idx+1}.png"))
         for f_idx, f in enumerate(f4):
             f.savefig(os.path.join(self.file_output_path, f"Signal Post-Phase {f_idx+1}.png"))
-
-        # ~ f3.savefig(os.path.join(self.file_output_path, "Signal Post-Phase.png")
-        # ~ f4.savefig(os.path.join(self.file_output_path, "Signal Post-Phase.png")
 
         with open(reportfile, 'w') as f:
             if self.bUseDifferenceImages:
