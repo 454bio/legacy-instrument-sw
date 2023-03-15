@@ -243,7 +243,7 @@ def create_color_matrix_from_spots(img:ZionImage, spot_labels:np.ndarray, spotli
     for base_spot_ind, base_spotlist in enumerate(spotlists):
         vec_list = []
         for base_spot in base_spotlist:
-            vec_list.apend( img.get_mean_spot_vector(spot_labels==base_spot) )
+            vec_list.append( img.get_mean_spot_vector(spot_labels==base_spot) )
         # TODO should we normalize vectors here?
         vec = np.mean(np.array(vec_list), axis=0)
         M[:,base_spot_ind] = vec

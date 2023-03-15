@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+from skimage.color import rgb2hsv
 
 '''
     Module contains low-level interface to handle pandas dataframes (and associated csv files)

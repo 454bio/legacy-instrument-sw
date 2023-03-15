@@ -1196,9 +1196,9 @@ class Handlers:
     def on_ip_enable_checkbox_toggled(self, switch):
         #TODO: lock/unlock rest of ip control section
         if switch.get_active():
-            self.parent.parent.ImageProcessor.enable = True
+            self.parent.parent.ImageProcessor.mp_namespace.IP_Enable = True
         else:
-            self.parent.parent.ImageProcessor.enable = False
+            self.parent.parent.ImageProcessor.mp_namespace.IP_Enable = False
         return
 
     def on_redo_roi_detection_button_clicked(self, button):
@@ -1226,7 +1226,6 @@ class Handlers:
             max_sz = None
 
         self.parent.parent.ImageProcessor.set_roi_params(median_ks, erode_ks, dilate_ks, threshold_scale, min_sz, max_sz)
-        # ~ self.parent.parent.ImageProcessor.mp_namespace.bEnable = False
         self.parent.parent.ImageProcessor.basis_spots_chosen_queue.put( 'redo_roi' )
 
     def on_select_spots_button_clicked(self, button):

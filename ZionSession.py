@@ -335,7 +335,11 @@ class ZionSession():
                         # ~ print(f"Unlocking _load_image thread")
                         # ~ self.load_image_lock.release()
                     with self.ip_enable_lock:
-                        self.ImageProcessor.mp_namespace.bEnable = True
+                        if self.ImageProcessor.mp_namespace.IP_Enable:
+                            self.ImageProcessor.mp_namespace.bEnable = True
+                            # ~ print(f"Image Processor granted access")
+                        else:
+                            print(f"Image Processor disabled!")
                         self.ImageProcessor.mp_namespace.bConvertEnable = True
 
                     group_or_wait.sleep(
@@ -389,7 +393,11 @@ class ZionSession():
                         if stop_event.is_set():
                             print("Received stop!")
                             with self.ip_enable_lock:
-                                self.ImageProcessor.mp_namespace.bEnable = True
+                                if self.ImageProcessor.mp_namespace.IP_Enable:
+                                    self.ImageProcessor.mp_namespace.bEnable = True
+                                    # ~ print(f"Image Processor granted access")
+                                else:
+                                    print(f"Image Processor disabled!")
                                 self.ImageProcessor.mp_namespace.bConvertEnable = True
                             break
 
@@ -409,7 +417,11 @@ class ZionSession():
                     if num_fstrobe != num_captured_frames:
                         print(f"WARNING: We did not receive all of the frames actually captured!!  num_fstrobe: {num_fstrobe}  expected: {expected_num_frames}")
             with self.ip_enable_lock:
-                self.ImageProcessor.mp_namespace.bEnable = True
+                if self.ImageProcessor.mp_namespace.IP_Enable:
+                    self.ImageProcessor.mp_namespace.bEnable = True
+                    # ~ print(f"Image Processor granted access")
+                else:
+                    print(f"Image Processor disabled!")
                 self.ImageProcessor.mp_namespace.bConvertEnable = True
             print("RunProgram Finished!")
 
@@ -483,8 +495,9 @@ class ZionSession():
 
     def update_roi_image(self, basis_spot_queue):
         while True:
-            if self.ImageProcessor.bEnable:
+            if self.ImageProcessor.mp_namespace.bEnable:
                 self.ImageProcessor.rois_detected_event.wait()
+                print(f"update_roi_image: rois_detected_event occurred")
                 GLib.idle_add(self.gui.load_roi_image, (os.path.join(self.ImageProcessor.file_output_path, "rois_365.jpg"), basis_spot_queue))
                 self.ImageProcessor.rois_detected_event.clear()
 
