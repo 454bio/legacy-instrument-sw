@@ -213,18 +213,36 @@ def display_signals(coeffs, spotlist, numCycles, numRows=1, numPages=1, exclusio
             for base in range(4):
                  if s_idx == 0:
                      if stds is not None:
-                         ax1[page].flat[s_idx].bar( np.arange(1,numCycles+1)+(base-2)/6, scores_norm[:,base], 1/6, align="edge", color = base_colors[BASES[base]], label = BASES[base], yerr=stds_norm[:,base])
+                         if numSpots==1:
+                            ax1[page].bar( np.arange(1,numCycles+1)+(base-2)/6, scores_norm[:,base], 1/6, align="edge", color = base_colors[BASES[base]], label = BASES[base], yerr=stds_norm[:,base])
+                         else:
+                            ax1[page].flat[s_idx].bar( np.arange(1,numCycles+1)+(base-2)/6, scores_norm[:,base], 1/6, align="edge", color = base_colors[BASES[base]], label = BASES[base], yerr=stds_norm[:,base])
                      else:
-                         ax1[page].flat[s_idx].bar( np.arange(1,numCycles+1)+(base-2)/6, scores_norm[:,base], 1/6, align="edge", color = base_colors[BASES[base]], label = BASES[base])
+                         if numSpots==1:
+                            ax1[page].bar( np.arange(1,numCycles+1)+(base-2)/6, scores_norm[:,base], 1/6, align="edge", color = base_colors[BASES[base]], label = BASES[base])
+                         else:
+                            ax1[page].flat[s_idx].bar( np.arange(1,numCycles+1)+(base-2)/6, scores_norm[:,base], 1/6, align="edge", color = base_colors[BASES[base]], label = BASES[base])
                      if not noSignal:
-                         ax2[page].flat[s_idx].plot(np.arange(1, numCycles+1), coeffs[s_idx_orig,:,base]/kinetic_total, color = base_colors[BASES[base]], label = BASES[base])
+                         if numSpots==1:
+                            ax2[page].plot(np.arange(1, numCycles+1), coeffs[s_idx_orig,:,base]/kinetic_total, color = base_colors[BASES[base]], label = BASES[base])
+                         else:
+                            ax2[page].flat[s_idx].plot(np.arange(1, numCycles+1), coeffs[s_idx_orig,:,base]/kinetic_total, color = base_colors[BASES[base]], label = BASES[base])
                  else:
                      if stds is not None:
-                         ax1[page].flat[s_idx].bar( np.arange(1,numCycles+1)+(base-2)/6, scores_norm[:,base], 1/6, align="edge", color = base_colors[BASES[base]], yerr=stds_norm[:,base])
+                         if numSpots==1:
+                             ax1[page].bar( np.arange(1,numCycles+1)+(base-2)/6, scores_norm[:,base], 1/6, align="edge", color = base_colors[BASES[base]], yerr=stds_norm[:,base])
+                         else:
+                             ax1[page].flat[s_idx].bar( np.arange(1,numCycles+1)+(base-2)/6, scores_norm[:,base], 1/6, align="edge", color = base_colors[BASES[base]], yerr=stds_norm[:,base])
                      else:
-                         ax1[page].flat[s_idx].bar( np.arange(1,numCycles+1)+(base-2)/6, scores_norm[:,base], 1/6, align="edge", color = base_colors[BASES[base]])
+                         if numSpots==1:
+                             ax1[page].bar( np.arange(1,numCycles+1)+(base-2)/6, scores_norm[:,base], 1/6, align="edge", color = base_colors[BASES[base]])
+                         else:
+                             ax1[page].flat[s_idx].bar( np.arange(1,numCycles+1)+(base-2)/6, scores_norm[:,base], 1/6, align="edge", color = base_colors[BASES[base]])
                      if not noSignal:
-                         ax2[page].flat[s_idx].plot(np.arange(1, numCycles+1), coeffs[s_idx_orig,:,base]/kinetic_total, color = base_colors[BASES[base]])
+                         if numSpots==1:
+                             ax2[page].plot(np.arange(1, numCycles+1), coeffs[s_idx_orig,:,base]/kinetic_total, color = base_colors[BASES[base]])
+                         else:
+                             ax2[page].flat[s_idx].plot(np.arange(1, numCycles+1), coeffs[s_idx_orig,:,base]/kinetic_total, color = base_colors[BASES[base]])
             purity = np.max(scores_norm, axis=-1)
             called_base_idx = np.argmax(scores_norm, axis=-1)
             for cycle in range(numCycles):
@@ -232,20 +250,39 @@ def display_signals(coeffs, spotlist, numCycles, numRows=1, numPages=1, exclusio
                 SecondPlace = np.sort(scores_norm[cycle,:])[-2]
                 chastity = purity[cycle] / (purity[cycle] + SecondPlace)
                 if labels:
-                    ax1[page].flat[s_idx].text(cycle+1+(called_base_idx[cycle]-1.5)/6, purity[cycle]+0.01, f"{100*purity[cycle]:.1f}", color='black', fontsize=7, horizontalalignment='center')
+                    if numSpots==1:
+                        ax1[page].text(cycle+1+(called_base_idx[cycle]-1.5)/6, purity[cycle]+0.01, f"{100*purity[cycle]:.1f}", color='black', fontsize=7, horizontalalignment='center')
+                    else:
+                        ax1[page].flat[s_idx].text(cycle+1+(called_base_idx[cycle]-1.5)/6, purity[cycle]+0.01, f"{100*purity[cycle]:.1f}", color='black', fontsize=7, horizontalalignment='center')
                     #ax1[page].flat[s_idx].text(cycle+1+(called_base_idx[cycle]-1.5)/6, purity[cycle]+0.01, f"{chastity:.2f}", color='black', fontsize=7, horizontalalignment='center')
-            ax1[page].flat[s_idx].set_ylim([-0.1,1.1])
-
+            if numSpots==1:
+                ax1[page].set_ylim([-0.1,1.1])
+            else:
+                ax1[page].flat[s_idx].set_ylim([-0.1,1.1])
             if not noSignal:
-                ax2[page].flat[s_idx].set_xticks(np.arange(1,numCycles+1))
-                
-                if s_idx == 0:
-                    ax2[page].flat[s_idx].plot(np.arange(1, numCycles+1), np.sum(coeffs[s_idx_orig,:,:]/kinetic_total, axis=-1), color = 'black', label = 'Total')
+                if numSpots==1:
+                    ax2[page].set_xticks(np.arange(1,numCycles+1))
                 else:
-                    ax2[page].flat[s_idx].plot(np.arange(1, numCycles+1), np.sum(coeffs[s_idx_orig,:,:]/kinetic_total, axis=-1), color = 'black')
+                    ax2[page].flat[s_idx].set_xticks(np.arange(1,numCycles+1))
+                if s_idx == 0:
+                    if numSpots==1:
+                        ax2[page].plot(np.arange(1, numCycles+1), np.sum(coeffs[s_idx_orig,:,:]/kinetic_total, axis=-1), color = 'black', label = 'Total')
+                    else:
+                        ax2[page].flat[s_idx].plot(np.arange(1, numCycles+1), np.sum(coeffs[s_idx_orig,:,:]/kinetic_total, axis=-1), color = 'black', label = 'Total')
+                else:
+                    if numSpots==1:
+                        ax2[page].plot(np.arange(1, numCycles+1), np.sum(coeffs[s_idx_orig,:,:]/kinetic_total, axis=-1), color = 'black')
+                    else:
+                        ax2[page].flat[s_idx].plot(np.arange(1, numCycles+1), np.sum(coeffs[s_idx_orig,:,:]/kinetic_total, axis=-1), color = 'black')
                 # ax1.flat[s_idx].set_title(''.join(f"{matrix_key[basecalls[s_idx_orig,cycle]]}" for cycle in range(numCycles))+f" ({gt_data[s_idx_orig]})")
-                ax2[page].flat[s_idx].set_title(spot, fontsize=10)
-            ax1[page].flat[s_idx].set_title(spot, fontsize=10)
+                if numSpots==1:
+                    ax2[page].set_title(spot, fontsize=10)
+                else:
+                    ax2[page].flat[s_idx].set_title(spot, fontsize=10)
+            if numSpots==1:
+                ax1[page].set_title(spot, fontsize=10)
+            else:
+                ax1[page].flat[s_idx].set_title(spot, fontsize=10)
 
     if prefix:
         prefix += " "
