@@ -7,6 +7,8 @@ from skimage.color import rgb2hsv
     Originally came from ZionImage.py but refactored to be separate module.
 '''
 
+BASES = ('A', 'C', 'G', 'T') #, 'S', 'N') #todo: include scatter color as a base? 'N' for None?
+
 # TODO: change df_cols to df_cols2 below (contains measurement property, could add more props
 df_cols = [ "roi",
             "wavelength",

@@ -6,15 +6,13 @@ from skimage.color import rgb2hsv
 from scipy.optimize import nnls
 from matplotlib import pyplot as plt
 
-from ImageProcessing.ZionData import extract_spot_data, csv_to_data, add_basecall_result_to_dataframe
+from ImageProcessing.ZionData import BASES, extract_spot_data, csv_to_data, add_basecall_result_to_dataframe
 from ImageProcessing.ZionReport import ZionReport
 
 '''
     This file contains code for basecalling and kinetics analysis.
     Also has code to map RGB/HSV data (X space) to base-amounts space (Z space)
 '''
-
-BASES = ('A', 'C', 'G', 'T') #, 'S', 'N') #todo: include scatter color as a base? 'N' for None?
 
 # TODO: use instead of str
 # class ZionBase(UserString):
