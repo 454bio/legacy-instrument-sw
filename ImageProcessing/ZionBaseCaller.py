@@ -165,6 +165,10 @@ def base_call(data, p:float=0.0, q:float=0.0, r:float=0.0):
     Qinv = create_phase_correct_matrix(p, q, numCycles, r=r)
 
     z_qinv = data @ Qinv
+    if z_qinv.ndim==2:
+        z_qinv = z_qinv[:,:-1]
+    elif z_qinv.ndim==3:
+        z_qinv = z_qinv[:,:,:-1]
     bases = np.argmax(z_qinv, axis=1)
 
     # now reshape back to size (N,L,4)
