@@ -378,17 +378,6 @@ class ZionImageProcessor(multiprocessing.Process):
 
         #now perform phase correction
         signal_post_basecall, Qinv = base_call(signal_pre_basecall, p=self.mp_namespace.p, q=self.mp_namespace.q, r=self.mp_namespace.r)
-        
-        #Transition matrix is numCycles+1 x numCycles+1
-        
-        # ~ P  = np.diag((self.mp_namespace.ip_cycle_ind+1)*[self.mp_namespace.p])
-        # ~ P += np.diag((self.mp_namespace.ip_cycle_ind)*[1-self.mp_namespace.p-self.mp_namespace.q], k=1)
-        # ~ P += np.diag((self.mp_namespace.ip_cycle_ind-1)*[self.mp_namespace.q], k=2)
-
-        # ~ Q = np.zeros(shape=(self.mp_namespace.ip_cycle_ind,self.mp_namespace.ip_cycle_ind))
-        # ~ for t in range(self.mp_namespace.ip_cycle_ind):
-            # ~ Q[:,t] = np.linalg.matrix_power(P,t+1)[0,1:]
-        # ~ Qinv = np.linalg.inv(Q)
 
         # ~ signal_post_basecall = np.transpose( (np.transpose(signal_pre_basecall, axes=(0,2,1)) @ Qinv)[:,:,:-1], axes=(0,2,1))
         basecall_pd_post = add_basecall_result_to_dataframe(signal_post_basecall, basecall_pd)
