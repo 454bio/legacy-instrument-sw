@@ -1,11 +1,14 @@
 import os
+import time
 import multiprocessing
 import threading
 from multiprocessing.managers import Namespace
+import numpy as np
 from tifffile import imread, imwrite
 from matplotlib import pyplot as plt
 
 from ImageProcessing.ZionImage import ZionImage, jpg_to_raw, get_imageset_from_cycle, get_cycle_from_filename, get_wavelength_from_filename, create_color_matrix_from_spots
+from ImageProcessing.ZionData import df_cols, extract_spot_data
 from ImageProcessing.ZionBaseCaller import project_color, base_call
 from ImageProcessing.ZionReport import ZionReport
 
@@ -35,6 +38,7 @@ class ZionImageProcessor(multiprocessing.Process):
         self.mp_namespace = self._mp_manager.Namespace()
         self.stop_event = self._mp_manager.Event()
 
+        self.mp_namespace.IP_Enable = False
         # TODO: a Lock, RLock, or condition to enable/disable all IP processes
         # ~ self._enable_condition = self._mp_manager.Condition()
         # ~ self._enable_lock = self._mp_manager.Lock()
@@ -101,21 +105,22 @@ class ZionImageProcessor(multiprocessing.Process):
         self._convert_image_thread.daemon = True
         self._convert_image_thread.start()
 
-        # ~ self._image_processing_thread = threading.Thread(
-            # ~ target=self._image_handler,
-            # ~ args=(self.mp_namespace, self.new_cycle_detected, self.rois_detected_event, self.basis_spots_chosen_queue, self.base_caller_queue, self.kinetics_analyzer_queue)
-        # ~ )
-        # ~ self._image_processing_thread.daemon = True
-        # ~ self._image_processing_thread.start()
+        self._image_processing_thread = threading.Thread(
+            target=self._image_handler,
+            args=(self.mp_namespace, self.new_cycle_detected, self.rois_detected_event, self.basis_spots_chosen_queue, self.base_caller_queue, self.kinetics_analyzer_queue)
+        )
+        self._image_processing_thread.daemon = True
+        self._image_processing_thread.start()
 
-        # ~ self._base_calling_thread = threading.Thread(
-            # ~ target=self._base_caller,
-            # ~ args=(self.mp_namespace, self.base_caller_queue, self.bases_called_event)
-        # ~ )
+        self._base_calling_thread = threading.Thread(
+            target=self._base_caller,
+            args=(self.mp_namespace, self.base_caller_queue, self.bases_called_event, 5)
+        )
 
-        # ~ self._base_calling_thread.daemon = True
-        # ~ self._base_calling_thread.start()
+        self._base_calling_thread.daemon = True
+        self._base_calling_thread.start()
 
+        #TODO re-enable kinetics thread once metrics are well-defined
         # ~ self._kinetics_thread = threading.Thread(
             # ~ target=self._kinetics_analyzer,
             # ~ args=(self.mp_namespace, self.kinetics_analyzer_queue, self.kinetics_analyzed_event)
@@ -208,10 +213,12 @@ class ZionImageProcessor(multiprocessing.Process):
                         _, self.roi_labels, self.numSpots = currImageSet.detect_rois(self.file_output_path, uv_wl=uv_wl, median_ks=self.mp_namespace.median_ks, erode_ks=self.mp_namespace.erode_ks, dilate_ks=self.mp_namespace.dilate_ks, threshold_scale=mp_namespace.threshold_scale,
                                                                                                  minSize=self.mp_namespace.minSpotSize, maxSize=self.mp_namespace.maxSpotSize, gray_weights=self.mp_namespace.grayWeights)
                         # This is to notify that rois were detected:
+                        print(f"About to set roi detected event with {self.numSpots} spots")
                         rois_detected_event.set()
 
                         # Now wait for info on which spots are basis color spots
                         basis_spotlists = basis_chosen_queue.get() #tuple of spot labels
+                        print(f"received basis spotlists: {basis_spotlists}")
 
                         #TODO this will turn into a tuple of lists (of spot labels)
                         if isinstance(basis_spotlists, tuple) and len(basis_spotlists)==4:
@@ -226,27 +233,36 @@ class ZionImageProcessor(multiprocessing.Process):
                     # done with all cycle-1 exclusive stuff
 
                     base_caller_queue.put(currImageSet)
-                    vis_cycle_files = [ f for f in cycle_files if not get_wavelength_from_filename(f)==uv_wl]
+
+                    #TODO re-enable kinetics thread once metrics are well-defined
+                    # ~ vis_cycle_files = [ f for f in cycle_files if not get_wavelength_from_filename(f)==uv_wl]
                     # ~ print(f"kineticsImageSet = {vis_cycle_files}")
-                    for cf in range(0, len(vis_cycle_files), nWls):
-                        wls = [ get_wavelength_from_filename(f) for f in vis_cycle_files[cf:cf+nWls] ]
-                        kinetics_queue.put( ZionImage(vis_cycle_files[cf:cf+nWls], wls, cycle=new_cycle) )
+                    # ~ for cf in range(0, len(vis_cycle_files), nWls):
+                        # ~ wls = [ get_wavelength_from_filename(f) for f in vis_cycle_files[cf:cf+nWls] ]
+                        # ~ kinetics_queue.put( ZionImage(vis_cycle_files[cf:cf+nWls], wls, cycle=new_cycle) )
 
                 elif new_cycle > 1:
                     base_caller_queue.put(currImageSet)
-                    # ~ print(f"\n\nBasis Vector = {self.M}, with shape {self.M.shape}\n\n")
-                    vis_cycle_files = [ f for f in cycle_files if not get_wavelength_from_filename(f)==uv_wl]
+
+                    #TODO re-enable kinetics thread once metrics are well-defined
+                    # ~ vis_cycle_files = [ f for f in cycle_files if not get_wavelength_from_filename(f)==uv_wl]
                     # ~ print(f"kineticsImageSet = {vis_cycle_files}")
-                    for cf in range(0, len(vis_cycle_files), nWls):
-                        wls = [ get_wavelength_from_filename(f) for f in vis_cycle_files[cf:cf+nWls] ]
-                        kinetics_queue.put( ZionImage(vis_cycle_files[cf:cf+nWls], wls, cycle=new_cycle) )
+                    # ~ for cf in range(0, len(vis_cycle_files), nWls):
+                        # ~ wls = [ get_wavelength_from_filename(f) for f in vis_cycle_files[cf:cf+nWls] ]
+                        # ~ kinetics_queue.put( ZionImage(vis_cycle_files[cf:cf+nWls], wls, cycle=new_cycle) )
 
                 else:
                     raise ValueError(f"Invalid cycle index {new_cycle}!")
 
 
-    def _base_caller(self, mp_namespace : Namespace, base_caller_queue : multiprocessing.Queue, bases_called_event : multiprocessing.Event):
+    def _base_caller(self, mp_namespace : Namespace, base_caller_queue : multiprocessing.Queue, bases_called_event : multiprocessing.Event, delay : int = 0):
+        '''
+            This thread is currently responsible for extracting spot data, since we do multiple cycles at once with our reports.
+            Later this will be the place to analyze freshly acquired data point(s) and add (in real-time) to existing result/graph.
+        '''
 
+        if delay:
+            time.sleep(delay)
         csvfile = os.path.join(self.file_output_path, "basecaller_spot_data.csv")
         print(f"_base_caller_thread: creating csv file {csvfile}")
         with open(csvfile, "w") as f:
@@ -302,14 +318,14 @@ class ZionImageProcessor(multiprocessing.Process):
         self.mp_namespace.q = q
         self.mp_namespace.r = r
 
-    @property
-    def enable(self):
-        return self.mp_namespace.bEnable
+    # ~ @property
+    # ~ def enable(self):
+        # ~ return self.mp_namespace.bEnable
 
-    @enable.setter
-    def enable(self, bEnable):
-        self.mp_namespace.bEnable = bEnable
-        print(f"Image Processor enabled? {bEnable}")
+    # ~ @enable.setter
+    # ~ def enable(self, bEnable):
+        # ~ self.mp_namespace.bEnable = bEnable
+        # ~ print(f"Image Processor enabled? {bEnable}")
 
     @property
     def show_spots(self):
@@ -343,21 +359,26 @@ class ZionImageProcessor(multiprocessing.Process):
         else:
             print("ROIs not detected yet!")
 
-    # TODO: replace with / move to ZionReport
+    # TODO: replace with / move to ZionReport.py
+    # Also should be using FPDF to create pdf reports
     def generate_report(self):
-        #todo kinetics
+
         reportfile = os.path.join(self.file_output_path, "report.txt")
         M = np.load(os.path.join(self.file_output_path, "M.npy"))
 
         # todo kinetics figure, similar to below
         # generate pre-phase-correction histograms:
         basecall_csv = os.path.join(self.file_output_path, "basecaller_spot_data.csv")
+        
+        #TODO check this and walk through it
         basecall_pd = csv_to_data(basecall_csv)
         signal_pre_basecall, spotlist, basecall_pd_pre = crosstalk_correct(basecall_pd, M, self.mp_namespace.ip_cycle_ind)
         basecall_pd_pre.to_csv(os.path.join(self.file_output_path, "basecaller_output_data_pre.csv"))
         f1, f2 = display_signals(signal_pre_basecall, spotlist, self.mp_namespace.ip_cycle_ind)
-        #now perform phase correction
 
+
+
+        #now perform phase correction
         #Transition matrix is numCycles+1 x numCycles+1
         P  = np.diag((self.mp_namespace.ip_cycle_ind+1)*[self.mp_namespace.p])
         P += np.diag((self.mp_namespace.ip_cycle_ind)*[1-self.mp_namespace.p-self.mp_namespace.q], k=1)
