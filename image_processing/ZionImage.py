@@ -25,6 +25,10 @@ def jpg_to_raw(filepath, target_path):
 	# ~ print(f"Wrote {filename}.tif in _ sec"}
 	retcode = ret.returncode
 	if retcode == 0:
+		if os.path.exists(target_path):
+			if os.path.getsize(target_path) > 1000000:
+				if os.path.exists(filepath):
+					os.remove(filepath)
 		return ret.returncode
 	else:
 		raise OSError(f"raw converter failed on image {filepath} with error {retcode}")
