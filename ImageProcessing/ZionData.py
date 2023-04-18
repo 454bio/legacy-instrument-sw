@@ -134,7 +134,7 @@ def extract_spot_data(img, roi_labels, csvFileName = None, kinetic=False):
 def csv_to_data(csvfile):
     df_total = pd.read_csv(csvfile)
     df_total.set_index(["roi", "cycle", "wavelength"], inplace=True)
-    wavelengths = list(set(df_total.index.get_level_values('wavelength').to_list()))
+    wavelengths = sorted(list(set(df_total.index.get_level_values('wavelength').to_list())))
     df_total = df_total.unstack()
     w_idx = []
     for w in wavelengths:
@@ -151,9 +151,9 @@ def csv_to_data(csvfile):
     df_total = df_total.reindex(columns=mi)
     return df_total
 
-def add_basecall_result_to_dataframe(data, df):
+def add_basecall_result_to_dataframe(data, df, signalName="Signal"):
     spotlist = list(set(df.index.get_level_values('roi').to_list()))
-    coeffs_pd = pd.DataFrame(index=df.index, columns = [("Signal", base) for base in BASES])
+    coeffs_pd = pd.DataFrame(index=df.index, columns = [(signalName, base) for base in BASES])
     numCycles = data.shape[1]
     for s_idx, spot in enumerate(spotlist):
         for cycle in range(numCycles):

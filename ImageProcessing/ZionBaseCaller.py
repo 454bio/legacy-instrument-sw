@@ -40,9 +40,10 @@ def project_color(data, M, factor_method="nnls"):
         "nnls" is non negative least squares (we assume each color is some non-negative amount of each base)
     '''
 
-    if data.dim == 2:
+    if data.ndim == 2:
         numCycles, numChannels = data.shape
-    elif data.dim == 3:
+        numSpots = 1
+    elif data.ndim == 3:
         numSpots, numCycles, numChannels = data.shape
     else:
         raise ValueError(f"data dimentions {data.shape} are not valid")
@@ -57,7 +58,7 @@ def project_color(data, M, factor_method="nnls"):
         ret = np.zeros(shape=(numSpots, numCycles, 4))
         for s in range(numSpots):
             for t in range(numCycles):
-                ret[s,t,:] = nnls(M, data[s,t,:])
+                ret[s,t,:] = nnls(M, data[s,t,:]) if data.ndim==3 else nnls(M, data[t,:])
 
     else:
         raise ValueError(f"Invalid factoring method {factor_method}")

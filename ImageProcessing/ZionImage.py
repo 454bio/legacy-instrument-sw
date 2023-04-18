@@ -132,19 +132,24 @@ class ZionImage(UserDict):
         self.cycle = cycle
         self.time_avg = round(sum(self.times)/len(self.times))
 
+    @property
+    def wavelengths(self):
+        keys = self.data.keys()
+        return sorted(keys)
+
     def get_mean_spot_vector(self, indices):
         out = []
-        for k in self.data.keys():
+        for k in self.wavelengths:
             out.extend( np.mean(self.data[k][indices], axis=0).tolist() )
         return out
 
-    @property
-    def wavelengths(self):
-        wls = self.data.keys()
-        # should be no dark key in here, but just in case
-        if '000' in wls:
-            wls.remove('000')
-        return wls
+    # @property
+    # def wavelengths(self):
+        # wls = self.data.keys()
+        # # should be no dark key in here, but just in case
+        # if '000' in wls:
+            # wls.remove('000')
+        # return wls
 
     @property
     def view_4D(self):
