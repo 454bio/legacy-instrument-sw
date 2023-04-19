@@ -65,7 +65,7 @@ def project_color(data, M, factor_method="nnls"):
 
     return ret
 
-def crosstalk_correct(data, X, numCycles, spotlist=None, exclusions=None, factor_method = "nnls", measure="mean"):
+def crosstalk_correct(data, X, numCycles, wavelengths, spotlist=None, exclusions=None, factor_method = "nnls", measure="mean"):
 
     '''
     Takes in dataframe, Kx4 "crosstalk" matrix X (which is actually just the color basis vectors), and number of cycles.
@@ -77,14 +77,14 @@ def crosstalk_correct(data, X, numCycles, spotlist=None, exclusions=None, factor
         exclusions = []
 
     if spotlist is None:
-        spotlist = list(set(data.index.get_level_values('roi').to_list()))
+        spotlist = sorted(list(set(data.index.get_level_values('roi').to_list())))
 
     meas_cols = [measure+"_"+ch for ch in ["R","G","B"]]
     # include standard deviation? for confidence and/or quality?
     # ~ std_cols = ["std_"+ch for ch in ["R","G","B"]]
     # ~ std_index = [("std"+i[0][-2:], i[1]) for i in X.index]
     #print(std_cols)
-    
+
     pinv = np.linalg.pinv(X.T)
     
     coeffs_df = pd.DataFrame(index = data.index, columns = [("Signal",base) for base in BASES])
@@ -93,19 +93,19 @@ def crosstalk_correct(data, X, numCycles, spotlist=None, exclusions=None, factor
     #coeffs_norm = np.zeros(shape=(len(spotlist), numCycles, 4))
     # ~ stds_out = np.zeros(shape=(len(spotlist), numCycles, 4))
     
+    indices = []
+    for w in wavelengths:
+        indices += [("mean_R", int(w)), ("mean_G", int(w)), ("mean_B", int(w))]
+    indices = pd.MultiIndex.from_tuples(indices)
+    
     for s_idx, spot in enumerate(spotlist):
         if spot not in exclusions:
-            
-            #TODO: columns getting re-ordered here
-            #x_vec = data[meas_cols].loc[spot].values
             x = data[meas_cols].loc[spot]
+            x_vec = x[indices].values
             # ~ stds_in = data[std_cols].loc[spot]
-            
-            #print(X.index)
             # ~ stds_in_vec = stds_in[std_index].values
             # ~ stds_out[s_idx, :, :] = np.matmul(stds_in_vec, pinv)
-            
-            x_vec = x[meas_cols].values
+
             if factor_method == "pinv":
                 coeffs[s_idx,:,:] = np.matmul(x_vec, pinv)
             elif factor_method == "nnls":                
@@ -117,6 +117,7 @@ def crosstalk_correct(data, X, numCycles, spotlist=None, exclusions=None, factor
                 coeffs_df.loc[(spot, cycle+1)] = coeffs[s_idx, cycle, :]
             #coeffs_norm[s_idx,:,:] = np.transpose( coeffs[s_idx,:,:].T / np.sum(coeffs[s_idx,:,:], axis=1) )
             #basecalls[s_idx,:] = np.argmax(scores_norm, axis=1)
+    #print(coeffs_df)
     return coeffs, spotlist, pd.concat([data, coeffs_df], axis=1)
 
 def create_phase_correct_matrix(p, q, numCycles, r=0):

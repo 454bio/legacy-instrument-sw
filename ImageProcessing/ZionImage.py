@@ -111,9 +111,9 @@ class ZionImage(UserDict):
                     # ~ print(f"adding {imagefile}")
                     # ~ print(f"image shape: {image.shape}")
             else: #not using difference image
-                if wavelength == '000':
+                if wavelength == '000':  #skip dark images
                     continue
-                if '000' in lstWavelengths:
+                elif '000' in lstWavelengths:
                     d[wavelength] = image - imread(lstImageFiles[lstWavelengths.index('000')])
                     self.times.append( get_time_from_filename(imagefile) )
                     # ~ print(f"adding {imagefile} - {lstImageFiles[lstWavelengths.index('000')]}")
@@ -128,7 +128,7 @@ class ZionImage(UserDict):
         #TODO check that all images are same dtype, shape, and dimensionality
         self.dtype = image.dtype
         self.dims = image.shape[:2]
-        self.nChannels = len(lstWavelengths)
+        self.nChannels = len(lstWavelengths) if '000' not in lstWavelengths else len(lstWavelengths)-1
         self.cycle = cycle
         self.time_avg = round(sum(self.times)/len(self.times))
 
@@ -176,7 +176,7 @@ class ZionImage(UserDict):
             raise ValueError(f"Invalid datatype given!")
         return img_8b
 
-    def detect_rois(self, out_path, uv_wl='365', median_ks=9, erode_ks=16, dilate_ks=13, threshold_scale=1, minSize=None, maxSize=None, gray_weights=None):
+    def detect_rois(self, out_path=None, uv_wl='365', median_ks=9, erode_ks=16, dilate_ks=13, threshold_scale=1, minSize=None, maxSize=None, gray_weights=None):
 
         print(f"Detecting ROIs using median={median_ks}, erode={erode_ks}, dilate={dilate_ks}, scale={threshold_scale}")
 
@@ -213,15 +213,22 @@ class ZionImage(UserDict):
                 spot_labels[spot_labels==s] = 0
                 nSpots -= 1
 
-        np.save(os.path.join(out_path, f"rois.npy"), spot_labels)
-        roi_img = [create_labeled_rois(spot_labels, filepath=os.path.join(out_path, f"rois"), color=[1,0,1])]
-        for w_ind, w in enumerate(self.wavelengths):
-            roi_img.append( create_labeled_rois(spot_labels, filepath=os.path.join(out_path, f"rois_{w}"), color=[1,0,1], img=self[w]) )
+        if out_path is not None:
+            np.save(os.path.join(out_path, f"rois.npy"), spot_labels)
+            roi_img = [create_labeled_rois(spot_labels, filepath=os.path.join(out_path, f"rois"), color=[1,0,1])]
+            for w_ind, w in enumerate(self.wavelengths):
+                roi_img.append( create_labeled_rois(spot_labels, filepath=os.path.join(out_path, f"rois_{w}"), color=[1,0,1], img=self[w]) )
+        else:
+            roi_img = [create_labeled_rois(spot_labels, color=[1,0,1])]
+            for w_ind, w in enumerate(self.wavelengths):
+                roi_img.append( create_labeled_rois(spot_labels, color=[1,0,1], img=self[w]) )
         return roi_img, spot_labels, nSpots
 
 # This is a useful way to construct a Zion Image given a directory of images and a cycle index of interest
 def get_imageset_from_cycle(new_cycle, input_dir_path, uv_wl, useDifferenceImage, useTiff=False):
     cycle_str = f"C{new_cycle:03d}"
+    
+    #TODO: test with multiple imagesets per cycle!
     cycle_files = sorted(glob(os.path.join(input_dir_path, f"*_{cycle_str}_*.tiff"))) if useTiff else sorted(glob(os.path.join(input_dir_path, f"*_{cycle_str}_*.tif")))
     wls = list(set(sorted([get_wavelength_from_filename(f) for f in cycle_files])))
     if not uv_wl in wls:
