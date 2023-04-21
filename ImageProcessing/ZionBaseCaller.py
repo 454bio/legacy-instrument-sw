@@ -181,17 +181,20 @@ def base_call(data, p:float=0.0, q:float=0.0, r:float=0.0):
 
     return z_qinv, bases
 
-def display_signals(coeffs, spotlist, numCycles, numRows=1, numPages=1, exclusions=None, prefix=None, noSignal=False, labels=True, stds=None, preOrPost="pre"):
+def display_signals(coeffs, spotlist, numCycles, numRows=1, numPages=1, exclusions=None, prefix=None, noSignal=False, labels=True, stds=None, preOrPost="pre", show_spots=None):
 
     base_colors = {"A": "orange", "C": "green", "G":"blue", "T":"red"} #TODO yellow?
 
     if exclusions is None:
         exclusions = []
+    if show_spots is None:
+        show_spots = []
 
-    numSpots = len(spotlist)
+    numSpots = len(show_spots)
 
-    width = len(spotlist) / (numRows*numPages)
+    width = len(show_spots) / (numRows*numPages)
     numCols = math.ceil(width)
+    #numSpotsPerPage = numSpots / 
 
     fig1 = []
     ax1 = []
@@ -208,8 +211,13 @@ def display_signals(coeffs, spotlist, numCycles, numRows=1, numPages=1, exclusio
             
     #TODO account for when there is only one spot (no need for any subplots)
 
-    for s_idx_orig, spot in enumerate(spotlist):
-        page, s_idx = divmod(s_idx_orig, numSpots//numPages)
+    s_idx = -1
+    for spot in show_spots:
+        s_idx_orig = spotlist.index(spot)
+        #page, s_idx = divmod(s_idx_orig, numSpots//numPages)
+        s_idx += 1
+        page = 0
+        #print(f"page = {page}, s_idx = {s_idx}")
         # ~ print(f"s_idx_org={s_idx_orig}, page={page}, s_idx={s_idx}")
         if spot not in exclusions:
             scores_norm = np.transpose( coeffs[s_idx_orig,:numCycles,:].T / np.sum(coeffs[s_idx_orig,:numCycles,:], axis=1) )
