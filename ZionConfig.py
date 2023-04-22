@@ -22,7 +22,7 @@ class ZionConfig(dict):
 		"MK27_04":  "e7e7af47",
 		"MK27_05":  "b3ff81ad",
 		"MK26_07":  "cdfc750b",
-		"MK26_08":  "bad5a0cf",
+		"MK26_09":  "bad5a0cf",
 	}
 
 	def __init__(self):
