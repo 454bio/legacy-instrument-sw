@@ -458,7 +458,7 @@ class ZionPigpioProcess(multiprocessing.Process):
         return added_wf
 
     def _camera_trigger_thread(self, camera_trigger_event : multiprocessing.Event, stop_event : multiprocessing.Event, pi : pigpio.pi):
-        """ Send a pulse on the DEBUG pin. """
+        """ Send a pulse on the CAMERA pin. """
         while True:
             camera_trigger_event.wait()
             if stop_event.is_set():
