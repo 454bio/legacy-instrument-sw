@@ -209,14 +209,18 @@ def display_signals(coeffs, spotlist, numCycles, numRows=1, numPages=1, exclusio
             fig2.append(fig)
             ax2.append(ax)
             
-    #TODO account for when there is only one spot (no need for any subplots)
-
+    #TODO account for when there is only one spot (ie no need for any subplots)
+    
     s_idx = -1
+    page = 0
     for spot in show_spots:
         s_idx_orig = spotlist.index(spot)
         #page, s_idx = divmod(s_idx_orig, numSpots//numPages)
         s_idx += 1
-        page = 0
+        if s_idx == numCols * numRows:
+            s_idx = 0
+            page += 1
+            
         #print(f"page = {page}, s_idx = {s_idx}")
         # ~ print(f"s_idx_org={s_idx_orig}, page={page}, s_idx={s_idx}")
         if spot not in exclusions:
