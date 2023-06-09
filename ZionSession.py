@@ -8,6 +8,7 @@ from datetime import datetime
 import io
 import threading
 import traceback
+import requests
 from functools import partial
 from queue import Queue
 from fractions import Fraction
@@ -416,15 +417,21 @@ class ZionSession():
         except Exception as e:
             tb = "".join(traceback.format_exception(type(e), e, e.__traceback__))
             GLib.idle_add(self.gui.printToLog,  "ERROR Running Protocol!")
+            slack_string = "Session " + self.Name + " on " + self.Config['serial'] + " had a runtime error and has crashed at " + str(datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))
+            response = requests.post('https://hooks.slack.com/services/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', json={'text': slack_string})
             print(f"RunProgram Error!!\n{tb}")
         finally:
             protocol_length = time.time() - self.TimeOfLife
             self.captureCountThisProtocol = 0
             if stop_event.is_set():
                 GLib.idle_add(self.gui.printToLog,  f"Protocol has been stopped! Total Time: {protocol_length:.2f} sec")
+                slack_string = "Session " + self.Name + " on " + self.Config['serial'] + " was stopped by the user at " + str(datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))
+                response = requests.post('https://hooks.slack.com/services/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', json={'text': slack_string})
                 print("RunProgram has been stopped!")
             else:
                 GLib.idle_add(self.gui.printToLog,  f"Protocol has finished! Total Time: {protocol_length:.2f} sec")
+                slack_string = "Session " + self.Name + " on " + self.Config['serial'] + " was completed successfully at " + str(datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))
+                response = requests.post('https://hooks.slack.com/services/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', json={'text': slack_string})
                 print("RunProgram has finished")
 
             # Send the stop signal to the image saving thread
