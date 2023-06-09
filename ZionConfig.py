@@ -15,7 +15,7 @@ class ZionConfig(dict):
 	DEVICE_CPUID_REGISTRY = { # (cpuid, )
 		# {serial}: cpuid  #can add things later by turning into tuple
 		"Zach_Dev": "417c8eb2",
-		"SAPPHIRE": "cdfc750b",
+		"Dry_Imager": "cdfc750b",
 		"MK26_03F": "fe04ffd5",
 		"MK27_01":  "8273400a",
 		"MK27_02":  "28a62a16",
