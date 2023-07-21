@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 from fractions import Fraction
+import sys
 from ZionSession import ZionSession
 from ZionCamera import ZionCameraParameters
 from ZionGtk import check_for_valid_filename
@@ -9,9 +10,12 @@ from ZionGtk import check_for_valid_filename
 ######################### User-Level Settings ##########################
 ######################################################################## 
 
+if len(sys.argv) < 2:
+    raise Exception("Session name not provided")
+
 # Session Name: This will be the name of the folder (prefixed with datetime info and suffixed with index).
 # NOTE: No underscores allowed in session name!
-Session_Name = 'TS'
+Session_Name = sys.argv[1]
 if not check_for_valid_filename(Session_Name):
     raise Exception("Invalid character (or whitespace) found in session name!")
     
