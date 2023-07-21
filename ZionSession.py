@@ -442,9 +442,9 @@ class ZionSession():
 
             # ~ self.ImageProcessor.add_to_convert_queue(None)
 
-            self.nas_push_thread = threading.Thread(target=self.push_to_cloud)
-            self.nas_push_thread.daemon=True
-            self.nas_push_thread.start()
+            # self.nas_push_thread = threading.Thread(target=self.push_to_cloud)
+            # self.nas_push_thread.daemon=True
+            # self.nas_push_thread.start()
 
             GLib.idle_add(self.gui.ProtocolProgressBar.set_fraction, 1.0)
             GLib.idle_add(self.gui.CurrentEventProgressBar.set_fraction, 1.0)

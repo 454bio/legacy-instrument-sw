@@ -1584,6 +1584,7 @@ Gain</property>
                         <child>
                           <object class="GtkButton" id="cloud_push_button">
                             <property name="visible">True</property>
+                            <property name="sensitive">False</property>
                             <property name="can-focus">True</property>
                             <property name="receives-default">True</property>
                             <property name="image">cloud_image</property>
