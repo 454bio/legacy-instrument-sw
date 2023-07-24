@@ -25,6 +25,7 @@ class ZionConfig(dict):
 		"MK27_09":  "bad5a0cf",
 		"MK27_11":  "d0c4a2c9",
 		"MK29_14":  "eda8f92c",
+		"MK27_16":  "bad5a0cf",
 		"MK27_13":  "4e68d646",
 		"MK27_18":  "c391ca45",
 		"MK27_17":  "2e683346",
